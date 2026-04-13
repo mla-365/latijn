@@ -29,13 +29,18 @@ body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Robo
 .state-answer{color:#000000}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;user-select:none;min-height:1.2em}
 .btnrow{display:flex;gap:10px;justify-content:center}
-button{appearance:none;border:1px solid var(--border);background:#e8eaed;color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:transform .05s ease}
-button:active{transform:translateY(1px)}
+button{appearance:none;border:1px solid var(--border);background:#e8eaed;color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:opacity .1s ease}
+button:active{opacity:0.85}
 button:focus{outline:none}
 button:disabled{cursor:default;opacity:1;pointer-events:none}
-.again{border-color:rgba(96,0,0,0.35);color:var(--danger)}
-.good{border-color:rgba(0,88,0,0.35);color:var(--success)}
+.again{border-color:rgba(96,0,0,0.35);color:var(--danger);transition:opacity .1s ease}
+.again:active{background:rgba(96,0,0,0.08)}
+.good{border-color:rgba(0,88,0,0.35);color:var(--success);transition:opacity .1s ease}
+.good:active{background:rgba(0,88,0,0.08)}
 .bar{width:100%;max-width:var(--cap);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px;user-select:none;font-family:monospace;letter-spacing:.2px}
+.bar>div{flex:1}
+.bar>div:nth-child(2){text-align:center}
+.bar>div:nth-child(3){text-align:right}
 .bottom-bar{padding-top:6px}
 .list-link{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 .list-link:hover{color:var(--text)}
@@ -75,12 +80,6 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
 
 @media(max-width:420px){:root{--cap:100%}.card-text{font-size:24px}button{min-width:110px}.panel{padding:20px 18px}}
 
-/* ── RS export/import ── */
-.rs-section{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
-.rs-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.rs-actions{display:flex;gap:8px}
-.rs-btn{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font-size:13px;cursor:pointer;text-align:center;min-width:auto}
-.rs-btn:hover{background:#f8f9fa}
 </style>
 </head>
 <body>
@@ -148,14 +147,6 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
       <div class="form-actions">
         <button id="cancelUpload">Annuleren</button>
         <button class="btn-primary" id="confirmUpload">Importeren</button>
-      </div>
-    </div>
-    <div class="rs-section">
-      <div class="rs-title">Voortgang</div>
-      <div class="rs-actions">
-        <button class="rs-btn" id="rsExport">↓ Export voortgang</button>
-        <button class="rs-btn" id="rsImport">↑ Import voortgang</button>
-        <input type="file" id="rsFileInput" accept=".json" style="display:none">
       </div>
     </div>
   </div>
@@ -502,6 +493,7 @@ $fileInput.addEventListener("change",e=>{
 
       // Parse lemmas
       const lemmas=[];
+      const importRS={};
       for(const row of rows){
         // Normalize column access (case-insensitive)
         const get=key=>{
@@ -523,7 +515,14 @@ $fileInput.addEventListener("change",e=>{
         if(gt) tag=gc?(gc+' \u00b7 '+gt):gt;
 
         const idVal=get("ID");
-        lemmas.push({id:parseInt(idVal)||lemmas.length+1, tag, pairs});
+        const lemmaVal=get("LEMMA");
+        const rsVal=get("RS");
+        const parsedId=parseInt(idVal)||lemmas.length+1;
+        lemmas.push({id:parsedId, tag, pairs, lemma:lemmaVal||""});
+        if(rsVal!==""){
+          const rsNum=parseInt(rsVal);
+          if(!isNaN(rsNum)) importRS[parsedId]=rsNum;
+        }
       }
 
       if(!lemmas.length){
@@ -531,8 +530,13 @@ $fileInput.addEventListener("change",e=>{
         return;
       }
 
+      if(lemmas.length<10){
+        showMsg("error","Please make sure to upload minimum ten rows. Found: "+lemmas.length+".");
+        return;
+      }
+
       showMsg("success",lemmas.length+" lemma's gevonden in "+file.name+". Vul de gegevens in.");
-      pendingData={lemmas,fileName:file.name};
+      pendingData={lemmas,fileName:file.name,importRS};
       $uploadForm.classList.add("open");
 
     }catch(err){
@@ -553,6 +557,14 @@ async function finalizeUpload(){
   }
   const level=document.getElementById("fLevel").value;
   const desc=document.getElementById("fDesc").value.trim();
+
+  // Check if RS data exists in the file and confirm overwrite
+  const hasRS=Object.keys(pendingData.importRS).length>0;
+  if(hasRS){
+    if(!confirm("This file contains progress scores (RS). Importing will overwrite any existing progress for this list. Continue?")){
+      return;
+    }
+  }
 
   // Build display name
   let name=lang;
@@ -576,6 +588,14 @@ async function finalizeUpload(){
 
   try{
     await dbPut(listObj);
+
+    // Apply RS from Excel: overwrite localStorage for this list
+    const rsData={};
+    for(const lemma of pendingData.lemmas){
+      rsData[lemma.id]=pendingData.importRS[lemma.id]||0;
+    }
+    localStorage.setItem("wd_rs_"+sysId,JSON.stringify(rsData));
+
     showMsg("success","Lijst '"+name+"' opgeslagen! ("+listObj.count+" lemma's)");
     $uploadForm.classList.remove("open");
     pendingData=null;
@@ -651,84 +671,26 @@ function showMsg(type,text){
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 
 /* ═══════════════════════════════════════════
-   RS EXPORT / IMPORT
+   DOWNLOAD LIST (XLSX EXPORT)
    ═══════════════════════════════════════════ */
-document.getElementById("rsExport").addEventListener("click",()=>{
-  // Collect all RS keys from localStorage
-  const allRS={};
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(key.startsWith("wd_rs_")){
-      try{allRS[key]=JSON.parse(localStorage.getItem(key))}catch(e){}
-    }
-  }
-  // Also save the active list preference
-  allRS._activeList=localStorage.getItem("wd_active_list")||"default_nlru1";
-
-  const blob=new Blob([JSON.stringify(allRS,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  const date=new Date().toISOString().slice(0,10);
-  a.download="worddock_voortgang_"+date+".json";
-  a.click();
-  URL.revokeObjectURL(url);
-  showMsg("success","Voortgang geëxporteerd. Bewaar het bestand op een veilige plek.");
-});
-
-const $rsFileInput=document.getElementById("rsFileInput");
-document.getElementById("rsImport").addEventListener("click",()=>{
-  $rsFileInput.click();
-});
-
-$rsFileInput.addEventListener("change",e=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  $rsFileInput.value="";
-
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const data=JSON.parse(ev.target.result);
-      let count=0;
-
-      for(const[key,val] of Object.entries(data)){
-        if(key==="_activeList"){
-          localStorage.setItem("wd_active_list",val);
-          continue;
-        }
-        if(key.startsWith("wd_rs_")){
-          localStorage.setItem(key,JSON.stringify(val));
-          count++;
-        }
-      }
-
-      // Reload RS for active list
-      loadRS();
-      initDeck();
-      showMsg("success","Voortgang geïmporteerd: "+count+" lijst(en). Je scores zijn hersteld.");
-    }catch(err){
-      showMsg("error","Ongeldig bestand: "+err.message);
-    }
-  };
-  reader.readAsText(file);
-});
 async function downloadList(id){
   try{
-    let data,name;
+    let data,name,listRS={};
     if(id==="default_nlru1"){
       data=DEFAULT_DATA;
       name=DEFAULT_LIST.name;
+      try{listRS=JSON.parse(localStorage.getItem("wd_rs_default_nlru1"))||{}}catch(e){}
     } else {
       const stored=await dbGet(id);
       if(!stored){showMsg("error","Lijst niet gevonden.");return;}
       data=stored.data;
       name=stored.name||"worddock";
+      try{listRS=JSON.parse(localStorage.getItem("wd_rs_"+id))||{}}catch(e){}
     }
 
     const rows=[];
     for(const lemma of data){
-      const row={ID:lemma.id,GRAMCAT:"",GRAMTAG:""};
+      const row={ID:lemma.id,LEMMA:lemma.lemma||"",GRAMCAT:"",GRAMTAG:""};
       if(lemma.tag){
         const parts=lemma.tag.split(" \u00b7 ");
         row.GRAMCAT=parts[0]||"";
@@ -738,6 +700,7 @@ async function downloadList(id){
         row["Q"+(i+1)]=lemma.pairs[i].q;
         row["A"+(i+1)]=lemma.pairs[i].a;
       }
+      row.RS=listRS[lemma.id]||0;
       rows.push(row);
     }
 
