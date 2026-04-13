@@ -29,18 +29,17 @@ body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Robo
 .state-answer{color:#000000}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;user-select:none;min-height:1.2em}
 .btnrow{display:flex;gap:10px;justify-content:center}
-button{appearance:none;border:1px solid var(--border);background:#e8eaed;color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:opacity .1s ease}
-button:active{opacity:0.85}
+button{appearance:none;border:1px solid var(--border);background:#e8eaed;color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:opacity .1s ease,background .1s ease;-webkit-tap-highlight-color:transparent}
 button:focus{outline:none}
 button:disabled{cursor:default;opacity:1;pointer-events:none}
-.again{border-color:rgba(96,0,0,0.35);color:var(--danger);transition:opacity .1s ease}
-.again:active{background:rgba(96,0,0,0.08)}
-.good{border-color:rgba(0,88,0,0.35);color:var(--success);transition:opacity .1s ease}
-.good:active{background:rgba(0,88,0,0.08)}
+.again{border-color:rgba(96,0,0,0.35);color:var(--danger)}
+.again.pressed{opacity:0.85;background:rgba(96,0,0,0.08)}
+.good{border-color:rgba(0,88,0,0.35);color:var(--success)}
+.good.pressed{opacity:0.85;background:rgba(0,88,0,0.08)}
 .bar{width:100%;max-width:var(--cap);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px;user-select:none;font-family:monospace;letter-spacing:.2px}
-.bar>div{flex:1}
-.bar>div:nth-child(2){text-align:center}
-.bar>div:nth-child(3){text-align:right}
+.bar>div:first-child{flex:0 0 auto;min-width:60px}
+.bar>div:nth-child(2){flex:1;text-align:center;padding:0 4px}
+.bar>div:last-child{flex:0 0 auto;min-width:50px;text-align:right}
 .bottom-bar{padding-top:6px}
 .list-link{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 .list-link:hover{color:var(--text)}
@@ -433,6 +432,18 @@ document.addEventListener("keydown",e=>{
   if((e.key==="ArrowLeft"||e.key==="p"||e.key==="P")&&showingA&&!deckDone){
     e.preventDefault();gradeAgain();
   }
+});
+
+/* ═══════════════════════════════════════════
+   BUTTON PRESS FEEDBACK (mobile touch)
+   ═══════════════════════════════════════════ */
+[$bA,$bG].forEach(btn=>{
+  btn.addEventListener("touchstart",()=>{btn.classList.add("pressed")},{passive:true});
+  btn.addEventListener("touchend",()=>{btn.classList.remove("pressed")},{passive:true});
+  btn.addEventListener("touchcancel",()=>{btn.classList.remove("pressed")},{passive:true});
+  btn.addEventListener("mousedown",()=>{btn.classList.add("pressed")});
+  btn.addEventListener("mouseup",()=>{btn.classList.remove("pressed")});
+  btn.addEventListener("mouseleave",()=>{btn.classList.remove("pressed")});
 });
 
 /* ═══════════════════════════════════════════
