@@ -6,9 +6,10 @@
 <title>WordDock</title>
 <style>
 :root{
-  --bg:#F9F9F9;
-  --card:#FBFBFB;
-  --text:#ffffff;
+  --bg:#ffffff;
+  --card:#ffffff;
+  --text:#1e293b;
+  --button-bg:#ffffff;
   --muted:#94a3b8;
   --border:#e5e7eb;
   --shadow:0 10px 30px rgba(15,23,42,0.10);
@@ -29,7 +30,7 @@ body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Robo
 .state-answer{color:#000000}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;user-select:none;min-height:1.2em}
 .btnrow{display:flex;gap:10px;justify-content:center}
-button{appearance:none;border:1px solid var(--border);background:#e8eaed;color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:transform .05s ease}
+button{appearance:none;border:1px solid var(--border);background:var(--button-bg);color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:transform .05s ease}
 button:active{transform:translateY(1px)}
 button:focus{outline:none}
 button:disabled{cursor:default;opacity:1;pointer-events:none}
@@ -37,7 +38,7 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
 .good{border-color:rgba(0,88,0,0.35);color:var(--success)}
 .bar{width:100%;max-width:var(--cap);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px;user-select:none;font-family:monospace;letter-spacing:.2px}
 .bottom-bar{padding-top:6px}
-.list-link{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.list-link{cursor:pointer;text-decoration:none}
 .list-link:hover{color:var(--text)}
 
 /* ── overlay panel ── */
