@@ -4,11 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>WordDock</title>
+<link rel="icon" type="image/x-icon" href="/assets/favicons/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/favicons/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/assets/favicons/android-chrome-512x512.png">
+<link rel="apple-touch-icon" href="/assets/favicons/apple-touch-icon.png">
 <style>
 :root{
-  --bg:#f0f2f5;
+  --bg:#ffffff;
   --card:#ffffff;
   --text:#1e293b;
+  --button-bg:#ffffff;
   --muted:#94a3b8;
   --border:#e5e7eb;
   --shadow:0 10px 30px rgba(15,23,42,0.10);
@@ -29,7 +35,7 @@ body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Robo
 .state-answer{color:#000000}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;user-select:none;min-height:1.2em}
 .btnrow{display:flex;gap:10px;justify-content:center}
-button{appearance:none;border:1px solid var(--border);background:#e8eaed;color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:transform .05s ease}
+button{appearance:none;border:1px solid var(--border);background:var(--button-bg);color:var(--text);padding:12px 14px;border-radius:14px;font-size:14px;cursor:pointer;min-width:120px;transition:transform .05s ease}
 button:active{transform:translateY(1px)}
 button:focus{outline:none}
 button:disabled{cursor:default;opacity:1;pointer-events:none}
@@ -37,8 +43,18 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
 .good{border-color:rgba(0,88,0,0.35);color:var(--success)}
 .bar{width:100%;max-width:var(--cap);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px;user-select:none;font-family:monospace;letter-spacing:.2px}
 .bottom-bar{padding-top:6px}
-.list-link{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.bottom-left{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.list-link{cursor:pointer;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list-link:hover{color:var(--text)}
+#cBR{flex-shrink:0;margin-left:14px}
+/* ── info modal ── */
+.info-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:200;justify-content:center;align-items:center;padding:20px}
+.info-modal.open{display:flex}
+.info-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 32px;max-width:420px;width:100%;text-align:center}
+.info-card h3{margin:0 0 14px 0;font-size:20px;color:var(--text);font-weight:600}
+.info-card p{margin:0 0 18px 0;font-size:15px;color:var(--text);line-height:1.5}
+.info-card a{color:var(--muted);text-decoration:none;font-size:13px}
+.info-card a:hover{color:var(--text);text-decoration:underline}
 /* ── overlay panel ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:100;justify-content:center;align-items:center}
 .overlay.open{display:flex}
@@ -54,9 +70,9 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
 .list-delete:hover{color:var(--danger)}
 .list-actions{display:flex;gap:2px;align-items:center}
 .list-dl{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;min-width:auto;padding:4px 8px}
-.list-dl:hover{color:var(--text)}
+.list-dl:hover{color:var()}
 .upload-btn{display:block;width:100%;padding:14px;border:2px dashed var(--border);border-radius:12px;background:none;color:var(--muted);font-size:14px;cursor:pointer;text-align:center;margin-top:4px;min-width:auto}
-.upload-btn:hover{border-color:var(--muted);color:var(--text)}
+.upload-btn:hover{border-color:var(--muted);color:var()}
 /* ── upload form ── */
 .upload-form{display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
 .upload-form.open{display:block}
@@ -77,10 +93,31 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
 .rs-actions{display:flex;gap:8px}
 .rs-btn{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font-size:13px;cursor:pointer;text-align:center;min-width:auto}
 .rs-btn:hover{background:#f8f9fa}
+/* ── LP selector ── */
+.lp-cols{display:flex;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.lp-col{flex:1;display:flex;flex-direction:column}
+.lp-col-label{font-size:11px;color:var(--muted);padding:8px 12px 6px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px}
+.lp-list{overflow-y:auto;max-height:220px}
+.lp-item{padding:9px 12px;font-size:14px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border)}
+.lp-item:last-child{border-bottom:none}
+.lp-item:hover{background:#f8f9fa}
+.lp-item.selected{background:#f0fdf4;font-weight:500}
+.lp-arrow{display:flex;align-items:center;justify-content:center;padding:0 4px;border-left:1px solid var(--border);border-right:1px solid var(--border);background:#fafafa;font-size:14px;color:var(--muted);min-width:28px}
+.lp-divider{text-align:center;font-size:12px;color:var(--muted);margin:12px 0;position:relative}
+.lp-divider::before,.lp-divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:var(--border)}
+.lp-divider::before{left:0}.lp-divider::after{right:0}
+.lp-user-btn{display:block;width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:none;color:var(--muted);font-size:14px;cursor:pointer;text-align:center;min-width:auto}
+.lp-user-btn:hover{background:#f8f9fa;color:var(--text)}
+/* ── Panel top row (Screen 2) ── */
+.panel-top-row{display:flex;align-items:center;margin-bottom:18px;gap:8px}
+.panel-back{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);min-width:auto;padding:0 6px 0 0;line-height:1}
+.panel-back:hover{color:var(--text)}
+.panel-lp-label{flex:1;font-size:16px;font-weight:600;color:var(--text)}
+.panel-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);min-width:auto;padding:0;line-height:1}
+.panel-close:hover{color:var(--text)}
 </style>
 </head>
 <body>
-<img src="data:image/png;base64,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" alt="Mondriaan" style="position:fixed;top:26px;left:26px;width:80px;height:80px;z-index:50;pointer-events:none;">
 <div class="shell">
   <div class="stage">
     <div class="card" id="card" tabindex="0">
@@ -94,63 +131,76 @@ button:disabled{cursor:default;opacity:1;pointer-events:none}
     <div class="hint" id="hint"></div>
   </div>
   <div class="bar bottom-bar">
-    <div>WordDock</div>
-    <div class="list-link" id="listLink">NL→RU · 1</div>
+    <div class="bottom-left">
+      <div class="list-link" id="infoLink">WordDock</div>
+      <div class="list-link" id="listLink">NL·RU·1</div>
+    </div>
     <div id="cBR">0/12</div>
   </div>
 </div>
-<!-- List picker overlay -->
+<!-- ── Info modal ── -->
+<div class="info-modal" id="infoModal">
+  <div class="info-card">
+    <h3>WordDock</h3>
+    <p>WordDock: efficient learning and worldwide collaboration.</p>
+    <a href="https://github.com/mla-365/worddock#readme" target="_blank" rel="noopener">Full documentation &rarr;</a>
+  </div>
+</div>
+<!-- ── Screen 1: LP Selector ── -->
+<div class="overlay" id="overlayLP">
+  <div class="panel">
+    <button class="panel-close" id="lpClose">×</button>
+    <h2>Language pair</h2>
+    <div class="lp-cols">
+      <div class="lp-col">
+        <div class="lp-col-label">From</div>
+        <div class="lp-list" id="srcList"></div>
+      </div>
+      <div class="lp-arrow">→</div>
+      <div class="lp-col">
+        <div class="lp-col-label">To</div>
+        <div class="lp-list" id="tgtList"></div>
+      </div>
+    </div>
+    <div class="lp-divider">or</div>
+    <button class="lp-user-btn" id="userListsBtn">My custom lists</button>
+  </div>
+</div>
+<!-- ── Screen 2: List Selector ── -->
 <div class="overlay" id="overlay">
   <div class="panel">
-    <button class="panel-close" id="panelClose">×</button>
-    <h2>Woordenlijsten</h2>
+    <div class="panel-top-row">
+      <button class="panel-back" id="panelBack">←</button>
+      <span class="panel-lp-label" id="panelLPLabel">NL→RU</span>
+      <button class="panel-close" id="panelClose">×</button>
+    </div>
     <div id="msg" class="msg"></div>
     <div id="listContainer"></div>
-    <button class="upload-btn" id="uploadBtn">+ Upload nieuwe lijst (.xlsx)</button>
+    <button class="upload-btn" id="uploadBtn">+ Upload list (.xlsx)</button>
     <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
     <div class="upload-form" id="uploadForm">
       <div class="form-row">
-        <label>Taalpaar</label>
-        <select id="fLang">
-          <option value="NL→RU">NL → RU</option>
-          <option value="NL→EN">NL → EN</option>
-          <option value="NL→FR">NL → FR</option>
-          <option value="NL→DE">NL → DE</option>
-          <option value="EN→RU">EN → RU</option>
-          <option value="FR→RU">FR → RU</option>
-          <option value="other">Anders…</option>
-        </select>
+        <label>Language pair</label>
+        <div id="uploadLPDisplay" style="font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;color:var(--text)"></div>
       </div>
-      <div class="form-row" id="customLangRow" style="display:none">
-        <label>Aangepast taalpaar</label>
-        <input type="text" id="fCustomLang" placeholder="bijv. ES→PT">
+      <div class="form-row" id="customLPRow" style="display:none">
+        <label>Custom pair</label>
+        <input type="text" id="fCustomLP" placeholder="e.g. ES→PT">
       </div>
       <div class="form-row">
-        <label>Niveau</label>
-        <select id="fLevel">
-          <option value="">— geen —</option>
-          <option value="A1">A1</option>
-          <option value="A2">A2</option>
-          <option value="B1">B1</option>
-          <option value="B2">B2</option>
-          <option value="C1">C1</option>
-          <option value="C2">C2</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>Beschrijving</label>
-        <input type="text" id="fDesc" placeholder="bijv. Bewegingswerkwoorden">
+        <label>Description</label>
+        <input type="text" id="fDesc" placeholder="e.g. Movement verbs">
       </div>
       <div class="form-actions">
-        <button id="cancelUpload">Annuleren</button>
-        <button class="btn-primary" id="confirmUpload">Importeren</button>
+        <button id="cancelUpload">Cancel</button>
+        <button class="btn-primary" id="confirmUpload">Import</button>
       </div>
     </div>
     <div class="rs-section">
-      <div class="rs-title">Voortgang</div>
+      <div class="rs-title">Progress</div>
       <div class="rs-actions">
-        <button class="rs-btn" id="rsExport">↓ Export voortgang</button>
-        <button class="rs-btn" id="rsImport">↑ Import voortgang</button>
+        <button class="rs-btn" id="rsExport">↓ Export</button>
+        <button class="rs-btn" id="rsImport">↑ Import</button>
         <input type="file" id="rsFileInput" accept=".json" style="display:none">
       </div>
     </div>
@@ -249,14 +299,15 @@ async function switchList(listMeta){
   }
   loadRS();
   initDeck();
-  document.getElementById("listLink").textContent=listMeta.name;
+  updateBottomBar();
   updateMastery();
 }
 function updateMastery(){
   const sum=ALL.reduce((s,l)=>s+Math.min(getRS(l.id),MASTERY),0);
   const pct=(sum/(ALL.length*MASTERY)*100).toFixed(2);
-  const base=activeListMeta.name;
-  document.getElementById("listLink").textContent=base+" · "+pct+"%";
+  const rawName=activeListMeta.name;
+  const displayName=rawName.replace(/→/g,"·").replace(/\s·\s/g,"·").replace(/^USER/,"MY");
+  document.getElementById("listLink").textContent=displayName;
 }
 /* ═══════════════════════════════════════════
    PIPE ENGINE
@@ -407,25 +458,95 @@ document.addEventListener("keydown",e=>{
   }
 });
 /* ═══════════════════════════════════════════
-   LIST PICKER & UPLOAD
+   LANGUAGE DATA
+   ═══════════════════════════════════════════ */
+const LANGUAGES=[
+  {code:"AR",name:"العربية"},
+  {code:"DE",name:"Deutsch"},
+  {code:"EN",name:"English"},
+  {code:"ES",name:"Español"},
+  {code:"FR",name:"Français"},
+  {code:"IT",name:"Italiano"},
+  {code:"JA",name:"日本語"},
+  {code:"KO",name:"한국어"},
+  {code:"NL",name:"Nederlands"},
+  {code:"PT",name:"Português"},
+  {code:"RU",name:"Русский"},
+  {code:"ZH",name:"中文"},
+];
+const AVAILABLE_LP=new Set(["NL-RU"]);
+const USER_LP="USER";
+/* ═══════════════════════════════════════════
+   LP STATE
+   ═══════════════════════════════════════════ */
+let activeSrc=localStorage.getItem("wd_src")||"NL";
+let activeTgt=localStorage.getItem("wd_tgt")||"RU";
+let activeLP=localStorage.getItem("wd_lp")||"NL-RU";
+function lpKey(src,tgt){return src+"-"+tgt;}
+function saveLPState(){
+  localStorage.setItem("wd_src",activeSrc);
+  localStorage.setItem("wd_tgt",activeTgt);
+  localStorage.setItem("wd_lp",activeLP);
+}
+/* ═══════════════════════════════════════════
+   BOTTOM BAR WIRING
+   ═══════════════════════════════════════════ */
+document.getElementById("infoLink").addEventListener("click",()=>{
+  document.getElementById("infoModal").classList.add("open");
+});
+const $infoModal=document.getElementById("infoModal");
+$infoModal.addEventListener("click",e=>{if(e.target===$infoModal)$infoModal.classList.remove("open");});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$infoModal.classList.remove("open");});
+document.getElementById("listLink").addEventListener("click",()=>openPanel());
+function updateBottomBar(){
+  /* LP label is now embedded in the filename; nothing to update here */
+}
+/* ═══════════════════════════════════════════
+   LP SELECTOR (Screen 1)
+   ═══════════════════════════════════════════ */
+const $overlayLP=document.getElementById("overlayLP");
+function openLP(){renderLP();$overlayLP.classList.add("open");}
+function closeLP(){$overlayLP.classList.remove("open");}
+document.getElementById("lpClose").addEventListener("click",closeLP);
+$overlayLP.addEventListener("click",e=>{if(e.target===$overlayLP)closeLP();});
+document.getElementById("userListsBtn").addEventListener("click",()=>{
+  activeLP=USER_LP;saveLPState();updateBottomBar();closeLP();openPanel();
+});
+function renderLP(){
+  const srcEl=document.getElementById("srcList");
+  const tgtEl=document.getElementById("tgtList");
+  srcEl.innerHTML=LANGUAGES.map(l=>
+    `<div class="lp-item${l.code===activeSrc?" selected":""}" data-code="${l.code}">${l.name}</div>`
+  ).join("");
+  const others=LANGUAGES.filter(l=>l.code!==activeSrc);
+  tgtEl.innerHTML=others.map(l=>
+    `<div class="lp-item${l.code===activeTgt?" selected":""}" data-code="${l.code}">${l.name}</div>`
+  ).join("");
+  srcEl.querySelectorAll(".lp-item").forEach(el=>el.addEventListener("click",()=>{
+    activeSrc=el.dataset.code;
+    if(activeTgt===activeSrc)activeTgt=LANGUAGES.find(l=>l.code!==activeSrc).code;
+    renderLP();
+  }));
+  tgtEl.querySelectorAll(".lp-item").forEach(el=>el.addEventListener("click",()=>{
+    activeTgt=el.dataset.code;
+    activeLP=lpKey(activeSrc,activeTgt);
+    saveLPState();updateBottomBar();closeLP();openPanel();
+  }));
+}
+/* ═══════════════════════════════════════════
+   LIST PICKER (Screen 2)
    ═══════════════════════════════════════════ */
 const $overlay=document.getElementById("overlay");
 const $listContainer=document.getElementById("listContainer");
 const $uploadForm=document.getElementById("uploadForm");
 const $fileInput=document.getElementById("fileInput");
 const $msg=document.getElementById("msg");
-document.getElementById("listLink").addEventListener("click",()=>openPanel());
 document.getElementById("panelClose").addEventListener("click",()=>closePanel());
-$overlay.addEventListener("click",e=>{if(e.target===$overlay)closePanel()});
-document.getElementById("uploadBtn").addEventListener("click",()=>{
-  $fileInput.click();
-});
-document.getElementById("fLang").addEventListener("change",e=>{
-  document.getElementById("customLangRow").style.display=e.target.value==="other"?"block":"none";
-});
+document.getElementById("panelBack").addEventListener("click",()=>{closePanel();openLP();});
+$overlay.addEventListener("click",e=>{if(e.target===$overlay)closePanel();});
+document.getElementById("uploadBtn").addEventListener("click",()=>$fileInput.click());
 document.getElementById("cancelUpload").addEventListener("click",()=>{
-  $uploadForm.classList.remove("open");
-  pendingData=null;
+  $uploadForm.classList.remove("open");pendingData=null;
 });
 document.getElementById("confirmUpload").addEventListener("click",()=>finalizeUpload());
 let pendingData=null;
@@ -440,129 +561,116 @@ $fileInput.addEventListener("change",e=>{
       const wb=XLSX.read(data,{type:"array"});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
-      if(!rows.length){showMsg("error","Bestand is leeg.");return;}
-      // Check required columns
+      if(!rows.length){showMsg("error","File is empty.");return;}
       const cols=Object.keys(rows[0]);
-      const hasId=cols.some(c=>c.toUpperCase()==="ID");
-      const hasQ1=cols.some(c=>c.toUpperCase()==="Q1");
-      const hasA1=cols.some(c=>c.toUpperCase()==="A1");
-      if(!hasId||!hasQ1||!hasA1){
-        showMsg("error","Verplichte kolommen ontbreken: ID, Q1, A1. Controleer je bestand.");
-        return;
+      const has=k=>cols.some(c=>c.toUpperCase()===k);
+      if(!has("ID")||!has("Q1")||!has("A1")){
+        showMsg("error","Required columns missing: ID, Q1, A1.");return;
       }
-      // Parse lemmas
       const lemmas=[];
       for(const row of rows){
-        // Normalize column access (case-insensitive)
         const get=key=>{
           const k=Object.keys(row).find(c=>c.toUpperCase()===key.toUpperCase());
           return k?String(row[k]||"").trim():"";
         };
         const pairs=[];
         for(let i=1;i<=10;i++){
-          const q=get("Q"+i);
-          const a=get("A"+i);
-          if(q&&a) pairs.push({q:q.replace(/[\n\r]/g," "),a:a.replace(/[\n\r]/g," ")});
+          const q=get("Q"+i),a=get("A"+i);
+          if(q&&a)pairs.push({q:q.replace(/[\n\r]/g," "),a:a.replace(/[\n\r]/g," ")});
         }
         if(!pairs.length)continue;
-        const gc=get("GRAMCAT");
-        const gt=get("GRAMTAG");
+        const gc=get("GRAMCAT"),gt=get("GRAMTAG");
         let tag=gc;
-        if(gt) tag=gc?(gc+' \u00b7 '+gt):gt;
-        const idVal=get("ID");
-        lemmas.push({id:parseInt(idVal)||lemmas.length+1, tag, pairs});
+        if(gt)tag=gc?(gc+" · "+gt):gt;
+        lemmas.push({
+          id:parseInt(get("ID"))||lemmas.length+1,
+          tag,pairs,
+          lemma:get("LEMMA"),level:get("LEVEL"),
+          cube:get("CUBE"),topic:get("TOPIC"),topix:get("TOPIX"),
+        });
       }
-      if(!lemmas.length){
-        showMsg("error","Geen geldige lemma's gevonden. Elke rij moet minstens Q1 en A1 bevatten.");
-        return;
-      }
-      showMsg("success",lemmas.length+" lemma's gevonden in "+file.name+". Vul de gegevens in.");
+      if(!lemmas.length){showMsg("error","No valid lemmas found.");return;}
+      showMsg("success",lemmas.length+" lemmas found in "+file.name+".");
       pendingData={lemmas,fileName:file.name};
+      const lpLabel=activeLP===USER_LP?"My custom lists":activeSrc+"→"+activeTgt;
+      document.getElementById("uploadLPDisplay").textContent=lpLabel;
+      document.getElementById("fDesc").value="";
       $uploadForm.classList.add("open");
-    }catch(err){
-      showMsg("error","Fout bij het lezen van het bestand: "+err.message);
-    }
+    }catch(err){showMsg("error","Error reading file: "+err.message);}
   };
   reader.readAsArrayBuffer(file);
 });
 async function finalizeUpload(){
   if(!pendingData)return;
-  const langSel=document.getElementById("fLang");
-  let lang=langSel.value;
-  if(lang==="other"){
-    lang=document.getElementById("fCustomLang").value.trim();
-    if(!lang){showMsg("error","Vul een taalpaar in.");return;}
-  }
-  const level=document.getElementById("fLevel").value;
+  const lp=activeLP===USER_LP?USER_LP:lpKey(activeSrc,activeTgt);
   const desc=document.getElementById("fDesc").value.trim();
-  // Build display name
-  let name=lang;
-  if(level) name+=" \u00b7 "+level;
-  if(desc) name+=" \u00b7 "+desc;
-  // System ID: unique, based on timestamp
+  let name=lp===USER_LP?"Custom":activeSrc+"→"+activeTgt;
+  if(desc)name+=" · "+desc;
   const sysId="list_"+Date.now()+"_"+Math.random().toString(36).substr(2,6);
   const listObj={
-    id:sysId,
-    name,
-    lang,
-    level,
-    desc,
-    count:pendingData.lemmas.length,
-    data:pendingData.lemmas,
-    isDefault:false,
+    id:sysId,name,lp,src:activeSrc,tgt:activeTgt,
+    desc,count:pendingData.lemmas.length,
+    data:pendingData.lemmas,isDefault:false,
     created:new Date().toISOString()
   };
   try{
     await dbPut(listObj);
-    showMsg("success","Lijst '"+name+"' opgeslagen! ("+listObj.count+" lemma's)");
-    $uploadForm.classList.remove("open");
-    pendingData=null;
-    // Switch to new list
-    await switchList({id:sysId,name,lang,level,desc,count:listObj.count,isDefault:false});
+    showMsg("success","List '"+name+"' saved! ("+listObj.count+" lemmas)");
+    $uploadForm.classList.remove("open");pendingData=null;
+    await switchList({id:sysId,name,lp,count:listObj.count,isDefault:false});
     setTimeout(()=>closePanel(),800);
-  }catch(err){
-    showMsg("error","Opslaan mislukt: "+err.message);
-  }
+  }catch(err){showMsg("error","Save failed: "+err.message);}
 }
 async function openPanel(){
   $msg.className="msg";$msg.textContent="";
-  $uploadForm.classList.remove("open");
-  pendingData=null;
-  // Build list
+  $uploadForm.classList.remove("open");pendingData=null;
+  document.getElementById("panelLPLabel").textContent=
+    activeLP===USER_LP?"My custom lists":activeSrc+"→"+activeTgt;
   const stored=await dbGetAll();
   $listContainer.innerHTML="";
-  // Default list
-  const allLists=[DEFAULT_LIST,...stored.map(s=>({
-    id:s.id,name:s.name,lang:s.lang,level:s.level,desc:s.desc,count:s.count,isDefault:false
-  }))];
-  for(const li of allLists){
+  let lists=[];
+  if(activeLP===USER_LP){
+    lists=stored.filter(s=>s.lp===USER_LP||!s.lp);
+  } else {
+    if(activeLP==="NL-RU")lists=[DEFAULT_LIST];
+    lists=[...lists,...stored.filter(s=>s.lp===activeLP)];
+  }
+  if(lists.length===0){
+    $listContainer.innerHTML='<div style="font-size:13px;color:var(--muted);padding:12px 0">No lists yet for this pair.</div>';
+  }
+  for(const li of lists){
     const div=document.createElement("div");
     div.className="list-item"+(li.id===activeListId?" active":"");
+    let masteryStr="";
+    const rsRaw=localStorage.getItem("wd_rs_"+li.id);
+    if(rsRaw){try{
+      const rsData=JSON.parse(rsRaw);
+      const entries=Object.values(rsData);
+      const sum=entries.reduce((s,v)=>s+Math.min(v,MASTERY),0);
+      const pct=Math.round(sum/(li.count*MASTERY)*100);
+      if(pct>0)masteryStr=" · "+pct+"%";
+    }catch(e){}}
     div.innerHTML=`
       <div>
-        <div class="list-name">${esc(li.name)}</div>
-        <div class="list-meta">${li.count} lemma's</div>
+        <div class="list-name">${esc(li.name)}${masteryStr}</div>
+        <div class="list-meta">${li.count} lemmas</div>
       </div>
       <div class="list-actions">
-        <button class="list-dl" title="Downloaden">\u2913</button>
-        ${li.isDefault?"":'<button class="list-delete" title="Verwijderen">\u00d7</button>'}
+        <button class="list-dl" title="Download">⬇</button>
+        ${li.isDefault?"":'<button class="list-delete" title="Delete">×</button>'}
       </div>
     `;
     div.addEventListener("click",async e=>{
       if(e.target.classList.contains("list-delete")){
-        if(confirm("Lijst '"+li.name+"' verwijderen?")){
+        if(confirm("Delete '"+li.name+"'?")){
           await dbDelete(li.id);
-          if(li.id===activeListId) await switchList(DEFAULT_LIST);
+          if(li.id===activeListId)await switchList(DEFAULT_LIST);
           openPanel();
         }
         return;
       }
-      if(e.target.classList.contains("list-dl")){
-        await downloadList(li.id);
-        return;
-      }
-      await switchList(li);
-      closePanel();
+      if(e.target.classList.contains("list-dl")){await downloadList(li.id);return;}
+      await switchList(li);closePanel();
     });
     $listContainer.appendChild(div);
   }
@@ -689,6 +797,7 @@ async function downloadList(id){
   // Default
   loadRS();
   initDeck();
+  updateBottomBar();
   updateMastery();
   $card.focus();
 })();
