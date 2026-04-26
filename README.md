@@ -23,7 +23,7 @@ Currently in active development:
 
 ## Attribution
 
-Russian data is sourced from [OpenRussian](https://github.com/Badestrand/russian-dictionary) under CC-BY-SA 4.0.
+Data is sourced from
 
 ## License
 
