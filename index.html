@@ -939,24 +939,6 @@ body{
 </div>
 
 <!-- ─── Domain panel (placeholder for Layer 4) ─── -->
-<div class="overlay" id="overlayDomain">
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Domain</div>
-      <button class="panel-close" data-close>×</button>
-    </div>
-    <div class="panel-body">
-      <p class="placeholder-note">
-        <strong>Domain panel — placeholder (Layer 4).</strong><br><br>
-        This panel will list every domain the learner has at least one file for
-        (NL-RU, BIO, HIST, …), with a "Catalog →" bridge link at the bottom
-        leading to the universe browser in the info page.<br><br>
-        For now the active domain is <strong>NL-RU</strong>, fixed.
-      </p>
-    </div>
-  </div>
-</div>
-
 <!-- ─── List browser (full-screen, Gmail-style two-pane) ─── -->
 <div class="infopage browser" id="listbrowser">
   <div class="browser-head">
@@ -996,26 +978,6 @@ body{
 <!-- mobile tab state: which pane shows. Driven by JS (.show-rail / .show-detail) -->
 
 <!-- (old overlayList retired; browser above is its replacement) -->
-
-<!-- ─── Filter panel (placeholder for Layer 5) ─── -->
-<div class="overlay" id="overlayFilter">
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Filter</div>
-      <button class="panel-close" data-close>×</button>
-    </div>
-    <div class="panel-body">
-      <p class="placeholder-note">
-        <strong>Filter panel — placeholder (Layer 5).</strong><br><br>
-        This panel will hold five filter axes (LEVEL / TOPIC / TOPIX /
-        GRAMCAT / USER) drawn from the active list's actual content, with a
-        Clear-all affordance.  Last filter per list will be remembered
-        automatically in localStorage (per §5.8).<br><br>
-        For now: no filter implemented.
-      </p>
-    </div>
-  </div>
-</div>
 
 <!-- ─── Info page (full screen, behind WordDock tab) ─── -->
 <div class="infopage" id="infopage">
@@ -1817,9 +1779,7 @@ const tabs = {
   list:   document.getElementById("tabList"),
   filter: document.getElementById("tabFilter")
 };
-const overlays = {
-  filter: document.getElementById("overlayFilter")
-};
+const overlays = {};   // (all overlays retired; kept empty so loops are no-ops)
 const $infopage = document.getElementById("infopage");
 const $settingspage = document.getElementById("settingspage");
 const $domainpage = document.getElementById("domainpage");
