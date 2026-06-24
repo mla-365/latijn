@@ -2048,6 +2048,17 @@ function renderBrowserLists(){
     row.appendChild(main);
     row.appendChild(actions);
     row.addEventListener("click", () => {
+      // Confirm only when this would switch study to a DIFFERENT domain
+      // (changing the language/subject you're drilling). Same-domain
+      // switches (e.g. master <-> a slice) need no confirmation.
+      const switchesDomain = list.domain !== DOMAIN_RUNTIME;
+      if (switchesDomain){
+        const ok = confirm(
+          "Switch to studying " + domainDisplayName(list.domain) + "?\n\n" +
+          "Your progress in " + domainDisplayName(DOMAIN_RUNTIME) + " is saved."
+        );
+        if (!ok) return;
+      }
       switchActiveList(list.listId);
       renderBrowser();
       setListMessage("");
