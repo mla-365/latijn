@@ -1171,26 +1171,30 @@ const EMBEDDED_NLRU = [
    to separate fetched files, only the bodies of these functions change.
    ──────────────────────────────────────────────────────────────────── */
 const catalog = {
+  // The list of available masters. Adding a domain = adding an entry here
+  // plus hosting its <domain>.json file next to index.html.
+  _domains: [
+    { domain: "NL-RU", display: { EN: "Dutch → Russian", NL: "Nederlands → Russisch" }, rowCount: 20 },
+    { domain: "NL-IT", display: { EN: "Dutch → Italian", NL: "Nederlands → Italiaans" }, rowCount: 22 }
+  ],
   manifest(){
-    return [{
-      domain: "NL-RU",
-      display: { EN: "Dutch → Russian", NL: "Nederlands → Russisch" },
+    return this._domains.map(d => ({
+      domain: d.domain,
+      display: d.display,
       version: SCHEMA_VERSION,
-      rowCount: EMBEDDED_NLRU.length
-    }];
+      rowCount: d.rowCount
+    }));
   },
   async loadMaster(domain){
-    if (domain === "NL-RU"){
-      // Fetch-on-demand: the master now lives in a separate file next to
-      // index.html, not baked into this code. (Test 1 of the scaling work.)
-      const resp = await fetch("NL-RU.json", { cache: "no-cache" });
-      if (!resp.ok) throw new Error("Could not fetch NL-RU.json (HTTP " + resp.status + ")");
-      return await resp.json();
-    }
-    throw new Error("Unknown domain: " + domain);
+    if (!this.isAvailable(domain)) throw new Error("Unknown domain: " + domain);
+    // Fetch-on-demand: each master lives in its own <domain>.json file next
+    // to index.html, not baked into this code.
+    const resp = await fetch(domain + ".json", { cache: "no-cache" });
+    if (!resp.ok) throw new Error("Could not fetch " + domain + ".json (HTTP " + resp.status + ")");
+    return await resp.json();
   },
   isAvailable(domain){
-    return this.manifest().some(m => m.domain === domain);
+    return this._domains.some(d => d.domain === domain);
   }
 };
 
@@ -1976,9 +1980,21 @@ function renderBrowserRail(){
     count.textContent = listsInDomain(domain).length || "";
     f.appendChild(name);
     f.appendChild(count);
-    f.addEventListener("click", () => {
+    f.addEventListener("click", async () => {
       browserDomain = domain;
       showBrowserPane("lists");
+      // If this is a curated domain whose master isn't loaded yet, fetch it
+      // so its Master appears in the lists pane.
+      if (catalog.isAvailable(domain) && !LISTS["embedded_" + domain]){
+        try {
+          const rows = await catalog.loadMaster(domain);
+          registerList({
+            listId: "embedded_" + domain, name:"Master", domain,
+            rows: normalizeEmbeddedRows(rows),
+            extraColumns:[], source:"embedded"
+          });
+        } catch(e){ /* fetch failed — leave pane empty */ }
+      }
       renderBrowser();
       // mobile: reveal the detail pane after picking a domain
       $listbrowser.classList.remove("show-rail");
