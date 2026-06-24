@@ -1180,7 +1180,13 @@ const catalog = {
     }];
   },
   async loadMaster(domain){
-    if (domain === "NL-RU") return EMBEDDED_NLRU;
+    if (domain === "NL-RU"){
+      // Fetch-on-demand: the master now lives in a separate file next to
+      // index.html, not baked into this code. (Test 1 of the scaling work.)
+      const resp = await fetch("NL-RU.json", { cache: "no-cache" });
+      if (!resp.ok) throw new Error("Could not fetch NL-RU.json (HTTP " + resp.status + ")");
+      return await resp.json();
+    }
     throw new Error("Unknown domain: " + domain);
   },
   isAvailable(domain){
