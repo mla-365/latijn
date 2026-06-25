@@ -138,6 +138,48 @@ body{
   z-index:90;
 }
 .menu-backdrop.open{display:block}
+
+/* ─── Reusable in-app dialog ─── */
+.wd-dialog-backdrop{
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,0.55);
+  display:none; align-items:center; justify-content:center;
+  padding:24px;
+}
+.wd-dialog-backdrop[hidden]{display:none}
+.wd-dialog-backdrop.open{display:flex}
+.wd-dialog{
+  background:var(--card-frame-bg);
+  border:1px solid var(--menu-border);
+  border-radius:16px;
+  max-width:420px; width:100%;
+  padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.wd-dialog-title{
+  font-family:'Poppins',sans-serif; font-size:17px; font-weight:600;
+  color:var(--ink); margin-bottom:10px;
+}
+.wd-dialog-body{
+  font-size:14px; line-height:1.55; color:rgba(255,255,255,0.78);
+  margin-bottom:22px;
+}
+.wd-dialog-actions{
+  display:flex; gap:10px; justify-content:flex-end;
+}
+.wd-dialog-btn{
+  padding:10px 18px; border-radius:10px; border:none;
+  font-size:14px; font-family:'Poppins',sans-serif; cursor:pointer;
+}
+.wd-dialog-cancel{
+  background:transparent; color:rgba(255,255,255,0.65);
+  border:1px solid var(--menu-border);
+}
+.wd-dialog-cancel:hover{ background:var(--menu-hover); color:var(--ink); }
+.wd-dialog-ok{
+  background:var(--studying); color:#ffffff; font-weight:500;
+}
+.wd-dialog-ok:hover{ filter:brightness(1.12); }
 .logo-menu-item{
   display:block;
   width:100%;
@@ -920,6 +962,18 @@ body{
 <!-- backdrop retired with the menu; kept (no-op) so JS refs stay valid -->
 <div class="menu-backdrop" id="menuBackdrop" hidden></div>
 
+<!-- ─── Reusable in-app dialog (replaces native confirm) ─── -->
+<div class="wd-dialog-backdrop" id="wdDialogBackdrop" hidden>
+  <div class="wd-dialog" role="dialog" aria-modal="true">
+    <div class="wd-dialog-title" id="wdDialogTitle"></div>
+    <div class="wd-dialog-body" id="wdDialogBody"></div>
+    <div class="wd-dialog-actions">
+      <button class="wd-dialog-btn wd-dialog-cancel" id="wdDialogCancel">Cancel</button>
+      <button class="wd-dialog-btn wd-dialog-ok" id="wdDialogOk">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Stage: card-area (tag + card) + action zone ─── -->
 <div class="stage">
   <div class="card-area">
@@ -995,7 +1049,7 @@ body{
     </details>
 
     <h3>How to change domain or list</h3>
-    <p>Open the menu from the WordDock logo at the top. <strong>Domain</strong> is your broad subject (a language pair like NL-RU, or a field like BIO). <strong>List</strong> is one set of items within that domain — a curator's master, a slice of it, or your own file. Switching is occasional; the menu keeps it out of your way while you study.</p>
+    <p>Click the WordDock logo to switch between studying and the browser. <strong>Domain</strong> is your broad subject (a language pair like NL-RU, or a field like BIO). Inside a domain, the <strong>Source</strong> is the whole set; a <strong>slice</strong> is a narrower lens onto it, or your own file. Pick a list to study it; your progress is shared across the domain.</p>
 
     <h3>How to import and export lists</h3>
     <p>In the List menu you can upload an <code>.xlsx</code> file to add a list, or download the active list to save your progress to disk. An imported file's running scores merge into your device; an exported file carries your current scores back out.</p>
@@ -1075,94 +1129,8 @@ let DOMAIN_RUNTIME = DOMAIN;
   localStorage.setItem("wd_schema_version", SCHEMA_VERSION);
 })();
 
-/* ─── Embedded NL-RU master (small Layer 1 seed) ─────────────────────────
-   Each row carries a stable SEQ_ID of the form <DOMAIN>_<LEVEL>_<NNNN>.
-   For Layer 1 we hand-assign all rows to A1 — these are foundational
-   bewegingswerkwoorden and core lemmas. Levels will be set properly when
-   real masters are imported.
-   ──────────────────────────────────────────────────────────────────────── */
-const EMBEDDED_NLRU = [
-  { SEQ_ID:"NL-RU_A1_0001", LEVEL:"A1", GRAMCAT:"conjunction", GRAMTAG:"", LEMMA:"maar",
-    pairs:[{q:"maar",a:"а"}] },
-  { SEQ_ID:"NL-RU_A1_0002", LEVEL:"A1", GRAMCAT:"ww", GRAMTAG:"beweging", LEMMA:"ходить/идти",
-    pairs:[
-      {q:"te voet gaan [MULTI!-DIRECTIONAL]", a:"ходи́ть"},
-      {q:"vervoeg MULTIDIRECTIONAL", a:"хожу́ - хо́дишь - хо́дят"},
-      {q:"geef imperatief", a:"ходи́"},
-      {q:"gaan (te voet) [OneDir] [imPERFECTIEF]", a:"идти́"},
-      {q:"vervoeg imPERFECTIEF", a:"иду́ - идёшь - иду́т"},
-      {q:"geef imperatief", a:"иди́"},
-      {q:"gaan (te voet) [OneDir] [PERFECTIEF]", a:"пойти́"},
-      {q:"vervoeg PERFECTIEF", a:"пойду́ - пойдёшь - пойду́т"},
-      {q:"geef imperatief", a:"пойди́"}
-    ]},
-  { SEQ_ID:"NL-RU_A1_0003", LEVEL:"A1", GRAMCAT:"ww", GRAMTAG:"beweging", LEMMA:"бегать/бежать",
-    pairs:[
-      {q:"lopen/rennen [MULTI!-DIRECTIONAL]", a:"бе́гать"},
-      {q:"vervoeg MULTIDIRECTIONAL", a:"бе́гаю - бе́гаешь - бе́гают"},
-      {q:"geef imperatief", a:"бе́гай"},
-      {q:"lopen/rennen [OneDir] [imPERFECTIEF]", a:"бежа́ть"},
-      {q:"vervoeg imPERFECTIEF", a:"бегу́ - бежи́шь - бегу́т"},
-      {q:"geef imperatief", a:"беги́"},
-      {q:"lopen/rennen [OneDir] [PERFECTIEF]", a:"побежа́ть"},
-      {q:"vervoeg PERFECTIEF", a:"побегу́ - побежи́шь - побегу́т"},
-      {q:"geef imperatief", a:"побеги́"}
-    ]},
-  { SEQ_ID:"NL-RU_A1_0004", LEVEL:"A1", GRAMCAT:"ww", GRAMTAG:"beweging", LEMMA:"летать/лететь",
-    pairs:[
-      {q:"vliegen [MULTI!-DIRECTIONAL]", a:"лета́ть"},
-      {q:"vervoeg MULTIDIRECTIONAL", a:"лета́ю - лета́ешь - лета́ют"},
-      {q:"geef imperatief", a:"лета́й"},
-      {q:"vliegen [OneDir] [imPERFECTIEF]", a:"лете́ть"},
-      {q:"vervoeg imPERFECTIEF", a:"лечу́ - лети́шь - летя́т"},
-      {q:"geef imperatief", a:"лети́"}
-    ]},
-  { SEQ_ID:"NL-RU_A1_0005", LEVEL:"A1", GRAMCAT:"ww", GRAMTAG:"beweging", LEMMA:"плавать/плыть",
-    pairs:[
-      {q:"zwemmen/varen [MULTI!-DIRECTIONAL]", a:"пла́вать"},
-      {q:"vervoeg MULTIDIRECTIONAL", a:"пла́ваю - пла́ваешь - пла́вают"},
-      {q:"zwemmen/varen [OneDir] [imPERFECTIEF]", a:"плыть"},
-      {q:"vervoeg imPERFECTIEF", a:"плыву́ - плывёшь - плыву́т"}
-    ]},
-  { SEQ_ID:"NL-RU_A1_0006", LEVEL:"A1", GRAMCAT:"voegwoord", GRAMTAG:"", LEMMA:"и",
-    pairs:[{q:"en", a:"и"}, {q:"jij en ik", a:"я и ты"}] },
-  { SEQ_ID:"NL-RU_A1_0007", LEVEL:"A1", GRAMCAT:"vz", GRAMTAG:"+ prep", LEMMA:"в",
-    pairs:[{q:"in, op (gesloten plaats)", a:"в + prep."}, {q:"in het boek", a:"в кни́ге"}] },
-  { SEQ_ID:"NL-RU_A1_0008", LEVEL:"A1", GRAMCAT:"vz", GRAMTAG:"+ prep", LEMMA:"на",
-    pairs:[{q:"in, op (open plaats)", a:"на + prep."}, {q:"op het werk", a:"на рабо́те"}] },
-  { SEQ_ID:"NL-RU_A1_0009", LEVEL:"A1", GRAMCAT:"partikel", GRAMTAG:"", LEMMA:"не",
-    pairs:[{q:"niet", a:"не"}, {q:"ik weet het niet", a:"я не зна́ю"}] },
-  { SEQ_ID:"NL-RU_A1_0010", LEVEL:"A1", GRAMCAT:"vnw", GRAMTAG:"pers.", LEMMA:"я",
-    pairs:[
-      {q:"ik", a:"я"},
-      {q:"jij", a:"ты"},
-      {q:"hij", a:"он"},
-      {q:"zij", a:"она́"},
-      {q:"wij", a:"мы"},
-      {q:"jullie", a:"вы"},
-      {q:"zij (meervoud)", a:"они́"}
-    ]},
-  { SEQ_ID:"NL-RU_A1_0011", LEVEL:"A1", GRAMCAT:"voegwoord", GRAMTAG:"", LEMMA:"что",
-    pairs:[{q:"dat", a:"что"}, {q:"Ik denk dat hij thuis is.", a:"Я ду́маю, что он до́ма."}] },
-  { SEQ_ID:"NL-RU_A1_0012", LEVEL:"A1", GRAMCAT:"vnw", GRAMTAG:"vragend", LEMMA:"что",
-    pairs:[{q:"wat?", a:"что?"}, {q:"Wat is dit?", a:"Что э́то?"}] },
-  { SEQ_ID:"NL-RU_A1_0013", LEVEL:"A1", GRAMCAT:"vz", GRAMTAG:"+ instr", LEMMA:"с",
-    pairs:[{q:"met", a:"с (со)"}, {q:"met citroen", a:"с лимо́ном"}] },
-  { SEQ_ID:"NL-RU_A1_0014", LEVEL:"A1", GRAMCAT:"vnw", GRAMTAG:"aanwijzend", LEMMA:"это",
-    pairs:[{q:"dit", a:"э́то"}, {q:"Dit is een vliegtuig.", a:"э́то самолёт."}] },
-  { SEQ_ID:"NL-RU_A1_0015", LEVEL:"A1", GRAMCAT:"voegwoord", GRAMTAG:"", LEMMA:"но",
-    pairs:[{q:"maar", a:"но"}] },
-  { SEQ_ID:"NL-RU_A1_0016", LEVEL:"A1", GRAMCAT:"bijwoord", GRAMTAG:"vragend", LEMMA:"как",
-    pairs:[{q:"hoe", a:"как"}] },
-  { SEQ_ID:"NL-RU_A1_0017", LEVEL:"A1", GRAMCAT:"vz", GRAMTAG:"+ dat", LEMMA:"к",
-    pairs:[{q:"naar (richting)", a:"к + dat."}] },
-  { SEQ_ID:"NL-RU_A1_0018", LEVEL:"A1", GRAMCAT:"vz", GRAMTAG:"+ gen", LEMMA:"у",
-    pairs:[{q:"bij (locatie)", a:"у + gen."}] },
-  { SEQ_ID:"NL-RU_A1_0019", LEVEL:"A1", GRAMCAT:"telwoord", GRAMTAG:"", LEMMA:"один",
-    pairs:[{q:"één", a:"оди́н"}] },
-  { SEQ_ID:"NL-RU_A1_0020", LEVEL:"A1", GRAMCAT:"adj", GRAMTAG:"", LEMMA:"хороший",
-    pairs:[{q:"goed", a:"хоро́ший"}] }
-];
+/* The NL-RU master (and every other domain) now lives in a fetched
+   <domain>.json file next to index.html, not embedded here. See catalog. */
 
 /* ─── Catalog interface (per §6.5) ──────────────────────────────────────
    Stable contract: manifest() returns the list of available masters
@@ -1175,7 +1143,8 @@ const catalog = {
   // plus hosting its <domain>.json file next to index.html.
   _domains: [
     { domain: "NL-RU", display: { EN: "Dutch → Russian", NL: "Nederlands → Russisch" }, rowCount: 20 },
-    { domain: "NL-IT", display: { EN: "Dutch → Italian", NL: "Nederlands → Italiaans" }, rowCount: 22 }
+    { domain: "NL-IT", display: { EN: "Dutch → Italian", NL: "Nederlands → Italiaans" }, rowCount: 22 },
+    { domain: "NL-FR", display: { EN: "Dutch → French", NL: "Nederlands → Frans" }, rowCount: 6 }
   ],
   manifest(){
     return this._domains.map(d => ({
@@ -1600,7 +1569,7 @@ async function loadDomainMaster(domain){
     const listId = "embedded_" + domain;
     if (!LISTS[listId]){
       registerList({
-        listId, name:"Master", domain,
+        listId, name:"Source", domain,
         rows: normalizeEmbeddedRows(rows),
         extraColumns:[], source:"embedded"
       });
@@ -1799,6 +1768,41 @@ const $domainUniverse = document.getElementById("domainUniverse");
 const $listbrowser = document.getElementById("listbrowser");
 const $logoMenu = document.getElementById("logoMenu");
 
+/* ─── In-app confirm dialog (promise-based; replaces native confirm) ─── */
+function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel"){
+  return new Promise(resolve => {
+    const back = document.getElementById("wdDialogBackdrop");
+    document.getElementById("wdDialogTitle").textContent = title;
+    document.getElementById("wdDialogBody").textContent = body;
+    const ok = document.getElementById("wdDialogOk");
+    const cancel = document.getElementById("wdDialogCancel");
+    ok.textContent = okLabel;
+    cancel.textContent = cancelLabel;
+    back.hidden = false;
+    back.classList.add("open");
+    function cleanup(result){
+      back.classList.remove("open");
+      back.hidden = true;
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      back.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onBackdrop(e){ if (e.target === back) cleanup(false); }
+    function onKey(e){
+      if (e.key === "Escape") cleanup(false);
+      if (e.key === "Enter")  cleanup(true);
+    }
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    back.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKey);
+  });
+}
+
 function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
   $infopage.classList.remove("open");
@@ -1989,7 +1993,7 @@ function renderBrowserRail(){
         try {
           const rows = await catalog.loadMaster(domain);
           registerList({
-            listId: "embedded_" + domain, name:"Master", domain,
+            listId: "embedded_" + domain, name:"Source", domain,
             rows: normalizeEmbeddedRows(rows),
             extraColumns:[], source:"embedded"
           });
@@ -2034,7 +2038,7 @@ function renderBrowserLists(){
     meta.className = "list-row-meta";
     meta.textContent = list.rows.length + " lemmas" +
       (list.listId === activeListId ? " · studying now" : "") +
-      (list.source === "embedded" ? " · master" : "");
+      (list.source === "embedded" ? " · source" : "");
     main.appendChild(name);
     main.appendChild(meta);
 
@@ -2047,21 +2051,23 @@ function renderBrowserLists(){
 
     row.appendChild(main);
     row.appendChild(actions);
-    row.addEventListener("click", () => {
+    row.addEventListener("click", async () => {
       // Confirm only when this would switch study to a DIFFERENT domain
       // (changing the language/subject you're drilling). Same-domain
-      // switches (e.g. master <-> a slice) need no confirmation.
+      // switches (e.g. source <-> a slice) need no confirmation.
       const switchesDomain = list.domain !== DOMAIN_RUNTIME;
       if (switchesDomain){
-        const ok = confirm(
-          "Switch to studying " + domainDisplayName(list.domain) + "?\n\n" +
-          "Your progress in " + domainDisplayName(DOMAIN_RUNTIME) + " is saved."
+        const ok = await wdConfirm(
+          "Switch to studying " + domainDisplayName(list.domain) + "?",
+          "Your progress in " + domainDisplayName(DOMAIN_RUNTIME) + " is saved.",
+          "Study " + domainDisplayName(list.domain)
         );
         if (!ok) return;
       }
       switchActiveList(list.listId);
-      renderBrowser();
       setListMessage("");
+      // Honor the intent: go straight to the study page.
+      closeAllSurfaces();
     });
     $browserLists.appendChild(row);
   }
@@ -2224,7 +2230,7 @@ function normalizeEmbeddedRows(rawRows){
   const rawRows = await catalog.loadMaster("NL-RU");
   const embeddedList = {
     listId: "embedded_NL-RU",
-    name: "Master",
+    name: "Source",
     domain: "NL-RU",
     rows: normalizeEmbeddedRows(rawRows),
     extraColumns: [],
