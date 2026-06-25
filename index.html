@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>WordDock</title>
-<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACw0lEQVR4nO2XS08TURTH/9OWDlKQR6w8y7SGRJAKZFpME9E++AaykITEuDLq0g9gogv9CHZpZOXKxJ0rWynGBQytRi0YEFqkD9EWSsuzMy5qh965pS1sMLF3dc/puef++j+nZ6ZM/81nEk5xqU7z8ipAFeCfANDkN/0X9Hj5ZOzIwJkva7j9+DXhG3P14dEdu2yP3p9E7Hdats811cHjvkXlctx9gfVkBkCBAp+XfsI87sbT59NEsCQBrnuT1OUA4LIaCdupsNeTGZjH3fLZiYevYB53y5cTAPnlEZYJm2EAO89Rl9eyGtgudxG+0WETFQcADp5DYnMbn77Fqc8ogB/xFBZXE2QCCw1wdcAAtkZN+IYvdaC+TlsU4N1cCKJED92iTegVVgjbZu4Eq9UQPpfViOivLWSzouzTqFW4NtRNxHFtjTB2NMGjyFkSQFkGVquBzdx5eEjF4DrP4c2HJcwGI0SssgwOC4f9AxHvP4YrB/AvxJBM7VCJ8ou/2Ibmhlp4hRVKrZEhA2o0h2ntPIeZr2tIb+9XDiCKEnz+EOGz8xwYJrd3Wk1IpXcxG4zAM0sC1J/R4kp/Tq0GHQtLbzsVUxYAAFWz88069Jn0AHL19wXCyGZFrEQ3sLyWJGLzP8+RQQPUahWlUkUAvkAYBwUNBuS6uaerBYbWs8S3UsI6LUYwTK5si6sJrMY3jw+wldmDoGgwB8/BaTVCFCVMFZSIUqtFh4GeVowMdlMNXTEAAKp2fSY9bjh7IcxHsZnelf1CMELYAPBgwobGerak/OUBFIcZBn/lXyb8SkUAwNLbjmRqB/6F2MkBQkUaDKAH1VE+nz8EUSz9yln2caxUIRTdwPciUFP+MDEVAeBtGflPBHDUSE2ldyHMR2X7ICtiOlB8+h0LYE7RcN4SQ6WwN4RgBFuZvbIATPV/QRWgCvDfA/wB8P4cIWgO6REAAAAASUVORK5CYII=">
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACYElEQVR4nO2XP0/bQBjGHxsFtWkVKA3lP0JxMsAQpCyF4GxVh0p8A+buGZj4GJ3KdwEGE6IAkcjAEGIwUUGFUKEqfxSCcdwh4eo7n+1UjUylclIUv3evn+d3751PtgC2fYZp6+tn24RgDUVfzTkeotOAXxCi7+YMhPAk5pYmeqf8bwBJKQnzq0l+W+kt202BgQAaXxpUXiqWsuVtfNqgctY/rnsDHJYP0dSbJF6KLCEwEKByErMJBAeDVF8qageQozIVK6riDXD/cI99bZ/EwcEgErMJ2owzW7ZPFEQkpSSJm3oT+XLeG4BHyopbZ2aanYdoObIMUfgttzi9iNCLEIlzWg66ofcIUGIAmPKuSCsAgHqrju3iNgBg6OUQ4tNxR+hddZdnxQfYO92D0TZILEdlCELnCJ+fmEf4dRgAkD3LYqe4Q+U5AbCTcgWot+o4+nZE4pFXI1iYWOgIW6qhlBRK2DpmhTHaBrJn2d4BAM4+6IpbhZWSgpyWQ+uhRY3F3sUwHhoneYWLAmp3tT8EYPdBt6SP/7qhE/OD8wMAwOTwJCLhSM/r7w7AeRKmhqcw93YOAJAv58l5QS1DLGXbtE7r7wpwU7tB8bpI4pk3M1h7v8YFtF7LUbk/FQDs5OkPae5YRs2gbbYBAKvxVUijEhlTKyquqlf9ARgLjQHoHD6Z0wzpr95VUbgoUDmPzW323gCcsxsAjr8f47Zx6wrrpdETgPZDw+XPS7sox8wJ4K8q4CTME+XNtFKr4OT6xFX/+ZXsGeAfAGC+1Xxtm+i+Qz0FRNdTZDv8NKcB/IJgPH4Bb+oNO9NtMdwAAAAASUVORK5CYII=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -328,15 +328,15 @@ body{
   transition:background-color .2s ease, border-color .2s ease;
 }
 
-/* Deck-completion celebration: flood the card with the brand green.
-   A brief, meaningful reward beat — green earns its place here because it's
-   rare and celebratory, not part of normal drilling. */
+/* Deck-completion celebration: a gentle green glow over the card.
+   A brief, meaningful reward beat — softened to a tint so it feels warm
+   rather than jarring (deeper green, lower opacity, not a solid slab). */
 .card.deck-done{
-  background:var(--logo-badge-bg);     /* the brand green #006600 */
-  border-color:#0a7a0a;
+  background:linear-gradient(rgba(0,80,0,0.42), rgba(0,80,0,0.42)), var(--card-bg);
+  border-color:rgba(10,122,10,0.7);
 }
 .card.deck-done .card-text{
-  color:#ffffff !important;            /* readable white over green */
+  color:#ffffff !important;            /* readable white over the green tint */
 }
 
 /* Tag floats at the center of the card's upper half (~23% from top),
