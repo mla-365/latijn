@@ -1188,11 +1188,9 @@ function getRS(seqId){ return RS[seqId] || 0; }
 
 /* Canonical 31-column order — the contract's authoritative shape. */
 const COLUMNS = [
-  "SEQ_ID", "GRAMCAT", "GRAMTAG",
+  "ID", "ENTRY", "CAT", "CTAG", "L",
   "Q1","A1","Q2","A2","Q3","A3","Q4","A4","Q5","A5",
-  "Q6","A6","Q7","A7","Q8","A8","Q9","A9","Q10","A10",
-  "RS",
-  "TOPIC", "TOPIX", "TPX_TAG", "LEVEL", "LEMMA", "USER", "ChaProp"
+  "Q6","A6","Q7","A7","Q8","A8","Q9","A9","Q10","A10"
 ];
 const COL_INDEX = Object.fromEntries(COLUMNS.map((n, i) => [n, i]));
 const MIN_VALID_ROWS = 10;
@@ -1237,21 +1235,22 @@ async function parseWordDockXlsx(file){
   for (const name of wb.SheetNames){
     const sheet = wb.Sheets[name];
     const a1 = sheet["A1"];
-    if (a1 && a1.v === "SEQ_ID"){
+    if (a1 && a1.v === "ID"){
       dataSheet = sheet;
       dataSheetName = name;
       break;
     }
-    // Reject legacy LEM_ID files immediately, clearly.
-    if (a1 && a1.v === "LEM_ID"){
+    // Reject legacy SEQ_ID / LEM_ID files immediately, clearly.
+    if (a1 && (a1.v === "SEQ_ID" || a1.v === "LEM_ID")){
       return { ok: false, error:
-        "This file is in the legacy LEM_ID format. " +
-        "WordDock now uses SEQ_ID. Please update the file or ask the curator for a current version." };
+        "This file is in a legacy format (" + a1.v + "). " +
+        "WordDock now uses the 25-column SF25 shape starting with ID. " +
+        "Please update the file or ask the curator for a current version." };
     }
   }
   if (!dataSheet){
     return { ok: false, error:
-      "No data sheet found. A WordDock file must have a sheet whose A1 cell is \"SEQ_ID\"." };
+      "No data sheet found. A WordDock file must have a sheet whose A1 cell is \"ID\"." };
   }
 
   // Convert to row-of-arrays form, preserving the header row.
@@ -1270,7 +1269,7 @@ async function parseWordDockXlsx(file){
     if (header[i] !== COLUMNS[i]){
       return { ok: false, error:
         `Column ${i+1} should be "${COLUMNS[i]}" but is "${header[i] || "(empty)"}". ` +
-        `WordDock files use a fixed 31-column order.` };
+        `WordDock files use a fixed 25-column order (SF25).` };
     }
   }
   // Capture any extra columns beyond the canonical 31 (preserve through round-trip)
@@ -1286,32 +1285,17 @@ async function parseWordDockXlsx(file){
     // Skip fully-blank rows
     if (!arr || arr.every(v => v === null || v === undefined || v === "")) continue;
 
-    const seqId = arr[COL_INDEX.SEQ_ID];
+    const id = arr[COL_INDEX.ID];
     const q1    = arr[COL_INDEX.Q1];
     const a1    = arr[COL_INDEX.A1];
 
-    // A row is "valid" only if SEQ_ID + Q1 + A1 are all filled.
-    if (!seqId || !q1 || !a1){
-      if (seqId) warnings.push(`Row ${r+1} (${seqId}): skipped — Q1 or A1 missing.`);
+    // A row is "valid" only if ID + Q1 + A1 are all filled.
+    if (!id || !q1 || !a1){
+      if (id) warnings.push(`Row ${r+1} (${id}): skipped — Q1 or A1 missing.`);
       continue;
     }
 
-    const seqIdStr = String(seqId).trim();
-    const domain = domainOfSeqId(seqIdStr);
-    if (!domain){
-      warnings.push(`Row ${r+1}: skipped — SEQ_ID "${seqIdStr}" doesn't match <DOMAIN>_<LEVEL>_<NNNN>.`);
-      continue;
-    }
-    if (detectedDomain === null) detectedDomain = domain;
-    else if (detectedDomain !== domain){
-      warnings.push(`Row ${r+1}: skipped — SEQ_ID prefix "${domain}" differs from file's domain "${detectedDomain}".`);
-      continue;
-    }
-
-    const rs = parseRS(arr[COL_INDEX.RS]);
-    if (rs === null){
-      warnings.push(`Row ${r+1} (${seqIdStr}): RS value "${arr[COL_INDEX.RS]}" not an integer — using 0.`);
-    }
+    const idStr = String(id).trim();
 
     // Build the Q/A pairs (only those with both Q and A filled).
     const pairs = [];
@@ -1321,27 +1305,22 @@ async function parseWordDockXlsx(file){
       if (q && a) pairs.push({ q: String(q), a: String(a) });
     }
 
+    // SF25 adapter: map the 25-column shape onto the field names the rest
+    // of the app already uses. ID→SEQ_ID, CAT→GRAMCAT, CTAG→GRAMTAG,
+    // ENTRY→LEMMA, L→LEVEL. RS is NOT in the file — it lives only in
+    // localStorage, joined at runtime by (domain + ID).
     const row = {
-      SEQ_ID: seqIdStr,
-      GRAMCAT: arr[COL_INDEX.GRAMCAT] ? String(arr[COL_INDEX.GRAMCAT]) : "",
-      GRAMTAG: arr[COL_INDEX.GRAMTAG] ? String(arr[COL_INDEX.GRAMTAG]) : "",
+      SEQ_ID: idStr,
+      GRAMCAT: arr[COL_INDEX.CAT]  ? String(arr[COL_INDEX.CAT])  : "",
+      GRAMTAG: arr[COL_INDEX.CTAG] ? String(arr[COL_INDEX.CTAG]) : "",
       pairs,
-      _rs_from_file: (rs === null ? 0 : rs),
-      // Preserved fields — read in, written back, never interpreted.
+      _rs_from_file: 0,
       _preserved: {
-        TOPIC:   arr[COL_INDEX.TOPIC]   ?? null,
-        TOPIX:   arr[COL_INDEX.TOPIX]   ?? null,
-        TPX_TAG: arr[COL_INDEX.TPX_TAG] ?? null,
-        LEVEL:   arr[COL_INDEX.LEVEL]   ?? null,
-        LEMMA:   arr[COL_INDEX.LEMMA]   ?? null,
-        USER:    arr[COL_INDEX.USER]    ?? null,
-        ChaProp: arr[COL_INDEX.ChaProp] ?? null
+        LEVEL: arr[COL_INDEX.L]     ?? null,
+        LEMMA: arr[COL_INDEX.ENTRY] ?? null
       },
-      // Stash any extra columns beyond the canonical 31
-      _extras: extraColumns.length
-        ? Object.fromEntries(extraColumns.map((h, i) => [h, arr[COLUMNS.length + i] ?? null]))
-        : null,
-      // Convenience: LEVEL is on the row for filtering even though it's a "preserved" field
+      _extras: null,
+      // Convenience: LEVEL is on the row for filtering.
       get LEVEL(){ return this._preserved.LEVEL; }
     };
     rows.push(row);
@@ -1359,8 +1338,12 @@ async function parseWordDockXlsx(file){
     const metaAoa = XLSX.utils.sheet_to_json(metaSheet, { header: 1, defval: null });
     for (const row of metaAoa){
       if (row && row[0] === "File Name" && row[1]) fileName = String(row[1]);
+      if (row && row[0] === "Domain" && row[1]) detectedDomain = String(row[1]).trim();
     }
   }
+  // SF25 IDs carry no domain prefix, so derive the domain from the Metadata
+  // "Domain" field if present, otherwise from the file name.
+  if (!detectedDomain) detectedDomain = fileName;
 
   return {
     ok: true,
@@ -1383,29 +1366,18 @@ function serializeToXlsx(list){
   const aoa = [headers];
   for (const row of list.rows){
     const arr = new Array(headers.length).fill(null);
-    arr[COL_INDEX.SEQ_ID]  = row.SEQ_ID;
-    arr[COL_INDEX.GRAMCAT] = row.GRAMCAT || null;
-    arr[COL_INDEX.GRAMTAG] = row.GRAMTAG || null;
+    const pres = row._preserved || {};
+    arr[COL_INDEX.ID]    = row.SEQ_ID;
+    arr[COL_INDEX.ENTRY] = pres.LEMMA ?? null;
+    arr[COL_INDEX.CAT]   = row.GRAMCAT || null;
+    arr[COL_INDEX.CTAG]  = row.GRAMTAG || null;
+    arr[COL_INDEX.L]     = pres.LEVEL ?? null;
     for (let i = 0; i < 10; i++){
       const p = row.pairs[i];
       arr[COL_INDEX["Q"+(i+1)]] = p ? p.q : null;
       arr[COL_INDEX["A"+(i+1)]] = p ? p.a : null;
     }
-    arr[COL_INDEX.RS] = getRS(row.SEQ_ID);    // CURRENT RS from localStorage
-    const pres = row._preserved || {};
-    arr[COL_INDEX.TOPIC]   = pres.TOPIC   ?? null;
-    arr[COL_INDEX.TOPIX]   = pres.TOPIX   ?? null;
-    arr[COL_INDEX.TPX_TAG] = pres.TPX_TAG ?? null;
-    arr[COL_INDEX.LEVEL]   = pres.LEVEL   ?? null;
-    arr[COL_INDEX.LEMMA]   = pres.LEMMA   ?? null;
-    arr[COL_INDEX.USER]    = pres.USER    ?? null;
-    arr[COL_INDEX.ChaProp] = pres.ChaProp ?? null;
-    // Append extras in the order they were originally found
-    if (row._extras && list.extraColumns){
-      for (let i = 0; i < list.extraColumns.length; i++){
-        arr[COLUMNS.length + i] = row._extras[list.extraColumns[i]] ?? null;
-      }
-    }
+    // SF25: RS is NOT written to the file — it lives only in localStorage.
     aoa.push(arr);
   }
   const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1438,7 +1410,7 @@ function ingestImportedRS(list){
   try { map = JSON.parse(localStorage.getItem(key)) || {}; }
   catch(e){ map = {}; }
   for (const row of list.rows){
-    map[row.SEQ_ID] = row._rs_from_file;
+    if (!(row.SEQ_ID in map)) map[row.SEQ_ID] = row._rs_from_file;  // join, don't clobber existing scores
   }
   localStorage.setItem(key, JSON.stringify(map));
   // If this list's domain is the currently-active runtime domain,
