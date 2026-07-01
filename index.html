@@ -667,6 +667,20 @@ body{
   line-height:1.55;
   color:#9aa3b0;
 }
+/* Scores backup: action row + message */
+.scores-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.scores-msg{
+  font-size:13px;
+  line-height:1.5;
+  color:var(--tag);
+  margin-top:10px;
+  min-height:1em;
+}
 /* Toggle switch */
 .toggle{
   flex-shrink:0;
@@ -1028,6 +1042,7 @@ body{
     </div>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
+  <input type="file" id="scoresFileInput" accept=".json,application/json" hidden>
 </div>
 
 <!-- mobile tab state: which pane shows. Driven by JS (.show-rail / .show-detail) -->
@@ -1052,14 +1067,14 @@ body{
     <p>Click the WordDock logo to switch between studying and the browser. <strong>Domain</strong> is your broad subject (a language pair like NL-RU, or a field like BIO). Inside a domain, the <strong>Source</strong> is the whole set; a <strong>slice</strong> is a narrower lens onto it, or your own file. Pick a list to study it; your progress is shared across the domain.</p>
 
     <h3>How to import and export lists</h3>
-    <p>In the List menu you can upload an <code>.xlsx</code> file to add a list, or download the active list to save your progress to disk. An imported file's running scores merge into your device; an exported file carries your current scores back out.</p>
+    <p>In the List menu you can upload an <code>.xlsx</code> file to add a list, or download the active list to save it to disk. The file holds the list's content — its words and cards — not your scores. Your running scores live only in this browser.</p>
     <details class="info-more">
       <summary>More on the file format</summary>
-      <p>WordDock files are 31-column spreadsheets with a fixed layout. The first column is SEQ_ID (a unique per-row identifier carrying the domain prefix). Running score lives in column 24. The app reads the question/answer pairs and the score; other columns (topic, level, lemma, and so on) are preserved untouched through import and export. An empty score cell is read as zero.</p>
+      <p>WordDock files are 25-column spreadsheets with a fixed layout (the SF25 shape): <code>ID</code>, <code>ENTRY</code>, <code>CAT</code>, <code>CTAG</code>, <code>L</code> (level), then up to ten question/answer pairs (<code>Q1/A1</code> … <code>Q10/A10</code>). The app reads the ID, the Q/A pairs, and the grammatical tags. Your running scores are <strong>not</strong> in the file — they live only in your browser, keyed by ID.</p>
     </details>
 
     <div class="warn">
-      <strong>Your progress lives only in this browser.</strong> Clearing your browser's site data wipes both your imported lists and your scores. The one durable backup is the excel file — download your lists and keep them somewhere safe. To restore, re-import: the file carries your scores back in.
+      <strong>Your progress lives only in this browser.</strong> Clearing your browser's site data wipes both your imported lists and your scores — and there is currently no way to restore your scores, since the excel file does not carry them. The file is a backup of a list's content (its words and cards), so re-importing brings the list back, but you start that list fresh.
     </div>
   </div>
 </div>
@@ -1078,6 +1093,18 @@ body{
       <button class="toggle" id="toggleReminders" role="switch" aria-checked="false">
         <span class="toggle-knob"></span>
       </button>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-label">Back up your scores</div>
+        <div class="setting-desc">Save all your scores (every domain) to a single <code>.json</code> file — for safekeeping, or to move them to another device. Import reads a saved file back in; if a domain already has different scores, you'll be asked before anything is overwritten.</div>
+        <div class="scores-actions">
+          <button class="list-btn js-export-scores" type="button">↓ Export scores</button>
+          <button class="list-btn js-import-scores" type="button">↑ Import scores</button>
+        </div>
+        <div class="scores-msg" aria-live="polite"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2173,6 +2200,148 @@ document.getElementById("browserBack").addEventListener("click", () => showBrows
 // Clicking the "Domains" header also returns to the lists view
 document.getElementById("browserDomainsHeader").addEventListener("click", () => showBrowserPane("lists"));
 document.getElementById("browserUpload").addEventListener("click", () => $fileInput.click());
+
+/* ════════════════════════════════════════════════════════════════════════
+   Score backup — export / import ALL domains as one JSON file.
+   RS lives only in localStorage (one bucket per domain, key wd_rs_<DOMAIN>).
+   This is the sole durable backup + the transport path between devices.
+   ════════════════════════════════════════════════════════════════════════ */
+
+const SCORES_FILE_TYPE = "worddock-scores";
+
+// Stable key ordering, so "identical" comparisons don't trip on order.
+function sortedObj(o){
+  const out = {};
+  for (const k of Object.keys(o || {}).sort()) out[k] = o[k];
+  return out;
+}
+
+// Read a domain's stored scores, keeping only non-zero entries (0 is implicit).
+function readDomainScores(domain){
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
+  catch (e) { map = {}; }
+  const nz = {};
+  for (const id in map){ if (map[id] !== 0) nz[id] = map[id]; }
+  return nz;
+}
+
+// Gather every domain that has any non-zero score.
+function gatherAllScores(){
+  const scores = {};
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k && k.startsWith("wd_rs_")){
+      const domain = k.slice("wd_rs_".length);
+      const nz = readDomainScores(domain);
+      if (Object.keys(nz).length) scores[domain] = nz;
+    }
+  }
+  return scores;
+}
+
+// Update every visible scores-message element (original + cloned settings).
+function setScoresMsg(text){
+  document.querySelectorAll(".scores-msg").forEach(el => { el.textContent = text || ""; });
+}
+
+function exportScores(){
+  const scores = gatherAllScores();
+  const domainCount = Object.keys(scores).length;
+  if (!domainCount){
+    setScoresMsg("Nothing to export yet — you haven't built up any scores.");
+    return;
+  }
+  const today = new Date().toISOString().split("T")[0];
+  const payload = { type: SCORES_FILE_TYPE, version: 1, exported: today, scores };
+  const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
+  const filename = "worddock-scores_" + today + ".json";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setScoresMsg("Exported " + domainCount + " domain" + (domainCount > 1 ? "s" : "") +
+    " to " + filename + " (check your Downloads folder).");
+}
+
+// Parse + apply an imported scores file. Empty/identical domains merge
+// silently; domains that differ AND already have scores prompt once.
+async function importScoresFromFile(file){
+  let payload;
+  try {
+    payload = JSON.parse(await file.text());
+  } catch (e) {
+    setScoresMsg("Couldn't read that file — it isn't valid JSON.");
+    return;
+  }
+  if (!payload || payload.type !== SCORES_FILE_TYPE || typeof payload.scores !== "object"){
+    setScoresMsg("That doesn't look like a WordDock scores file.");
+    return;
+  }
+  const fileScores = payload.scores;
+  const domains = Object.keys(fileScores);
+  if (!domains.length){
+    setScoresMsg("That file has no scores in it.");
+    return;
+  }
+
+  const silent = [];     // domains to write with no prompt
+  const conflicts = [];  // domains that differ and already have scores
+  for (const domain of domains){
+    const fileMap = sortedObj(fileScores[domain]);
+    const existing = sortedObj(readDomainScores(domain));
+    const isEmpty  = Object.keys(existing).length === 0;
+    const same     = JSON.stringify(existing) === JSON.stringify(fileMap);
+    if (isEmpty || same) silent.push({ domain, map: fileMap });
+    else                 conflicts.push({ domain, map: fileMap });
+  }
+
+  // Apply the safe ones immediately.
+  for (const s of silent) localStorage.setItem("wd_rs_" + s.domain, JSON.stringify(s.map));
+
+  // One confirm covering all conflicting domains.
+  let overwrote = 0;
+  if (conflicts.length){
+    const names = conflicts.map(c => c.domain).join(", ");
+    const ok = await wdConfirm(
+      "Overwrite existing scores?",
+      "This device already has different scores for: " + names + ". " +
+      "Using the file's scores replaces them — any progress since the backup is lost.",
+      "Use the file's scores", "Keep mine"
+    );
+    if (ok){
+      for (const c of conflicts) localStorage.setItem("wd_rs_" + c.domain, JSON.stringify(c.map));
+      overwrote = conflicts.length;
+    }
+  }
+
+  // Refresh in-memory RS for the active domain (next deck reflects it).
+  loadRS();
+
+  const parts = [];
+  if (silent.length)   parts.push("loaded " + silent.length);
+  if (overwrote)       parts.push("overwrote " + overwrote);
+  const kept = conflicts.length - overwrote;
+  if (kept)            parts.push("kept " + kept + " unchanged");
+  setScoresMsg("Import done — " + (parts.join(", ") || "nothing to change") + ".");
+}
+
+// Delegated clicks: works for the settings page AND its browser-pane clone.
+document.addEventListener("click", (e) => {
+  const exp = e.target.closest && e.target.closest(".js-export-scores");
+  const imp = e.target.closest && e.target.closest(".js-import-scores");
+  if (exp){ e.preventDefault(); exportScores(); }
+  else if (imp){ e.preventDefault(); document.getElementById("scoresFileInput").click(); }
+});
+
+document.getElementById("scoresFileInput").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";   // allow re-picking the same file
+  if (!file) return;
+  setScoresMsg("Reading " + file.name + "…");
+  await importScoresFromFile(file);
+});
 
 /* ─── Boot ─── */
 
