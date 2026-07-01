@@ -1638,15 +1638,24 @@ function gradeGood(){
         && !pipe.some(x => x.passDirty)
         && !pipe.some(x => x.needsRedemption)){
       deckDone = true;
-      // RS update — no floor (§5.7.5)
+      // RS update — no floor (§5.7.5). localStorage is the source of truth:
+      // re-read the live pool, apply deltas ONLY to this deck's IDs, write
+      // back. This prevents a stale in-memory copy from overwriting values
+      // written since the deck was built (e.g. by a scores import), which
+      // was the "reverted after studying" bug.
+      const poolKey = rsKey(DOMAIN_RUNTIME);
+      let pool;
+      try { pool = JSON.parse(localStorage.getItem(poolKey)) || {}; }
+      catch (e) { pool = {}; }
       pipe.forEach(x => {
         const id = x.row.SEQ_ID;
-        const old = getRS(id);
-        if      (x.timesDirty === 0) RS[id] = old + 1;
-        else if (x.timesDirty === 1) RS[id] = old - 1;
-        else                          RS[id] = old - 2;
+        const base = (id in pool) ? pool[id] : 0;
+        if      (x.timesDirty === 0) pool[id] = base + 1;
+        else if (x.timesDirty === 1) pool[id] = base - 1;
+        else                          pool[id] = base - 2;
       });
-      saveRS();
+      localStorage.setItem(poolKey, JSON.stringify(pool));
+      RS = pool;   // keep the in-memory copy in sync with the store
     }
     render();
     return;
