@@ -1201,19 +1201,17 @@ function loadRS(){
   try { RS = JSON.parse(localStorage.getItem(rsKey(DOMAIN_RUNTIME))) || {}; }
   catch (e) { RS = {}; }
 }
-function saveRS(){
-  localStorage.setItem(rsKey(DOMAIN_RUNTIME), JSON.stringify(RS));
-}
 function getRS(seqId){ return RS[seqId] || 0; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LAYER 2 — Excel I/O
-   Per contract §3: WordDock file = 31 columns in canonical order, headers
-   in row 1 starting with SEQ_ID, ≥10 valid rows. App acts on SEQ_ID, Q/A
-   pairs, RS; displays GRAMCAT/GRAMTAG; preserves the rest on round-trip.
+   WordDock file = the 25-column SF25 shape, headers in row 1 starting with
+   ID, ≥10 valid rows. The app reads ID + Q/A pairs + the grammatical tags;
+   RS is NOT in the file (it lives only in localStorage). Internally the
+   adapter still maps ID→SEQ_ID, CAT→GRAMCAT, CTAG→GRAMTAG, ENTRY→LEMMA, L→LEVEL.
    ════════════════════════════════════════════════════════════════════════ */
 
-/* Canonical 31-column order — the contract's authoritative shape. */
+/* Canonical 25-column SF25 order — the authoritative shape. */
 const COLUMNS = [
   "ID", "ENTRY", "CAT", "CTAG", "L",
   "Q1","A1","Q2","A2","Q3","A3","Q4","A4","Q5","A5",
@@ -1221,23 +1219,6 @@ const COLUMNS = [
 ];
 const COL_INDEX = Object.fromEntries(COLUMNS.map((n, i) => [n, i]));
 const MIN_VALID_ROWS = 10;
-
-/* Extract the domain prefix from a SEQ_ID. Returns null if malformed. */
-function domainOfSeqId(seqId){
-  if (!seqId || typeof seqId !== "string") return null;
-  // SEQ_ID = <DOMAIN>_<LEVEL>_<NNNN>. Domain is everything before the
-  // first underscore that is followed by a LEVEL-like token.
-  const m = seqId.match(/^([^_]+(?:-[^_]+)?)_([A-Z]\d[A-Z]?)_(\d{4})$/);
-  return m ? m[1] : null;
-}
-
-/* Coerce a raw RS cell value to an integer (per contract: empty = 0). */
-function parseRS(raw){
-  if (raw === null || raw === undefined || raw === "") return 0;
-  if (typeof raw === "number") return Math.trunc(raw);
-  const n = parseInt(String(raw).trim(), 10);
-  return Number.isNaN(n) ? null : n;   // null signals "junk value"
-}
 
 /* Parse a WordDock xlsx file (File or ArrayBuffer).
    Returns { ok: true, list } or { ok: false, error }. */
@@ -1256,7 +1237,7 @@ async function parseWordDockXlsx(file){
     return { ok: false, error: "Not a readable .xlsx file: " + e.message };
   }
 
-  // Find the first sheet whose A1 cell is "SEQ_ID"
+  // Find the first sheet whose A1 cell is "ID"
   let dataSheet = null;
   let dataSheetName = null;
   for (const name of wb.SheetNames){
@@ -1291,7 +1272,7 @@ async function parseWordDockXlsx(file){
   }
 
   const header = aoa[0].map(h => h === null ? "" : String(h));
-  // Verify the canonical 31 columns are present in order.
+  // Verify the canonical 25 columns (SF25) are present in order.
   for (let i = 0; i < COLUMNS.length; i++){
     if (header[i] !== COLUMNS[i]){
       return { ok: false, error:
@@ -1299,7 +1280,7 @@ async function parseWordDockXlsx(file){
         `WordDock files use a fixed 25-column order (SF25).` };
     }
   }
-  // Capture any extra columns beyond the canonical 31 (preserve through round-trip)
+  // Capture any extra columns beyond the canonical 25 (preserve through round-trip)
   const extraColumns = header.slice(COLUMNS.length).filter(h => h);
 
   // Parse data rows
