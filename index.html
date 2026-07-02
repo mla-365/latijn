@@ -2014,6 +2014,13 @@ function classifyDomains(){
     if (ta !== tb) return tb - ta;         // most-recent studied first
     return a < b ? -1 : 1;                 // then alphabetical
   });
+  // Cap ACTIVE at the 5 most recent; the rest fall back into MORE.
+  // They keep their bold (engaged) look there, so they stay recognizable.
+  const ACTIVE_CAP = 5;
+  if (active.length > ACTIVE_CAP){
+    more.push(...active.splice(ACTIVE_CAP));
+    more.sort();
+  }
   return { active, my, more };
 }
 
