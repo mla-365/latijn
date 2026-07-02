@@ -893,9 +893,15 @@ body{
 .folder .count{font-size:11px;color:var(--tag);font-weight:400}
 .folder.mydomain{
   margin-top:14px;
+  margin-bottom:14px;
   position:relative;
-  font-weight:700;
-  color:var(--ink);
+}
+.folder.mydomain::after{
+  content:"";
+  position:absolute;
+  left:11px;right:11px;bottom:-8px;
+  height:1px;
+  background:var(--menu-border);
 }
 .folder.mydomain::before{
   content:"";
