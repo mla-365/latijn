@@ -667,6 +667,19 @@ body{
   line-height:1.55;
   color:#9aa3b0;
 }
+/* Quiet backup nudge on the deck-done card — one line, no modal */
+.card-backup-nudge{
+  position:absolute;
+  bottom:14%;
+  left:0;right:0;
+  text-align:center;
+  font-size:13px;
+  color:var(--tag);
+  cursor:pointer;
+  padding:0 24px;
+}
+.card-backup-nudge:hover{color:var(--ink);text-decoration:underline}
+
 /* Scores backup: action row + message */
 .scores-actions{
   display:flex;
@@ -1020,6 +1033,7 @@ body{
       <div class="card">
         <div class="card-tag" id="cardTag"></div>
         <div class="card-text state-question" id="cardText">…</div>
+        <div class="card-backup-nudge" id="backupNudge" hidden></div>
       </div>
     </div>
   </div>
@@ -1113,7 +1127,7 @@ body{
     <div class="setting-row">
       <div class="setting-text">
         <div class="setting-label">Export reminders</div>
-        <div class="setting-desc">Remind me to export if I haven't saved an excel backup in a week. Your progress lives only in this browser, so an export is the only durable backup.</div>
+        <div class="setting-desc">After finishing a deck, show a quiet reminder if your scores haven't been backed up lately — after a week with changes, or after a lot of new progress. Your scores live only in this browser; the scores export below is the durable backup.</div>
       </div>
       <button class="toggle" id="toggleReminders" role="switch" aria-checked="false">
         <span class="toggle-knob"></span>
@@ -1653,16 +1667,18 @@ function gradeGood(){
       let pool;
       try { pool = JSON.parse(localStorage.getItem(poolKey)) || {}; }
       catch (e) { pool = {}; }
+      let backupGains = 0;
       pipe.forEach(x => {
         const id = x.row.SEQ_ID;
         const base = (id in pool) ? pool[id] : 0;
-        if      (x.timesDirty === 0) pool[id] = base + 1;
+        if      (x.timesDirty === 0){ pool[id] = base + 1; backupGains++; }
         else if (x.timesDirty === 1) pool[id] = base - 1;
         else                          pool[id] = base - 2;
       });
       localStorage.setItem(poolKey, JSON.stringify(pool));
       RS = pool;   // keep the in-memory copy in sync with the store
       markStudied(DOMAIN_RUNTIME);   // for ACTIVE ordering
+      addBackupGains(backupGains);   // for the export-reminder nudge
     }
     render();
     return;
@@ -1689,14 +1705,32 @@ function moveTo(targetIdx){
 }
 
 function render(){
+  const $nudge = document.getElementById("backupNudge");
   if (deckDone){
     $card.classList.add("deck-done");
     $cardTag.textContent  = "";
     $cardText.textContent = "Another WordDeck Done!";
     $cardText.className   = "card-text state-answer";
     $counter.textContent  = deckScore + "/12 ✓";
+    // Quiet backup nudge: only when reminders are on AND scores are stale —
+    // (changed + >7 days since export/never) OR heavy progress (gains > 365).
+    const m = readBackupMeta();
+    const WEEK = 7 * 24 * 60 * 60 * 1000;
+    const stale = m.gains > 0 && (!m.lastExportTs || Date.now() - m.lastExportTs > WEEK);
+    const heavy = m.gains > 365;
+    if (remindersOn && (stale || heavy)){
+      $nudge.textContent = m.lastExportTs
+        ? "Scores not backed up since " +
+          new Date(m.lastExportTs).toLocaleDateString(undefined, { day: "numeric", month: "short" }) +
+          " — Export"
+        : "Scores never backed up — Export";
+      $nudge.hidden = false;
+    } else {
+      $nudge.hidden = true;
+    }
     return;
   }
+  $nudge.hidden = true;
   $card.classList.remove("deck-done");
   const s     = cur();
   const field = s.row.pairs[s.fi];
@@ -2306,6 +2340,22 @@ document.getElementById("browserUpload").addEventListener("click", () => $fileIn
 
 const SCORES_FILE_TYPE = "worddock-scores";
 
+/* Backup staleness meta: when scores were last exported + positive-delta
+   gains accumulated since. Drives the deck-done nudge. Gains count ONLY
+   +1s (a −1/−2 adds nothing). Reset to 0 on every scores export. */
+const BACKUP_META_KEY = "wd_backup_meta";
+function readBackupMeta(){
+  try { return JSON.parse(localStorage.getItem(BACKUP_META_KEY)) || { lastExportTs: null, gains: 0 }; }
+  catch { return { lastExportTs: null, gains: 0 }; }
+}
+function writeBackupMeta(m){ localStorage.setItem(BACKUP_META_KEY, JSON.stringify(m)); }
+function addBackupGains(n){
+  if (!n) return;
+  const m = readBackupMeta();
+  m.gains = (m.gains || 0) + n;
+  writeBackupMeta(m);
+}
+
 // Stable key ordering, so "identical" comparisons don't trip on order.
 function sortedObj(o){
   const out = {};
@@ -2358,6 +2408,7 @@ function exportScores(){
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  writeBackupMeta({ lastExportTs: Date.now(), gains: 0 });   // fresh backup
   setScoresMsg("Exported " + domainCount + " domain" + (domainCount > 1 ? "s" : "") +
     " to " + filename + " (check your Downloads folder).");
 }
@@ -2438,6 +2489,14 @@ document.getElementById("scoresFileInput").addEventListener("change", async (e) 
   if (!file) return;
   setScoresMsg("Reading " + file.name + "…");
   await importScoresFromFile(file);
+});
+
+// Deck-done nudge: export scores; stopPropagation so the card's own click
+// (which starts a new deck when deckDone) doesn't fire.
+document.getElementById("backupNudge").addEventListener("click", (e) => {
+  e.stopPropagation();
+  exportScores();
+  e.currentTarget.textContent = "Exported ✓ (check your Downloads folder)";
 });
 
 /* ─── Boot ─── */
