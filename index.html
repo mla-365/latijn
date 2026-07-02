@@ -680,6 +680,32 @@ body{
 }
 .card-backup-nudge:hover{color:var(--ink);text-decoration:underline}
 
+/* Considerable-progress celebration: question + two buttons on the green card */
+.card-celeb{
+  position:absolute;
+  bottom:9%;
+  left:0;right:0;
+  text-align:center;
+  padding:0 24px;
+}
+.card-celeb-q{
+  font-size:14px;
+  color:rgba(255,255,255,0.92);
+  margin-bottom:12px;
+}
+.card-celeb-actions{display:flex;gap:10px;justify-content:center}
+.celeb-btn{
+  padding:8px 18px;border:none;border-radius:9px;cursor:pointer;
+  font-size:14px;font-weight:500;
+  background:rgba(255,255,255,0.92);color:#0a5c0a;
+}
+.celeb-btn:hover{background:#ffffff}
+.celeb-later{
+  background:transparent;color:rgba(255,255,255,0.75);
+  border:1px solid rgba(255,255,255,0.35);
+}
+.celeb-later:hover{color:#ffffff;border-color:rgba(255,255,255,0.7)}
+
 /* Scores backup: action row + message */
 .scores-actions{
   display:flex;
@@ -1034,6 +1060,13 @@ body{
         <div class="card-tag" id="cardTag"></div>
         <div class="card-text state-question" id="cardText">…</div>
         <div class="card-backup-nudge" id="backupNudge" hidden></div>
+        <div class="card-celeb" id="backupCeleb" hidden>
+          <div class="card-celeb-q" id="celebQ">Back up your progress now?</div>
+          <div class="card-celeb-actions" id="celebActions">
+            <button class="celeb-btn" id="celebBackup" type="button">Back up</button>
+            <button class="celeb-btn celeb-later" id="celebLater" type="button">Later</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1474,6 +1507,10 @@ let deckScore = 0;
 let deckDone = false;
 let showingA = false;
 let peeking = false;
+// Considerable-progress celebration state
+let heavyCelebDismissed = false;   // in-memory: resets next session
+let celebState = null;             // null | "exported"
+let celebFilename = "";
 
 /* Lists registry — in-memory only for Layer 2.
    Holds every list the user has loaded this session, keyed by listId.
@@ -1620,6 +1657,7 @@ function initDeck(){
   deckDone = false;
   showingA = false;
   peeking = false;
+  celebState = null;
   render();
 }
 
@@ -1706,31 +1744,54 @@ function moveTo(targetIdx){
 
 function render(){
   const $nudge = document.getElementById("backupNudge");
+  const $celeb = document.getElementById("backupCeleb");
+  const $celebQ = document.getElementById("celebQ");
+  const $celebActions = document.getElementById("celebActions");
   if (deckDone){
     $card.classList.add("deck-done");
     $cardTag.textContent  = "";
-    $cardText.textContent = "Another WordDeck Done!";
-    $cardText.className   = "card-text state-answer";
     $counter.textContent  = deckScore + "/12 ✓";
-    // Quiet backup nudge: only when reminders are on AND scores are stale —
-    // (changed + >7 days since export/never) OR heavy progress (gains > 365).
     const m = readBackupMeta();
     const WEEK = 7 * 24 * 60 * 60 * 1000;
     const stale = m.gains > 0 && (!m.lastExportTs || Date.now() - m.lastExportTs > WEEK);
     const heavy = m.gains > 365;
-    if (remindersOn && (stale || heavy)){
-      $nudge.textContent = m.lastExportTs
-        ? "Scores not backed up since " +
-          new Date(m.lastExportTs).toLocaleDateString(undefined, { day: "numeric", month: "short" }) +
-          " — Export"
-        : "Scores never backed up — Export";
-      $nudge.hidden = false;
-    } else {
+
+    if (celebState === "exported"){
+      // State 2: backup done, still celebratory
+      $cardText.textContent = "Your progress has been exported ✓";
+      $cardText.className   = "card-text state-answer";
+      $celebQ.textContent = celebFilename;
+      $celebActions.hidden = true;
+      $celeb.hidden = false;
       $nudge.hidden = true;
+    } else if (remindersOn && heavy && !heavyCelebDismissed){
+      // State 1: considerable progress — celebrate + offer backup
+      $cardText.textContent = "You made considerable progress — congratulations!";
+      $cardText.className   = "card-text state-answer";
+      $celebQ.textContent = "Back up your progress now?";
+      $celebActions.hidden = false;
+      $celeb.hidden = false;
+      $nudge.hidden = true;
+    } else {
+      // Normal deck-done card, with the quiet one-line nudge when stale
+      $cardText.textContent = "Another WordDeck Done!";
+      $cardText.className   = "card-text state-answer";
+      $celeb.hidden = true;
+      if (remindersOn && (stale || heavy)){
+        $nudge.textContent = m.lastExportTs
+          ? "Scores not backed up since " +
+            new Date(m.lastExportTs).toLocaleDateString(undefined, { day: "numeric", month: "short" }) +
+            " — Export"
+          : "Scores never backed up — Export";
+        $nudge.hidden = false;
+      } else {
+        $nudge.hidden = true;
+      }
     }
     return;
   }
   $nudge.hidden = true;
+  $celeb.hidden = true;
   $card.classList.remove("deck-done");
   const s     = cur();
   const field = s.row.pairs[s.fi];
@@ -2397,7 +2458,7 @@ function exportScores(){
   const domainCount = Object.keys(scores).length;
   if (!domainCount){
     setScoresMsg("Nothing to export yet — you haven't built up any scores.");
-    return;
+    return null;
   }
   const today = new Date().toISOString().split("T")[0];
   const payload = { type: SCORES_FILE_TYPE, version: 1, exported: today, scores };
@@ -2410,7 +2471,8 @@ function exportScores(){
   URL.revokeObjectURL(url);
   writeBackupMeta({ lastExportTs: Date.now(), gains: 0 });   // fresh backup
   setScoresMsg("Exported " + domainCount + " domain" + (domainCount > 1 ? "s" : "") +
-    " to " + filename + " (check your Downloads folder).");
+    " to " + filename + ".");
+  return { filename, domainCount };
 }
 
 // Parse + apply an imported scores file. Empty/identical domains merge
@@ -2496,7 +2558,24 @@ document.getElementById("scoresFileInput").addEventListener("change", async (e) 
 document.getElementById("backupNudge").addEventListener("click", (e) => {
   e.stopPropagation();
   exportScores();
-  e.currentTarget.textContent = "Exported ✓ (check your Downloads folder)";
+  e.currentTarget.textContent = "Exported ✓";
+});
+
+// Celebration buttons (considerable progress)
+document.getElementById("celebBackup").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const res = exportScores();
+  if (res){
+    celebState = "exported";
+    celebFilename = res.filename;
+    heavyCelebDismissed = true;   // don't re-ask after the next deck
+    render();
+  }
+});
+document.getElementById("celebLater").addEventListener("click", (e) => {
+  e.stopPropagation();
+  heavyCelebDismissed = true;   // not again until next session
+  render();
 });
 
 /* ─── Boot ─── */
