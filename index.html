@@ -859,6 +859,23 @@ body{
   font-size:10px;text-transform:uppercase;letter-spacing:.09em;
   color:var(--tag);margin:6px 8px 10px;
 }
+/* Zone labels for the three-zone rail (Active / My Domain / More) */
+.rail-zone-label{
+  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--tag);margin:16px 8px 8px;
+}
+.rail-zone-label:first-child{margin-top:4px}
+/* Collapsible MORE header */
+.rail-more-toggle{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 11px;margin-top:10px;border-radius:9px;cursor:pointer;
+  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--tag);transition:background-color .12s,color .12s;
+  user-select:none;
+}
+.rail-more-toggle:hover{background:var(--menu-hover);color:var(--ink)}
+.rail-more-toggle .more-caret{font-size:11px;width:12px;text-align:center}
+.rail-more-toggle .more-count{margin-left:auto;font-size:11px;letter-spacing:0}
 .folder{
   display:flex;align-items:center;justify-content:space-between;
   padding:9px 11px;border-radius:9px;font-size:14px;color:#c0c8d2;
@@ -1637,6 +1654,7 @@ function gradeGood(){
       });
       localStorage.setItem(poolKey, JSON.stringify(pool));
       RS = pool;   // keep the in-memory copy in sync with the store
+      markStudied(DOMAIN_RUNTIME);   // for ACTIVE ordering
     }
     render();
     return;
@@ -1957,44 +1975,116 @@ function listsInDomain(domain){
   return Object.values(LISTS).filter(l => l.domain === domain);
 }
 
+/* ─── Last-studied tracking (drives ACTIVE ordering) ─── */
+const LAST_STUDIED_KEY = "wd_last_studied";
+function readLastStudied(){
+  try { return JSON.parse(localStorage.getItem(LAST_STUDIED_KEY)) || {}; }
+  catch { return {}; }
+}
+function domainLastStudied(domain){ return readLastStudied()[domain] || 0; }
+function markStudied(domain){
+  if (!domain) return;
+  const m = readLastStudied();
+  m[domain] = Date.now();
+  localStorage.setItem(LAST_STUDIED_KEY, JSON.stringify(m));
+}
+
+/* Sort every domain into the three rail zones. Presentation ONLY — the data
+   model stays flat; this just decides where each domain shows in the rail.
+   ACTIVE = touched (RS≠0) or studying now · MY = the sandbox · MORE = rest. */
+function classifyDomains(){
+  const active = [], my = [], more = [];
+  for (const d of domainUniverse()){
+    if (d === MY_DOMAIN){ my.push(d); continue; }
+    if (domainHasProgress(d) || d === DOMAIN_RUNTIME) active.push(d);
+    else more.push(d);
+  }
+  active.sort((a, b) => {
+    if (a === DOMAIN_RUNTIME) return -1;   // studying now always tops
+    if (b === DOMAIN_RUNTIME) return 1;
+    const ta = domainLastStudied(a), tb = domainLastStudied(b);
+    if (ta !== tb) return tb - ta;         // most-recent studied first
+    return a < b ? -1 : 1;                 // then alphabetical
+  });
+  return { active, my, more };
+}
+
+/* Build one clickable domain row. */
+function makeFolderEl(domain){
+  const f = document.createElement("div");
+  f.className = "folder";
+  if (domainHasProgress(domain)) f.classList.add("engaged");
+  if (domain === browserDomain)  f.classList.add("active");
+
+  const name = document.createElement("span");
+  name.textContent = domainDisplayName(domain);
+  const count = document.createElement("span");
+  count.className = "count";
+  count.textContent = listsInDomain(domain).length || "";
+  f.appendChild(name);
+  f.appendChild(count);
+  f.addEventListener("click", async () => {
+    browserDomain = domain;
+    showBrowserPane("lists");
+    // If this is a curated domain whose master isn't loaded yet, fetch it
+    // so its Source appears in the lists pane.
+    if (catalog.isAvailable(domain) && !LISTS["embedded_" + domain]){
+      try {
+        const rows = await catalog.loadMaster(domain);
+        registerList({
+          listId: "embedded_" + domain, name:"Source", domain,
+          rows: normalizeEmbeddedRows(rows),
+          extraColumns:[], source:"embedded"
+        });
+      } catch(e){ /* fetch failed — leave pane empty */ }
+    }
+    renderBrowser();
+    // mobile: reveal the detail pane after picking a domain
+    $listbrowser.classList.remove("show-rail");
+    $listbrowser.classList.add("show-detail");
+  });
+  return f;
+}
+
+function addRailLabel(text){
+  const l = document.createElement("div");
+  l.className = "rail-zone-label";
+  l.textContent = text;
+  $browserRail.appendChild(l);
+}
+
+// MORE collapse state: null = decide from context (open when ACTIVE is empty).
+let moreExpanded = null;
+
 function renderBrowserRail(){
   $browserRail.innerHTML = "";
-  domainUniverse().forEach(domain => {
-    const f = document.createElement("div");
-    f.className = "folder";
-    if (domainHasProgress(domain)) f.classList.add("engaged");
-    if (domain === browserDomain)  f.classList.add("active");
-    if (domain === MY_DOMAIN)      f.classList.add("mydomain");
+  const { active, my, more } = classifyDomains();
 
-    const name = document.createElement("span");
-    name.textContent = domainDisplayName(domain);
-    const count = document.createElement("span");
-    count.className = "count";
-    count.textContent = listsInDomain(domain).length || "";
-    f.appendChild(name);
-    f.appendChild(count);
-    f.addEventListener("click", async () => {
-      browserDomain = domain;
-      showBrowserPane("lists");
-      // If this is a curated domain whose master isn't loaded yet, fetch it
-      // so its Master appears in the lists pane.
-      if (catalog.isAvailable(domain) && !LISTS["embedded_" + domain]){
-        try {
-          const rows = await catalog.loadMaster(domain);
-          registerList({
-            listId: "embedded_" + domain, name:"Source", domain,
-            rows: normalizeEmbeddedRows(rows),
-            extraColumns:[], source:"embedded"
-          });
-        } catch(e){ /* fetch failed — leave pane empty */ }
-      }
-      renderBrowser();
-      // mobile: reveal the detail pane after picking a domain
-      $listbrowser.classList.remove("show-rail");
-      $listbrowser.classList.add("show-detail");
-    });
-    $browserRail.appendChild(f);
-  });
+  // ACTIVE — hidden entirely when empty
+  if (active.length){
+    addRailLabel("Active");
+    active.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
+  }
+
+  // MY DOMAIN — always shown
+  if (my.length){
+    addRailLabel("My Domain");
+    my.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
+  }
+
+  // MORE — collapsible. Defaults open when there's nothing in ACTIVE yet.
+  if (more.length){
+    const expanded = (moreExpanded === null) ? (active.length === 0) : moreExpanded;
+    const header = document.createElement("div");
+    header.className = "rail-more-toggle";
+    header.innerHTML =
+      '<span class="more-caret">' + (expanded ? "▾" : "▸") + "</span>" +
+      "<span>More</span>" +
+      '<span class="more-count">' + more.length + "</span>";
+    header.addEventListener("click", () => { moreExpanded = !expanded; renderBrowserRail(); });
+    $browserRail.appendChild(header);
+    if (expanded) more.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
+  }
 }
 
 function renderBrowserLists(){
@@ -2054,6 +2144,7 @@ function renderBrowserLists(){
         if (!ok) return;
       }
       switchActiveList(list.listId);
+      markStudied(list.domain);   // for ACTIVE ordering
       setListMessage("");
       // Honor the intent: go straight to the study page.
       closeAllSurfaces();
