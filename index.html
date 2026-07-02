@@ -894,6 +894,8 @@ body{
 .folder.mydomain{
   margin-top:14px;
   position:relative;
+  font-weight:700;
+  color:var(--ink);
 }
 .folder.mydomain::before{
   content:"";
@@ -2066,11 +2068,12 @@ function renderBrowserRail(){
     active.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
   }
 
-  // MY DOMAIN — always shown
-  if (my.length){
-    addRailLabel("My Domain");
-    my.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
-  }
+  // MY DOMAIN — no zone label; a thin line above delineates the zone
+  my.forEach(d => {
+    const el = makeFolderEl(d);
+    el.classList.add("mydomain");
+    $browserRail.appendChild(el);
+  });
 
   // MORE — collapsible. Defaults open when there's nothing in ACTIVE yet.
   if (more.length){
