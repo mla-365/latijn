@@ -1,6 +1,6 @@
 # WordDock
 
-**Efficient learning and worldwide collaboration.**
+**Efficient learning and collaboration.**
 
 WordDock is a free, lightweight, browser-based vocabulary trainer built around spaced repetition and deep drilling. It uses Excel-based decks displayed as flashcards — no login, no backend, no server dependency. Progress stays in your browser; decks are exchanged as `.xlsx` files between users.
 
