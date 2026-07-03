@@ -424,6 +424,7 @@ body{
   user-select:none;
   min-height:1em;
 }
+.counter-ctx{color:var(--tag)}
 
 /* ─── Overlays / panels ─── */
 .overlay{
@@ -1075,7 +1076,7 @@ body{
       <button class="btn btn-again" id="btnAgain">Again</button>
       <button class="btn btn-good"  id="btnGood">Good</button>
     </div>
-    <div class="counter" id="counter">0/12</div>
+    <div class="counter" id="counter"><span class="counter-ctx" id="counterCtx"></span><span id="counterNum">0/12</span></div>
   </div>
 </div>
 
@@ -1547,6 +1548,12 @@ const $cardText = document.getElementById("cardText");
 const $btnGood  = document.getElementById("btnGood");
 const $btnAgain = document.getElementById("btnAgain");
 const $counter  = document.getElementById("counter");
+const $counterCtx = document.getElementById("counterCtx");
+const $counterNum = document.getElementById("counterNum");
+function paintCounter(numText){
+  $counterCtx.textContent = DOMAIN_RUNTIME + "\u00B7" + activeListName + " \u00B7 ";
+  $counterNum.textContent = numText;
+}
 const $tabDomainValue = document.getElementById("tabDomainValue");
 const $tabListValue   = document.getElementById("tabListValue");
 const $tabFilterValue = document.getElementById("tabFilterValue");
@@ -1750,7 +1757,7 @@ function render(){
   if (deckDone){
     $card.classList.add("deck-done");
     $cardTag.textContent  = "";
-    $counter.textContent  = deckScore + "/12 ✓";
+    paintCounter(deckScore + "/12 ✓");
     const m = readBackupMeta();
     const WEEK = 7 * 24 * 60 * 60 * 1000;
     const stale = m.gains > 0 && (!m.lastExportTs || Date.now() - m.lastExportTs > WEEK);
@@ -1811,7 +1818,7 @@ function render(){
     $cardText.textContent = field.q;
     $cardText.className   = "card-text state-question";
   }
-  $counter.textContent  = deckScore + "/12";
+  paintCounter(deckScore + "/12");
 }
 
 /* ─── Input ─── */
