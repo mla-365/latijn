@@ -226,6 +226,31 @@ body{
   letter-spacing:.01em;
 }
 
+/* On hover over the logo: reveal the currently-studied list — big, pure
+   white, no container (the page is dark enough to carry bare text).
+   Guarded by (hover:hover): touch devices tap the logo and see the same
+   answer in the browser view, so no stuck-hover artifacts on mobile. */
+.logo-hover-list{
+  position:absolute;
+  top:calc(100% + 2px);
+  left:50%;
+  transform:translateX(-50%);
+  font-family:'Poppins',sans-serif;
+  font-size:20px;
+  font-weight:400;
+  color:#ffffff;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  z-index:110;
+}
+@media (hover:hover){
+  .logo-wrap:hover .logo-hover-list{
+    opacity:1;
+    transition:opacity .15s ease .12s;   /* small delay: no flicker on mouse-past */
+  }
+}
+
 /* Spacer not needed while pills are hidden */
 .topbar-spacer{ display:none; }
 
@@ -424,6 +449,13 @@ body{
   font-variant-numeric:tabular-nums;
   user-select:none;
   min-height:1em;
+}
+/* the N of N/12 sits right-aligned in a fixed two-digit slot, so the
+   "/12" stays put when the count goes 9 → 10 */
+.counter-n{
+  display:inline-block;
+  min-width:2ch;
+  text-align:right;
 }
 .counter-ctx{color:var(--tag)}
 
@@ -1028,6 +1060,7 @@ body{
       <span class="logo-badge">W</span>
       <span class="logo-word">ordDock</span>
     </button>
+    <div class="logo-hover-list" id="logoHoverList"></div>
     <!-- logo menu retired: the logo now toggles study <-> browser directly.
          Empty element kept so existing JS refs stay valid (no-op). -->
     <div class="logo-menu" id="logoMenu" hidden></div>
@@ -1537,6 +1570,8 @@ function switchActiveList(listId){
     $tabDomainValue.textContent = DOMAIN_RUNTIME;
   }
   $tabListValue.textContent = activeListName;
+  document.getElementById("logoHoverList").textContent =
+    DOMAIN_RUNTIME + "\u00B7" + activeListName;
   initDeck();
   return true;
 }
@@ -1551,9 +1586,13 @@ const $btnAgain = document.getElementById("btnAgain");
 const $counter  = document.getElementById("counter");
 const $counterCtx = document.getElementById("counterCtx");
 const $counterNum = document.getElementById("counterNum");
-function paintCounter(numText){
-  $counterCtx.textContent = DOMAIN_RUNTIME + "\u00B7" + activeListName + "\u00A0\u00A0\u00A0\u00B7\u00A0\u00A0\u00A0";
-  $counterNum.textContent = numText;
+function paintCounter(score, done){
+  // Context (DOMAIN·List) no longer lives here — it's revealed by hovering
+  // the logo. The counter is just the centered N/12, with N in a fixed
+  // two-digit slot so "/12" never shifts.
+  $counterCtx.textContent = "";
+  $counterNum.innerHTML =
+    '<span class="counter-n">' + score + "</span>/12" + (done ? " \u2713" : "");
 }
 const $tabDomainValue = document.getElementById("tabDomainValue");
 const $tabListValue   = document.getElementById("tabListValue");
@@ -1758,7 +1797,7 @@ function render(){
   if (deckDone){
     $card.classList.add("deck-done");
     $cardTag.textContent  = "";
-    paintCounter(deckScore + "/12 ✓");
+    paintCounter(deckScore, true);
     const m = readBackupMeta();
     const WEEK = 7 * 24 * 60 * 60 * 1000;
     const stale = m.gains > 0 && (!m.lastExportTs || Date.now() - m.lastExportTs > WEEK);
@@ -1819,7 +1858,7 @@ function render(){
     $cardText.textContent = field.q;
     $cardText.className   = "card-text state-question";
   }
-  paintCounter(deckScore + "/12");
+  paintCounter(deckScore, false);
 }
 
 /* ─── Input ─── */
