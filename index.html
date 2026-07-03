@@ -240,9 +240,15 @@ body{
   font-weight:400;
   color:#ffffff;
   white-space:nowrap;
+  text-align:center;
   pointer-events:none;
   opacity:0;
   z-index:110;
+}
+.logo-hover-label{
+  font-size:12px;
+  color:var(--tag);       /* muted, so the list name stays the loud line */
+  margin-bottom:2px;
 }
 @media (hover:hover){
   .logo-wrap:hover .logo-hover-list{
@@ -1060,7 +1066,10 @@ body{
       <span class="logo-badge">W</span>
       <span class="logo-word">ordDock</span>
     </button>
-    <div class="logo-hover-list" id="logoHoverList"></div>
+    <div class="logo-hover-list" id="logoHoverList">
+      <div class="logo-hover-label">Studying now:</div>
+      <div id="logoHoverName"></div>
+    </div>
     <!-- logo menu retired: the logo now toggles study <-> browser directly.
          Empty element kept so existing JS refs stay valid (no-op). -->
     <div class="logo-menu" id="logoMenu" hidden></div>
@@ -1570,7 +1579,7 @@ function switchActiveList(listId){
     $tabDomainValue.textContent = DOMAIN_RUNTIME;
   }
   $tabListValue.textContent = activeListName;
-  document.getElementById("logoHoverList").textContent =
+  document.getElementById("logoHoverName").textContent =
     DOMAIN_RUNTIME + "\u00B7" + activeListName;
   initDeck();
   return true;
