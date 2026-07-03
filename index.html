@@ -220,7 +220,7 @@ body{
 }
 .logo-word{
   font-family:'Poppins',sans-serif;
-  font-size:24px;
+  font-size:20px;             /* 20px trial 2026-07-03 (was 24px locked) */
   font-weight:400;            /* regular — the colder, cooler look (locked) */
   color:var(--ink);
   letter-spacing:.01em;
@@ -1552,7 +1552,7 @@ const $counter  = document.getElementById("counter");
 const $counterCtx = document.getElementById("counterCtx");
 const $counterNum = document.getElementById("counterNum");
 function paintCounter(numText){
-  $counterCtx.textContent = DOMAIN_RUNTIME + "\u00B7" + activeListName + " \u00B7 ";
+  $counterCtx.textContent = DOMAIN_RUNTIME + "\u00B7" + activeListName + "\u00A0\u00A0\u00A0\u00B7\u00A0\u00A0\u00A0";
   $counterNum.textContent = numText;
 }
 const $tabDomainValue = document.getElementById("tabDomainValue");
@@ -1806,7 +1806,7 @@ function render(){
   // GRAMCAT-GRAMTAG, uppercase, hyphen-joined; or just GRAMCAT if no tag
   const cat = (s.row.GRAMCAT || "").toUpperCase();
   const tag = (s.row.GRAMTAG || "").toUpperCase();
-  $cardTag.textContent = tag ? cat + "-" + tag : cat;
+  $cardTag.textContent = tag ? cat + " \u00B7 " + tag : cat;
   if (showingA){
     if (peeking){
       $cardText.textContent = field.q;
