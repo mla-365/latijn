@@ -100,16 +100,24 @@ body{
   position:relative;
 }
 .logo{
-  display:flex;
+  display:grid;
+  grid-template-columns:1fr 1fr;   /* equal halves — the seam IS the center */
   align-items:center;
-  gap:11px;
-  padding:6px 12px 6px 6px;
+  padding:6px;
   background:transparent;
   border:none;
   cursor:pointer;
   outline:none;
   border-radius:10px;
 }
+/* badge + "Word" right-anchored to the seam; "Dock" left-anchored from it */
+.logo-left{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  justify-self:end;
+}
+.logo-dock{justify-self:start}
 
 /* Dropdown menu from the logo: vertical stacked items. */
 .logo-menu{
@@ -1025,8 +1033,7 @@ body{
 <div class="topbar">
   <div class="logo-wrap">
     <button class="logo" id="tabWordDock" data-tab="wd">
-      <span class="logo-badge">W</span>
-      <span class="logo-word">WordDock</span>
+      <span class="logo-left"><span class="logo-badge">W</span><span class="logo-word">Word</span></span><span class="logo-word logo-dock">Dock</span>
     </button>
     <!-- logo menu retired: the logo now toggles study <-> browser directly.
          Empty element kept so existing JS refs stay valid (no-op). -->
