@@ -1260,7 +1260,7 @@ let DOMAIN_RUNTIME = DOMAIN;
 (function migrateSchema(){
   const stored = localStorage.getItem("wd_schema_version");
   if (stored === SCHEMA_VERSION) return;          // already current
-  // wipe everything WordDock-related — old keys won't map to new SEQ_IDs
+  // wipe everything WordDock-related — old keys won't map to new IDs
   const toRemove = [];
   for (let i = 0; i < localStorage.length; i++){
     const k = localStorage.key(i);
@@ -1310,21 +1310,23 @@ const catalog = {
   }
 };
 
-/* ─── RS store: domain-scoped, keyed by SEQ_ID ──────────────────────── */
+/* ─── RS store: domain-scoped, keyed by ID ──────────────────────── */
 function rsKey(domain){ return "wd_rs_" + domain; }
 let RS = {};
 function loadRS(){
   try { RS = JSON.parse(localStorage.getItem(rsKey(DOMAIN_RUNTIME))) || {}; }
   catch (e) { RS = {}; }
 }
-function getRS(seqId){ return RS[seqId] || 0; }
+function getRS(id){ return RS[id] || 0; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LAYER 2 — Excel I/O
    WordDock file = the 25-column SF25 shape, headers in row 1 starting with
    ID, ≥10 valid rows. The app reads ID + Q/A pairs + the grammatical tags;
-   RS is NOT in the file (it lives only in localStorage). Internally the
-   adapter still maps ID→SEQ_ID, CAT→GRAMCAT, CTAG→GRAMTAG, ENTRY→LEMMA, L→LEVEL.
+   RS is NOT in the file (it lives only in localStorage). The app's internal
+   field names now match the SF25 column names directly (ID, ENTRY, CAT, CTAG,
+   L) — no adapter mapping; the old SEQ_ID/GRAMCAT/GRAMTAG/LEMMA/LEVEL names
+   were retired in the 2026-07-10 rename pass.
    ════════════════════════════════════════════════════════════════════════ */
 
 /* Canonical 25-column SF25 order — the authoritative shape. */
@@ -1429,30 +1431,29 @@ async function parseWordDockXlsx(file){
       if (q && a) pairs.push({ q: String(q), a: String(a) });
     }
 
-    // SF25 adapter: map the 25-column shape onto the field names the rest
-    // of the app already uses. ID→SEQ_ID, CAT→GRAMCAT, CTAG→GRAMTAG,
-    // ENTRY→LEMMA, L→LEVEL. RS is NOT in the file — it lives only in
-    // localStorage, joined at runtime by (domain + ID).
+    // Build the row in the app's field names, which now equal the SF25
+    // column names directly (ID, CAT, CTAG, L, ENTRY). RS is NOT in the
+    // file — it lives only in localStorage, joined at runtime by (domain + ID).
     const row = {
-      SEQ_ID: idStr,
-      GRAMCAT: arr[COL_INDEX.CAT]  ? String(arr[COL_INDEX.CAT])  : "",
-      GRAMTAG: arr[COL_INDEX.CTAG] ? String(arr[COL_INDEX.CTAG]) : "",
+      ID: idStr,
+      CAT: arr[COL_INDEX.CAT]  ? String(arr[COL_INDEX.CAT])  : "",
+      CTAG: arr[COL_INDEX.CTAG] ? String(arr[COL_INDEX.CTAG]) : "",
       pairs,
       _rs_from_file: 0,
       _preserved: {
-        LEVEL: arr[COL_INDEX.L]     ?? null,
-        LEMMA: arr[COL_INDEX.ENTRY] ?? null
+        L: arr[COL_INDEX.L]     ?? null,
+        ENTRY: arr[COL_INDEX.ENTRY] ?? null
       },
       _extras: null,
-      // Convenience: LEVEL is on the row for filtering.
-      get LEVEL(){ return this._preserved.LEVEL; }
+      // Convenience: L is on the row for filtering.
+      get L(){ return this._preserved.L; }
     };
     rows.push(row);
   }
 
   if (rows.length < MIN_VALID_ROWS){
     return { ok: false, error:
-      `Only ${rows.length} valid rows found. A WordDock file requires at least ${MIN_VALID_ROWS} rows where SEQ_ID, Q1, and A1 are all filled.` };
+      `Only ${rows.length} valid rows found. A WordDock file requires at least ${MIN_VALID_ROWS} rows where ID, Q1, and A1 are all filled.` };
   }
 
   // Try to read a friendly file name from the Metadata sheet, if present.
@@ -1491,11 +1492,11 @@ function serializeToXlsx(list){
   for (const row of list.rows){
     const arr = new Array(headers.length).fill(null);
     const pres = row._preserved || {};
-    arr[COL_INDEX.ID]    = row.SEQ_ID;
-    arr[COL_INDEX.ENTRY] = pres.LEMMA ?? null;
-    arr[COL_INDEX.CAT]   = row.GRAMCAT || null;
-    arr[COL_INDEX.CTAG]  = row.GRAMTAG || null;
-    arr[COL_INDEX.L]     = pres.LEVEL ?? null;
+    arr[COL_INDEX.ID]    = row.ID;
+    arr[COL_INDEX.ENTRY] = pres.ENTRY ?? null;
+    arr[COL_INDEX.CAT]   = row.CAT || null;
+    arr[COL_INDEX.CTAG]  = row.CTAG || null;
+    arr[COL_INDEX.L]     = pres.L ?? null;
     for (let i = 0; i < 10; i++){
       const p = row.pairs[i];
       arr[COL_INDEX["Q"+(i+1)]] = p ? p.q : null;
@@ -1525,7 +1526,7 @@ function serializeToXlsx(list){
 }
 
 /* On a successful import: write the file's RS values into localStorage
-   for the SEQ_IDs this file covers. Rows not in this file are untouched. */
+   for the IDs this file covers. Rows not in this file are untouched. */
 function ingestImportedRS(list){
   // Make sure we're operating on the RS map for the *list's* domain,
   // not necessarily the currently-active domain.
@@ -1534,7 +1535,7 @@ function ingestImportedRS(list){
   try { map = JSON.parse(localStorage.getItem(key)) || {}; }
   catch(e){ map = {}; }
   for (const row of list.rows){
-    if (!(row.SEQ_ID in map)) map[row.SEQ_ID] = row._rs_from_file;  // join, don't clobber existing scores
+    if (!(row.ID in map)) map[row.ID] = row._rs_from_file;  // join, don't clobber existing scores
   }
   localStorage.setItem(key, JSON.stringify(map));
   // If this list's domain is the currently-active runtime domain,
@@ -1694,9 +1695,9 @@ async function loadDomainMaster(domain){
 /* ─── Deck construction (§5.7.1): take lowest-RS 10 ─── */
 function buildDeck(){
   const sorted = [...ALL].sort((a,b) => {
-    const ra = getRS(a.SEQ_ID), rb = getRS(b.SEQ_ID);
+    const ra = getRS(a.ID), rb = getRS(b.ID);
     if (ra !== rb) return ra - rb;
-    return a.SEQ_ID < b.SEQ_ID ? -1 : 1;
+    return a.ID < b.ID ? -1 : 1;
   });
   return sorted.slice(0, Math.min(10, sorted.length)).map(row => ({
     row,
@@ -1763,7 +1764,7 @@ function gradeGood(){
       catch (e) { pool = {}; }
       let backupGains = 0;
       pipe.forEach(x => {
-        const id = x.row.SEQ_ID;
+        const id = x.row.ID;
         const base = (id in pool) ? pool[id] : 0;
         if      (x.timesDirty === 0){ pool[id] = base + 1; backupGains++; }
         else if (x.timesDirty === 1) pool[id] = base - 1;
@@ -1851,9 +1852,9 @@ function render(){
   $card.classList.remove("deck-done");
   const s     = cur();
   const field = s.row.pairs[s.fi];
-  // GRAMCAT-GRAMTAG, uppercase, hyphen-joined; or just GRAMCAT if no tag
-  const cat = (s.row.GRAMCAT || "").toUpperCase();
-  const tag = (s.row.GRAMTAG || "").toUpperCase();
+  // CAT-CTAG, uppercase, hyphen-joined; or just CAT if no tag
+  const cat = (s.row.CAT || "").toUpperCase();
+  const tag = (s.row.CTAG || "").toUpperCase();
   $cardTag.textContent = tag ? cat + " \u00B7 " + tag : cat;
   if (showingA){
     if (peeking){
@@ -2638,19 +2639,17 @@ document.getElementById("celebLater").addEventListener("click", (e) => {
    regardless of where rows came from, so behavior is uniform. */
 function normalizeEmbeddedRows(rawRows){
   return rawRows.map(r => ({
-    SEQ_ID:  r.SEQ_ID,
-    GRAMCAT: r.GRAMCAT || "",
-    GRAMTAG: r.GRAMTAG || "",
+    ID:  r.ID,
+    CAT: r.CAT || "",
+    CTAG: r.CTAG || "",
     pairs:   r.pairs || [],
     _rs_from_file: 0,
     _preserved: {
-      TOPIC: null, TOPIX: null, TPX_TAG: null,
-      LEVEL: r.LEVEL || null,
-      LEMMA: r.LEMMA || null,
-      USER: null, ChaProp: null
+      L: r.L || null,
+      ENTRY: r.ENTRY || null
     },
     _extras: null,
-    get LEVEL(){ return this._preserved.LEVEL; }
+    get L(){ return this._preserved.L; }
   }));
 }
 
