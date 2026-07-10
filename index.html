@@ -1190,7 +1190,7 @@ body{
     </details>
 
     <div class="warn">
-      <strong>Your progress lives only in this browser.</strong> Clearing your browser's site data wipes both your imported lists and your scores — and there is currently no way to restore your scores, since the excel file does not carry them. The file is a backup of a list's content (its words and cards), so re-importing brings the list back, but you start that list fresh.
+      <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Settings → Back up your scores) is the only backup of your progress.
     </div>
   </div>
 </div>
@@ -1204,7 +1204,7 @@ body{
     <div class="setting-row">
       <div class="setting-text">
         <div class="setting-label">Export reminders</div>
-        <div class="setting-desc">After finishing a deck, show a quiet reminder if your scores haven't been backed up lately — after a week with changes, or after a lot of new progress. Your scores live only in this browser; the scores export below is the durable backup.</div>
+        <div class="setting-desc">After finishing a deck, show a quiet reminder if your scores haven't been backed up lately — after a week with changes, or after a lot of new progress.</div>
       </div>
       <button class="toggle" id="toggleReminders" role="switch" aria-checked="false">
         <span class="toggle-knob"></span>
@@ -1214,10 +1214,10 @@ body{
     <div class="setting-row">
       <div class="setting-text">
         <div class="setting-label">Back up your scores</div>
-        <div class="setting-desc">Save all your scores (every domain) to a single <code>.json</code> file — for safekeeping, or to move them to another device. Import reads a saved file back in; if a domain already has different scores, you'll be asked before anything is overwritten.</div>
+        <div class="setting-desc">One file, every domain — the only backup of your progress, and the way to move it to another device.</div>
         <div class="scores-actions">
           <button class="list-btn js-export-scores" type="button">↓ Export scores</button>
-          <button class="list-btn js-import-scores" type="button">↑ Import scores</button>
+          <button class="list-btn js-import-scores" type="button">↑ Restore from file</button>
         </div>
         <div class="scores-msg" aria-live="polite"></div>
       </div>
@@ -2513,7 +2513,7 @@ function exportScores(){
   const scores = gatherAllScores();
   const domainCount = Object.keys(scores).length;
   if (!domainCount){
-    setScoresMsg("Nothing to export yet — you haven't built up any scores.");
+    setScoresMsg("Nothing to export yet — scores build up as you complete decks.");
     return null;
   }
   const today = new Date().toISOString().split("T")[0];
@@ -2526,8 +2526,7 @@ function exportScores(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   writeBackupMeta({ lastExportTs: Date.now(), gains: 0 });   // fresh backup
-  setScoresMsg("Exported " + domainCount + " domain" + (domainCount > 1 ? "s" : "") +
-    " to " + filename + ".");
+  setScoresMsg("Exported your scores to " + filename + ".");
   return { filename, domainCount };
 }
 
@@ -2569,12 +2568,10 @@ async function importScoresFromFile(file){
   // One confirm covering all conflicting domains.
   let overwrote = 0;
   if (conflicts.length){
-    const names = conflicts.map(c => c.domain).join(", ");
     const ok = await wdConfirm(
-      "Overwrite existing scores?",
-      "This device already has different scores for: " + names + ". " +
-      "Using the file's scores replaces them — any progress since the backup is lost.",
-      "Use the file's scores", "Keep mine"
+      "Replace this browser's scores?",
+      "This browser already has progress. Loading the file replaces it.",
+      "Use the file", "Keep what's here"
     );
     if (ok){
       for (const c of conflicts) localStorage.setItem("wd_rs_" + c.domain, JSON.stringify(c.map));
@@ -2585,12 +2582,12 @@ async function importScoresFromFile(file){
   // Refresh in-memory RS for the active domain (next deck reflects it).
   loadRS();
 
-  const parts = [];
-  if (silent.length)   parts.push("loaded " + silent.length);
-  if (overwrote)       parts.push("overwrote " + overwrote);
-  const kept = conflicts.length - overwrote;
-  if (kept)            parts.push("kept " + kept + " unchanged");
-  setScoresMsg("Import done — " + (parts.join(", ") || "nothing to change") + ".");
+  const applied = silent.length + overwrote;
+  if (applied){
+    setScoresMsg("Restored your scores from " + file.name + ".");
+  } else {
+    setScoresMsg("Nothing changed — kept this browser's scores.");
+  }
 }
 
 // Delegated clicks: works for the settings page AND its browser-pane clone.
