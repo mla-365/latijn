@@ -1366,13 +1366,6 @@ async function parseWordDockXlsx(file){
       dataSheetName = name;
       break;
     }
-    // Reject legacy SEQ_ID / LEM_ID files immediately, clearly.
-    if (a1 && (a1.v === "SEQ_ID" || a1.v === "LEM_ID")){
-      return { ok: false, error:
-        "This file is in a legacy format (" + a1.v + "). " +
-        "WordDock now uses the 25-column SF25 shape starting with ID. " +
-        "Please update the file or ask the curator for a current version." };
-    }
   }
   if (!dataSheet){
     return { ok: false, error:
