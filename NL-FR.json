@@ -1,1 +1,12 @@
-[{"SEQ_ID": "NL-FR_A1_0001", "LEVEL": "A1", "GRAMCAT": "zn", "GRAMTAG": "v", "LEMMA": "la maison", "pairs": [{"q": "het huis", "a": "la maison"}]}, {"SEQ_ID": "NL-FR_A1_0002", "LEVEL": "A1", "GRAMCAT": "zn", "GRAMTAG": "m", "LEMMA": "le chien", "pairs": [{"q": "de hond", "a": "le chien"}]}, {"SEQ_ID": "NL-FR_A1_0003", "LEVEL": "A1", "GRAMCAT": "ww", "GRAMTAG": "", "LEMMA": "manger", "pairs": [{"q": "eten", "a": "manger"}]}, {"SEQ_ID": "NL-FR_A1_0004", "LEVEL": "A1", "GRAMCAT": "zn", "GRAMTAG": "v", "LEMMA": "l'eau", "pairs": [{"q": "het water", "a": "l'eau"}]}, {"SEQ_ID": "NL-FR_A1_0005", "LEVEL": "A1", "GRAMCAT": "adj", "GRAMTAG": "", "LEMMA": "grand", "pairs": [{"q": "groot", "a": "grand"}]}, {"SEQ_ID": "NL-FR_A1_0006", "LEVEL": "A1", "GRAMCAT": "zn", "GRAMTAG": "m", "LEMMA": "le livre", "pairs": [{"q": "het boek", "a": "le livre"}]}]
+[
+  {"ID": "0001", "ENTRY": "la maison", "CAT": "zn", "CTAG": "v", "L": "A1", "pairs": [{"q": "het huis", "a": "la maison"}]},
+  {"ID": "0002", "ENTRY": "le chien", "CAT": "zn", "CTAG": "m", "L": "A1", "pairs": [{"q": "de hond", "a": "le chien"}]},
+  {"ID": "0003", "ENTRY": "manger", "CAT": "ww", "CTAG": "", "L": "A1", "pairs": [{"q": "eten", "a": "manger"}]},
+  {"ID": "0004", "ENTRY": "l'eau", "CAT": "zn", "CTAG": "v", "L": "A1", "pairs": [{"q": "het water", "a": "l'eau"}]},
+  {"ID": "0005", "ENTRY": "grand", "CAT": "adjectief", "CTAG": "", "L": "A1", "pairs": [{"q": "groot", "a": "grand"}]},
+  {"ID": "0006", "ENTRY": "le livre", "CAT": "zn", "CTAG": "m", "L": "A1", "pairs": [{"q": "het boek", "a": "le livre"}]},
+  {"ID": "0007", "ENTRY": "le jardin", "CAT": "zn", "CTAG": "m", "L": "A1", "pairs": [{"q": "de tuin", "a": "le jardin"}]},
+  {"ID": "0008", "ENTRY": "le crayon", "CAT": "zn", "CTAG": "m", "L": "A1", "pairs": [{"q": "het potlood", "a": "le crayon"}]},
+  {"ID": "0009", "ENTRY": "le ciel", "CAT": "zn", "CTAG": "m", "L": "A1", "pairs": [{"q": "de lucht", "a": "le ciel"}]},
+  {"ID": "0010", "ENTRY": "le moyen", "CAT": "zn", "CTAG": "m", "L": "A1", "pairs": [{"q": "het middel", "a": "le moyen"}]}
+]
