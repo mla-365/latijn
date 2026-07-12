@@ -178,6 +178,22 @@ body{
   outline:none;
 }
 .wd-dialog-input:focus{ border-color:rgba(255,255,255,0.38); }
+/* The native <select> popup follows the OS, not our CSS — color-scheme tells
+   the browser to render it dark. The option rules cover the browsers that do
+   honour them. */
+select.wd-dialog-input{
+  color-scheme:dark;
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23a8b4c4' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  padding-right:34px;
+  cursor:pointer;
+}
+select.wd-dialog-input option{
+  background:#2a2e37;
+  color:#fff;
+}
 /* Live preview of the resulting filename — teaches the naming rule by showing
    it assemble as the user types, instead of explaining it. */
 .wd-dialog-preview{
@@ -1518,6 +1534,20 @@ async function parseWordDockXlsx(file){
    characters, which is why domain codes (NL-RU) and Full-List both work.
    Returns domain:null when the leading token isn't a plausible domain — the
    import dialog then asks the user instead of guessing. */
+/* Turn a messy filename into a usable domain token: "Copy of biology" →
+   "COPY-OF-BIOLOGY". Used when a file names no domain and the user keeps it as
+   their own — it becomes its own domain, so it gets its own pool. */
+function toDomainToken(raw){
+  const t = (raw || "")
+    .trim()
+    .replace(/[^\w\- ]+/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toUpperCase();
+  return t || "MY-LIST";
+}
+
 function parseFilename(rawName){
   const base = (rawName || "").replace(/\.xlsx$/i, "").trim();
   const cut = base.indexOf("_");
@@ -2243,7 +2273,7 @@ function wdPickDomain(title, body, suggestion, defaultDomain){
     const own = document.createElement("option");
     own.value = "__OWN__";
     own.textContent = suggestion
-      ? "MY LISTS — keep \u201C" + suggestion + "\u201D"
+      ? "MY LISTS — import as \u201C" + suggestion + "\u201D"
       : "MY LISTS — my own list";
     select.appendChild(own);
     // Default: the pane the user came from (if it's curated), else "my own".
@@ -2252,8 +2282,8 @@ function wdPickDomain(title, body, suggestion, defaultDomain){
     function refresh(){
       const v = select.value;
       preview.textContent = (v === "__OWN__")
-        ? "Goes to MY LISTS as " + (suggestion || "MY-LIST")
-        : "Joins the curated " + v + " domain (shared progress)";
+        ? "Goes to MY LISTS as its own list, with its own progress."
+        : "Joins the curated " + v + " domain and shares its progress.";
     }
     refresh();
 
@@ -2275,6 +2305,9 @@ function wdPickDomain(title, body, suggestion, defaultDomain){
     }
     function chosen(){
       const v = select.value;
+      // "My own" means the file becomes ITS OWN domain, named after itself.
+      // A shared catch-all domain would put two unrelated files in one pool —
+      // exactly the ID collision we warn about elsewhere.
       return (v === "__OWN__") ? (suggestion || "MY-LIST") : v;
     }
     function onOk(){ cleanup(chosen()); }
@@ -2836,14 +2869,15 @@ $fileInput.addEventListener("change", async (e) => {
       list.domain
     );
   } else {
-    // The filename told us nothing (e.g. "Copy of NL-IT.xlsx"). Ask — never
-    // force the user out of the app to rename their file. The pane they came
-    // from seeds the default.
+    // The filename told us nothing (e.g. "Copy of biology.xlsx"). Ask — never
+    // force the user out of the app to rename their file. If they keep it as
+    // their own, it becomes ITS OWN domain named after the file, so two
+    // unrelated imports can never end up sharing one pool.
     domain = await wdPickDomain(
       "Couldn't read a domain from the filename",
       "Name files as DOMAIN_name.xlsx to skip this step. For now, pick where " +
       "this list belongs:",
-      null,
+      toDomainToken(list.name),
       importIntent
     );
   }
