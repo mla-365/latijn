@@ -958,23 +958,54 @@ body{
   font-size:10px;text-transform:uppercase;letter-spacing:.09em;
   color:var(--tag);margin:6px 8px 10px;
 }
-/* Zone labels for the three-zone rail (Active / My Domain / More) */
+/* Zone headers (ACTIVE / MY LISTS / MORE) — centered, with hairlines running
+   out to each side. Centering is what makes them read as headers: the domains
+   below them are larger and often bold, so a small left-aligned label got lost
+   among its own contents. The line belongs to the ZONE, never to the rows. */
 .rail-zone-label{
-  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--tag);margin:16px 8px 8px;
-}
-.rail-zone-label:first-child{margin-top:4px}
-/* Collapsible MORE header */
-.rail-more-toggle{
   display:flex;align-items:center;gap:8px;
-  padding:9px 11px;margin-top:10px;border-radius:9px;cursor:pointer;
   font-size:10px;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--tag);transition:background-color .12s,color .12s;
+  color:var(--tag);margin:18px 4px 10px;
   user-select:none;
 }
-.rail-more-toggle:hover{background:var(--menu-hover);color:var(--ink)}
-.rail-more-toggle .more-caret{font-size:11px;width:12px;text-align:center}
-.rail-more-toggle .more-count{margin-left:auto;font-size:11px;letter-spacing:0}
+.rail-zone-label::before,
+.rail-zone-label::after{
+  content:"";flex:1;height:1px;background:var(--menu-border);
+}
+.rail-zone-label:first-child{margin-top:4px}
+/* Collapsible MORE header — same centered shape, plus caret and count. */
+.rail-more-toggle{
+  display:flex;align-items:center;gap:8px;
+  margin:18px 4px 10px;border-radius:9px;cursor:pointer;
+  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--tag);transition:color .12s;
+  user-select:none;
+}
+.rail-more-toggle::before,
+.rail-more-toggle::after{
+  content:"";flex:1;height:1px;background:var(--menu-border);
+}
+.rail-more-toggle:hover{color:var(--ink)}
+.rail-more-toggle .more-caret{font-size:11px}
+.rail-more-toggle .more-count{font-size:11px;letter-spacing:0}
+/* Rail-level import action — lives under the MY LISTS header, so the zone
+   always offers a way in even when it holds nothing yet. */
+.rail-import{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 11px;margin:2px 0 2px;border-radius:9px;
+  font-size:13px;color:var(--tag);cursor:pointer;
+  border:1px dashed var(--menu-border);
+  transition:background-color .12s,color .12s,border-color .12s;
+  user-select:none;
+}
+.rail-import:hover{
+  background:var(--menu-hover);color:var(--ink);
+  border-color:rgba(255,255,255,0.28);
+}
+.rail-zone-empty{
+  font-size:12px;color:var(--tag);opacity:.75;
+  padding:2px 11px 6px;line-height:1.5;
+}
 .folder{
   display:flex;align-items:center;justify-content:space-between;
   padding:9px 11px;border-radius:9px;font-size:14px;color:#c0c8d2;
@@ -990,25 +1021,6 @@ body{
   color:var(--ink);
 }
 .folder .count{font-size:11px;color:var(--tag);font-weight:400}
-.folder.mydomain{
-  margin-top:14px;
-  margin-bottom:14px;
-  position:relative;
-}
-.folder.mydomain::after{
-  content:"";
-  position:absolute;
-  left:11px;right:11px;bottom:-8px;
-  height:1px;
-  background:var(--menu-border);
-}
-.folder.mydomain::before{
-  content:"";
-  position:absolute;
-  left:11px;right:11px;top:-8px;
-  height:1px;
-  background:var(--menu-border);
-}
 /* RIGHT detail — the lists (the work) */
 .browser-detail{
   flex:1;padding:16px 20px;overflow-y:auto;min-width:0;
@@ -1039,6 +1051,10 @@ body{
   padding:4px 6px;border-radius:7px;
 }
 .list-row-actions button:hover{background:var(--menu-hover);color:var(--ink)}
+/* The remove action is the only destructive one — it earns a warmer hover,
+   but stays quiet at rest (no red sitting on the screen). */
+.list-row-del{font-size:17px !important;line-height:1}
+.list-row-del:hover{background:rgba(220,90,90,0.16) !important;color:#ffb4b4 !important}
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
 }
@@ -1264,6 +1280,7 @@ body{
     <div class="domain-universe-label">All domains</div>
     <div class="domain-universe" id="domainUniverse"></div>
     <p class="domain-note">Domains are curated. <strong>MY LISTS</strong> gathers anything you import that doesn't match a curated domain — each keeps its own progress. Bold means you've made progress in that domain.</p>
+    <p class="domain-note"><strong>One rule for your own lists:</strong> within a domain, every entry needs its own ID — never restart numbering in a new file. Progress is tracked per ID, so two files that both start at 0001 would share scores between different words. WordDock checks this when you import and warns you.</p>
   </div>
 </div>
 
@@ -1605,53 +1622,93 @@ const FULL_LIST_NAME = "Full-List";
 
 const LISTS_KEY = "wd_lists";
 
-/* Persist every imported list. Shape kept deliberately plain:
-   { listId: { listId, name, domain, rows, source } }  — rows are the parsed
-   SF25 objects, minus the getters (JSON drops those; rehydrate rebuilds them). */
+/* Persist every imported list.
+
+   Two shapes, chosen by whether the domain is curated:
+
+   • CURATED domain (e.g. a slice of NL-RU) → store only the IDs. Every row
+     already exists in the <DOMAIN>.json the app fetches on boot, so storing
+     675 rows again would duplicate ~135 KB for nothing. IDs alone are ~5 KB.
+     Rehydration resolves them against the domain's Full-List.
+     (Accepted consequence: if the curator later removes a word from the
+     corpus, that ID resolves to nothing and quietly drops from the list —
+     which is the correct outcome, the curator removed it.)
+
+   • UNCURATED domain (the user's own content) → store the full rows. There is
+     no Source to resolve against; this file is the only copy, and it lives on
+     the user's disk, not on our server. */
 function saveLists(){
   const out = {};
   for (const l of Object.values(LISTS)){
     if (l.source !== "imported") continue;          // embedded ones re-fetch
-    out[l.listId] = {
-      listId: l.listId,
-      name:   l.name,
-      domain: l.domain,
-      source: "imported",
-      rows:   l.rows.map(r => ({
+    const base = { listId: l.listId, name: l.name, domain: l.domain, source: "imported" };
+    if (isCurated(l.domain)){
+      out[l.listId] = { ...base, mode: "ids", ids: l.rows.map(r => r.ID) };
+    } else {
+      out[l.listId] = { ...base, mode: "rows", rows: l.rows.map(r => ({
         ID: r.ID, CAT: r.CAT, CTAG: r.CTAG,
         L: r._preserved.L, ENTRY: r._preserved.ENTRY,
         pairs: r.pairs
-      }))
-    };
+      })) };
+    }
   }
   try { localStorage.setItem(LISTS_KEY, JSON.stringify(out)); }
   catch(e){ console.warn("Could not save lists (storage full?):", e); }
 }
 
-/* Rehydrate imported lists from localStorage on boot. The stored rows are
-   plain JSON, so rebuild the same row shape the engine expects (getters and
-   _preserved included) — the engine must see one row shape everywhere. */
+/* Rebuild the engine's row shape from plain stored JSON (getters included —
+   the engine must see one row shape everywhere, whatever the source). */
+function hydrateRow(r){
+  return {
+    ID: r.ID, CAT: r.CAT || "", CTAG: r.CTAG || "",
+    pairs: r.pairs || [],
+    _rs_from_file: 0,
+    _preserved: { L: r.L ?? null, ENTRY: r.ENTRY ?? null },
+    _extras: null,
+    get L(){ return this._preserved.L; }
+  };
+}
+
+/* Rehydrate imported lists on boot.
+   "rows" lists rebuild immediately. "ids" lists need their domain's Full-List
+   fetched first, so they resolve lazily — see resolveIdLists(). */
+const PENDING_ID_LISTS = [];
+
 function loadPersistedLists(){
   let raw;
   try { raw = JSON.parse(localStorage.getItem(LISTS_KEY)) || {}; }
   catch { return; }
-  for (const stored of Object.values(raw)){
-    if (!stored || !Array.isArray(stored.rows)) continue;
-    LISTS[stored.listId] = {
-      listId: stored.listId,
-      name:   stored.name,
-      domain: stored.domain,
-      source: "imported",
-      extraColumns: null,
-      rows: stored.rows.map(r => ({
-        ID: r.ID, CAT: r.CAT || "", CTAG: r.CTAG || "",
-        pairs: r.pairs || [],
-        _rs_from_file: 0,
-        _preserved: { L: r.L ?? null, ENTRY: r.ENTRY ?? null },
-        _extras: null,
-        get L(){ return this._preserved.L; }
-      }))
-    };
+  for (const s of Object.values(raw)){
+    if (!s || !s.listId) continue;
+    if (s.mode === "ids" && Array.isArray(s.ids)){
+      PENDING_ID_LISTS.push(s);                     // resolved after the Source loads
+    } else if (Array.isArray(s.rows)){
+      LISTS[s.listId] = {
+        listId: s.listId, name: s.name, domain: s.domain, source: "imported",
+        extraColumns: null,
+        rows: s.rows.map(hydrateRow)
+      };
+    }
+  }
+}
+
+/* Resolve any stored ID-only lists for a domain, now that its Full-List rows
+   are in memory. Each ID is looked up in the Full-List; missing IDs (removed
+   from the corpus since) are simply skipped. */
+function resolveIdLists(domain, fullRows){
+  if (!PENDING_ID_LISTS.length) return;
+  const byId = new Map(fullRows.map(r => [r.ID, r]));
+  for (let i = PENDING_ID_LISTS.length - 1; i >= 0; i--){
+    const s = PENDING_ID_LISTS[i];
+    if (s.domain !== domain) continue;
+    const rows = s.ids.map(id => byId.get(id)).filter(Boolean);
+    if (rows.length){
+      LISTS[s.listId] = {
+        listId: s.listId, name: s.name, domain: s.domain, source: "imported",
+        extraColumns: null, rows
+      };
+    }
+    PENDING_ID_LISTS.splice(i, 1);
   }
 }
 
@@ -1675,6 +1732,7 @@ function switchActiveList(listId){
   $tabListValue.textContent = activeListName;
   document.getElementById("logoHoverName").textContent =
     DOMAIN_RUNTIME + "\u00B7" + activeListName;
+  saveLastList(list.listId);   // resume here on the next boot
   initDeck();
   return true;
 }
@@ -1790,11 +1848,13 @@ async function loadDomainMaster(domain){
     const rows = await catalog.loadMaster(domain);
     const listId = "embedded_" + domain;
     if (!LISTS[listId]){
+      const fullRows = normalizeEmbeddedRows(rows);
       registerList({
         listId, name:FULL_LIST_NAME, domain,
-        rows: normalizeEmbeddedRows(rows),
+        rows: fullRows,
         extraColumns:[], source:"embedded"
       });
+      resolveIdLists(domain, fullRows);   // stored slices of this domain
     }
     switchActiveList(listId);
   } catch(e){ /* unknown domain — no-op */ }
@@ -2153,7 +2213,7 @@ function wdPromptName(title, body, domain, prefill){
    Offers the curated domains plus "keep <guess>" / a free-typed domain, so a
    badly-named file is fixed IN THE APP; the user never has to go rename it.
    Resolves to the chosen domain string, or null on cancel. */
-function wdPickDomain(title, body, suggestion){
+function wdPickDomain(title, body, suggestion, defaultDomain){
   return new Promise(resolve => {
     const back    = document.getElementById("wdDialogBackdrop");
     const field   = document.getElementById("wdDialogField");
@@ -2186,7 +2246,8 @@ function wdPickDomain(title, body, suggestion){
       ? "MY LISTS — keep \u201C" + suggestion + "\u201D"
       : "MY LISTS — my own list";
     select.appendChild(own);
-    select.value = "__OWN__";
+    // Default: the pane the user came from (if it's curated), else "my own".
+    select.value = (defaultDomain && isCurated(defaultDomain)) ? defaultDomain : "__OWN__";
 
     function refresh(){
       const v = select.value;
@@ -2391,6 +2452,10 @@ function setListMessage(text, kind){
 // Which domain the browser's right pane is showing. Defaults to the active
 // study domain, but the user can browse another domain without switching study.
 let browserDomain = null;
+/* Which domain the user was standing in when they hit import. Used ONLY as the
+   picker's default when the filename can't name a domain — the filename always
+   wins when it parses (locked rule: identity comes from what the user sees). */
+let importIntent = null;
 
 function listsInDomain(domain){
   return Object.values(LISTS).filter(l => l.domain === domain);
@@ -2466,11 +2531,13 @@ function makeFolderEl(domain){
     if (catalog.isAvailable(domain) && !LISTS["embedded_" + domain]){
       try {
         const rows = await catalog.loadMaster(domain);
+        const fullRows = normalizeEmbeddedRows(rows);
         registerList({
           listId: "embedded_" + domain, name:FULL_LIST_NAME, domain,
-          rows: normalizeEmbeddedRows(rows),
+          rows: fullRows,
           extraColumns:[], source:"embedded"
         });
+        resolveIdLists(domain, fullRows);   // stored slices of this domain
       } catch(e){ /* fetch failed — leave pane empty */ }
     }
     renderBrowser();
@@ -2495,22 +2562,30 @@ function renderBrowserRail(){
   $browserRail.innerHTML = "";
   const { active, my, more } = classifyDomains();
 
-  // ACTIVE — hidden entirely when empty
+  // ACTIVE — in practice never empty (the studying-now domain always sits here)
   if (active.length){
     addRailLabel("Active");
     active.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
   }
 
-  // MY LISTS — the zone gathering the user's own (uncurated) domains.
-  // Rendered only when they exist; a thin line above delineates the zone.
-  if (my.length){
-    addRailLabel(MY_ZONE_LABEL);
-    my.forEach(d => {
-      const el = makeFolderEl(d);
-      el.classList.add("mydomain");
-      $browserRail.appendChild(el);
-    });
+  // MY LISTS — ALWAYS shown, even when empty. A zone earns its place when it
+  // has content OR an affordance: this one carries the import action, so it
+  // teaches the feature instead of hiding it in an info page nobody reads.
+  addRailLabel(MY_ZONE_LABEL);
+  my.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
+  if (!my.length){
+    const hint = document.createElement("div");
+    hint.className = "rail-zone-empty";
+    hint.textContent = "Your own lists land here.";
+    $browserRail.appendChild(hint);
   }
+  const imp = document.createElement("div");
+  imp.className = "rail-import";
+  imp.innerHTML = "<span>+</span><span>Import a list</span>";
+  // Importing from HERE means "this is my own" — so when the filename can't
+  // name a domain, the picker defaults to MY LISTS rather than a curated one.
+  imp.addEventListener("click", () => { importIntent = null; $fileInput.click(); });
+  $browserRail.appendChild(imp);
 
   // MORE — collapsible. Defaults open when there's nothing in ACTIVE yet.
   if (more.length){
@@ -2518,9 +2593,9 @@ function renderBrowserRail(){
     const header = document.createElement("div");
     header.className = "rail-more-toggle";
     header.innerHTML =
-      '<span class="more-caret">' + (expanded ? "▾" : "▸") + "</span>" +
       "<span>More</span>" +
-      '<span class="more-count">' + more.length + "</span>";
+      '<span class="more-count">' + more.length + "</span>" +
+      '<span class="more-caret">' + (expanded ? "▾" : "▸") + "</span>";
     header.addEventListener("click", () => { moreExpanded = !expanded; renderBrowserRail(); });
     $browserRail.appendChild(header);
     if (expanded) more.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
@@ -2565,6 +2640,15 @@ function renderBrowserLists(){
     dl.title = "Export this list"; dl.textContent = "↓";
     dl.addEventListener("click", (e) => { e.stopPropagation(); exportList(list.listId); });
     actions.appendChild(dl);
+    // Delete — only on the user's own imported lists. The curated Full-List
+    // re-fetches on every boot, so "deleting" it would be theatre.
+    if (list.source === "imported"){
+      const del = document.createElement("button");
+      del.title = "Remove this list"; del.textContent = "\u00D7";
+      del.className = "list-row-del";
+      del.addEventListener("click", (e) => { e.stopPropagation(); deleteList(list.listId); });
+      actions.appendChild(del);
+    }
 
     row.appendChild(main);
     row.appendChild(actions);
@@ -2663,6 +2747,53 @@ document.querySelectorAll(".rail-meta-item").forEach(item => {
   item.addEventListener("click", () => showBrowserPane(item.dataset.pane));
 });
 
+/* Find IDs the incoming list reuses for a DIFFERENT word than the domain
+   already knows. Compares against every list already in that domain — the
+   curated Full-List included (fetching it if it isn't loaded yet, since the
+   check is worthless without it).
+
+   The list being REPLACED is excluded: re-importing an edited version of your
+   own file must not collide with itself. And a matching ID with a matching
+   word is not a clash — that's the same word, which is the whole point. */
+async function findIdClashes(incoming, domain){
+  const known = new Map();     // ID -> ENTRY, as the domain already understands it
+
+  // The curated master defines the domain's vocabulary — load it if needed.
+  if (isCurated(domain) && !LISTS["embedded_" + domain]){
+    try {
+      const raw = await catalog.loadMaster(domain);
+      const fullRows = normalizeEmbeddedRows(raw);
+      registerList({
+        listId: "embedded_" + domain, name: FULL_LIST_NAME, domain,
+        rows: fullRows, extraColumns: [], source: "embedded"
+      });
+      resolveIdLists(domain, fullRows);
+    } catch { /* offline or missing — check what we do have */ }
+  }
+
+  for (const l of Object.values(LISTS)){
+    if (l.domain !== domain) continue;
+    if (l.listId === incoming.listId) continue;          // the one being replaced
+    for (const r of l.rows){
+      const entry = r._preserved ? r._preserved.ENTRY : null;
+      if (r.ID && entry && !known.has(r.ID)) known.set(r.ID, entry);
+    }
+  }
+
+  let count = 0, example = "";
+  for (const r of incoming.rows){
+    const entry = r._preserved ? r._preserved.ENTRY : null;
+    const seen  = known.get(r.ID);
+    if (seen && entry && seen !== entry){
+      count++;
+      if (!example){
+        example = "\u201C" + entry + "\u201D would inherit \u201C" + seen + "\u201D's progress";
+      }
+    }
+  }
+  return { count, example };
+}
+
 $fileInput.addEventListener("change", async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -2706,12 +2837,14 @@ $fileInput.addEventListener("change", async (e) => {
     );
   } else {
     // The filename told us nothing (e.g. "Copy of NL-IT.xlsx"). Ask — never
-    // force the user out of the app to rename their file.
+    // force the user out of the app to rename their file. The pane they came
+    // from seeds the default.
     domain = await wdPickDomain(
       "Couldn't read a domain from the filename",
       "Name files as DOMAIN_name.xlsx to skip this step. For now, pick where " +
       "this list belongs:",
-      null
+      null,
+      importIntent
     );
   }
   if (!domain){                       // user cancelled out of the dialogs
@@ -2720,13 +2853,33 @@ $fileInput.addEventListener("change", async (e) => {
   }
   list.domain = domain;
 
-  // ── Identity = domain + name. Re-importing the same list REPLACES it
-  // (the user edited their file and loaded the new version); progress is
-  // untouched, because RS lives in the pool, never in the list.
+  // ── Identity = domain + name. Re-importing the same list REPLACES it (the
+  // user edited their file and loaded the new version); progress is untouched,
+  // because RS lives in the pool, never in the list. Resolved BEFORE the clash
+  // check below, so a list can't be found to collide with its own old version.
   const existing = Object.values(LISTS).find(
     l => l.domain === domain && l.name === list.name && l.source === "imported"
   );
   list.listId = existing ? existing.listId : ("imported_" + Date.now());
+
+  // ── ID collision check. Progress is keyed by (domain + ID), so two lists in
+  // one domain that reuse an ID for DIFFERENT words would share scores wrongly
+  // — drilling "cat" would credit "photosynthesis". The natural human mistake
+  // (restarting numbering at 0001 in a new spreadsheet) produces exactly this,
+  // and it corrupts silently. So we check at the one moment the user is paying
+  // attention, and never write before they've seen it.
+  const clash = await findIdClashes(list, domain);
+  if (clash.count){
+    const ok = await wdConfirm(
+      "These IDs are already used in " + domain,
+      clash.count + " ID" + (clash.count > 1 ? "s" : "") + " in this file belong to " +
+      "different words in " + domain + ". WordDock tracks progress per ID, so these " +
+      "lists would share scores wrongly — " + clash.example + ". " +
+      "Give every word in " + domain + " its own ID, or import this as a new domain.",
+      "Import anyway", "Cancel"
+    );
+    if (!ok){ setListMessage("Import cancelled."); return; }
+  }
 
   registerList(list);                  // persists to localStorage
   ingestImportedRS(list);
@@ -2785,12 +2938,82 @@ async function exportList(listId){
   }
 }
 
+/* Remove one of the user's own lists.
+
+   A list is a LENS; the progress lives in the domain's pool. So removing a
+   slice of a curated domain destroys nothing — the words are in the Full-List,
+   the scores are in wd_rs_<DOMAIN>, and re-importing the same slice rejoins
+   both. But an UNCURATED list's rows exist only in this browser, and its pool
+   belongs to that domain alone — so when its last list goes, the pool goes
+   with it. Dead pools are not kept "just in case": unreachable data that sync
+   would replicate forever is exactly the cruft we refuse to accumulate.
+
+   Three situations, three honest messages — the one that destroys says so. */
+async function deleteList(listId){
+  const list = LISTS[listId];
+  if (!list || list.source !== "imported") return;
+
+  const curated = isCurated(list.domain);
+  const siblings = Object.values(LISTS).filter(
+    l => l.source === "imported" && l.domain === list.domain && l.listId !== listId
+  );
+  const lastOfDomain = !curated && siblings.length === 0;
+
+  let body;
+  if (curated){
+    body = "Your progress stays in the " + list.domain + " Full-List.";
+  } else if (lastOfDomain){
+    body = "The list and its progress are both deleted. You'd need the file to bring it back.";
+  } else {
+    body = "Your progress stays — your other " + list.domain + " lists still use it.";
+  }
+
+  const ok = await wdConfirm(
+    "Remove \u201C" + list.name + "\u201D from WordDock?",
+    body, "Remove", "Keep"
+  );
+  if (!ok) return;
+
+  const wasActive = (activeListId === listId);
+  const domain = list.domain;
+  delete LISTS[listId];
+  saveLists();
+
+  if (lastOfDomain){
+    try { localStorage.removeItem("wd_rs_" + domain); } catch {}
+  }
+
+  // If we just deleted what was being studied, fall back to a Full-List. The
+  // deleted list's own domain may have none (it was uncurated), and NL-RU's
+  // may not even be loaded (we boot into the last-studied domain) — so take
+  // any loaded Full-List, and fetch the default only if there is none.
+  if (wasActive){
+    let fallback = LISTS["embedded_" + domain]
+                || Object.values(LISTS).find(l => l.source === "embedded");
+    if (fallback){
+      switchActiveList(fallback.listId);
+    } else {
+      await loadDomainMaster("NL-RU");     // nothing loaded — fetch the default
+    }
+  }
+  // The pane may now be showing a domain that no longer exists.
+  if (!domainUniverse().includes(browserDomain)) browserDomain = DOMAIN_RUNTIME;
+
+  renderBrowser();
+  setListMessage("Removed \u201C" + list.name + "\u201D.");
+}
+
 // List browser: back button closes; dashed upload row triggers file picker
 // Back link (in Info/Settings) returns to the lists view, staying in the browser
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 document.getElementById("browserDomainsHeader").addEventListener("click", () => showBrowserPane("lists"));
-document.getElementById("browserUpload").addEventListener("click", () => $fileInput.click());
+document.getElementById("browserUpload").addEventListener("click", () => {
+  // Importing from inside a domain's pane means "probably into this domain" —
+  // it seeds the picker only if the filename can't decide.
+  importIntent = browserDomain;
+  $fileInput.click();
+});
 
 /* ════════════════════════════════════════════════════════════════════════
    Score backup — export / import ALL domains as one JSON file.
@@ -2995,29 +3218,56 @@ function normalizeEmbeddedRows(rawRows){
   }));
 }
 
+/* Last studied list — so a reload resumes where the user left off, instead of
+   always dumping them back on NL-RU's Full-List. A preference, not progress:
+   last write wins, and an unresolvable value silently falls back. */
+const LAST_LIST_KEY = "wd_last_list";
+
+function saveLastList(listId){
+  try { localStorage.setItem(LAST_LIST_KEY, listId); } catch {}
+}
+function readLastList(){
+  try { return localStorage.getItem(LAST_LIST_KEY); } catch { return null; }
+}
+
 (async () => {
   // Bring back the user's own imported lists first — they exist only here
   // (their file lives on the user's disk, not on our server), so without this
   // they'd vanish on every refresh.
   loadPersistedLists();
 
-  // Load NL-RU master via the stable catalog interface
-  const rawRows = await catalog.loadMaster("NL-RU");
-  const embeddedList = {
-    listId: "embedded_NL-RU",
+  // Which list were we studying? Load ITS domain, not always NL-RU.
+  const wanted = readLastList();
+  let bootDomain = "NL-RU";
+  if (wanted){
+    if (LISTS[wanted]) bootDomain = LISTS[wanted].domain;               // an own list
+    else if (wanted.startsWith("embedded_")) bootDomain = wanted.slice(9);
+    else {
+      const pend = PENDING_ID_LISTS.find(s => s.listId === wanted);     // a stored slice
+      if (pend) bootDomain = pend.domain;
+    }
+  }
+  if (!catalog.isAvailable(bootDomain)) bootDomain = "NL-RU";           // uncurated own list:
+                                                                        // still fetch a Source
+  const rawRows = await catalog.loadMaster(bootDomain);
+  const fullRows = normalizeEmbeddedRows(rawRows);
+  registerList({
+    listId: "embedded_" + bootDomain,
     name: FULL_LIST_NAME,
-    domain: "NL-RU",
-    rows: normalizeEmbeddedRows(rawRows),
+    domain: bootDomain,
+    rows: fullRows,
     extraColumns: [],
     source: "embedded"
-  };
-  registerList(embeddedList);
+  });
+  resolveIdLists(bootDomain, fullRows);   // stored slices of this domain can now resolve
+
   loadRS();
-  // populate tab values
   $tabDomainValue.textContent = DOMAIN_RUNTIME;
   $tabFilterValue.textContent = "No filter";
-  // Activate the embedded list (sets ALL, populates List tab, runs initDeck)
-  switchActiveList(embeddedList.listId);
+
+  // Resume the last list if it still exists; otherwise the domain's Full-List.
+  const resume = (wanted && LISTS[wanted]) ? wanted : ("embedded_" + bootDomain);
+  switchActiveList(resume);
 })();
 </script>
 </body>
