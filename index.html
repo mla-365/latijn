@@ -165,6 +165,26 @@ body{
   font-size:14px; line-height:1.55; color:rgba(255,255,255,0.78);
   margin-bottom:22px;
 }
+/* Optional field area — the Save-as input and the domain picker live here. */
+.wd-dialog-field{
+  margin:-8px 0 22px;
+}
+.wd-dialog-input{
+  width:100%; box-sizing:border-box;
+  padding:10px 12px; border-radius:10px;
+  border:1px solid rgba(255,255,255,0.16);
+  background:rgba(255,255,255,0.05); color:#fff;
+  font-size:14px; font-family:'Poppins',sans-serif;
+  outline:none;
+}
+.wd-dialog-input:focus{ border-color:rgba(255,255,255,0.38); }
+/* Live preview of the resulting filename — teaches the naming rule by showing
+   it assemble as the user types, instead of explaining it. */
+.wd-dialog-preview{
+  margin-top:10px; font-size:12px; color:var(--tag);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  min-height:1em;
+}
 .wd-dialog-actions{
   display:flex; gap:10px; justify-content:flex-end;
 }
@@ -1089,6 +1109,13 @@ body{
   <div class="wd-dialog" role="dialog" aria-modal="true">
     <div class="wd-dialog-title" id="wdDialogTitle"></div>
     <div class="wd-dialog-body" id="wdDialogBody"></div>
+    <!-- Optional field area: used by the Save-as and domain-picker dialogs.
+         Hidden for a plain confirm. -->
+    <div class="wd-dialog-field" id="wdDialogField" hidden>
+      <input type="text" id="wdDialogInput" class="wd-dialog-input" autocomplete="off" spellcheck="false">
+      <select id="wdDialogSelect" class="wd-dialog-input" hidden></select>
+      <div class="wd-dialog-preview" id="wdDialogPreview"></div>
+    </div>
     <div class="wd-dialog-actions">
       <button class="wd-dialog-btn wd-dialog-cancel" id="wdDialogCancel">Cancel</button>
       <button class="wd-dialog-btn wd-dialog-ok" id="wdDialogOk">OK</button>
@@ -1236,7 +1263,7 @@ body{
 
     <div class="domain-universe-label">All domains</div>
     <div class="domain-universe" id="domainUniverse"></div>
-    <p class="domain-note">Domains are curated. <strong>MY DOMAIN</strong> is your personal space — anything you import that doesn't match a curated domain lands there. Bold means you've made progress in that domain.</p>
+    <p class="domain-note">Domains are curated. <strong>MY LISTS</strong> gathers anything you import that doesn't match a curated domain — each keeps its own progress. Bold means you've made progress in that domain.</p>
   </div>
 </div>
 
@@ -1397,7 +1424,6 @@ async function parseWordDockXlsx(file){
   // Parse data rows
   const rows = [];
   const warnings = [];
-  let detectedDomain = null;
 
   for (let r = 1; r < aoa.length; r++){
     const arr = aoa[r];
@@ -1449,26 +1475,18 @@ async function parseWordDockXlsx(file){
       `Only ${rows.length} valid rows found. A WordDock file requires at least ${MIN_VALID_ROWS} rows where ID, Q1, and A1 are all filled.` };
   }
 
-  // Try to read a friendly file name from the Metadata sheet, if present.
-  let fileName = (file && file.name) ? file.name.replace(/\.xlsx$/i, "") : "Imported";
-  const metaSheet = wb.Sheets["Metadata"];
-  if (metaSheet){
-    const metaAoa = XLSX.utils.sheet_to_json(metaSheet, { header: 1, defval: null });
-    for (const row of metaAoa){
-      if (row && row[0] === "File Name" && row[1]) fileName = String(row[1]);
-      if (row && row[0] === "Domain" && row[1]) detectedDomain = String(row[1]).trim();
-    }
-  }
-  // SF25 IDs carry no domain prefix, so derive the domain from the Metadata
-  // "Domain" field if present, otherwise from the file name.
-  if (!detectedDomain) detectedDomain = fileName;
+  // ── Identity comes from the FILENAME, never from the hidden Metadata sheet.
+  // A stale/forgotten Metadata cell (copied file, never edited) would silently
+  // mis-file the list; the filename is what the user sees and controls.
+  // Convention: DOMAIN_NAME.xlsx  — underscore separates, first token = domain.
+  const parsed = parseFilename(file && file.name);
 
   return {
     ok: true,
     list: {
-      listId: "imported_" + Date.now(),
-      name: fileName,
-      domain: detectedDomain,
+      listId: null,                 // assigned after the user confirms the domain
+      name: parsed.name,
+      domain: parsed.domain,        // null when the filename doesn't parse
       rows,
       extraColumns,
       source: "imported"
@@ -1477,9 +1495,30 @@ async function parseWordDockXlsx(file){
   };
 }
 
+/* Split "NL-RU_vakantie.xlsx" into { domain:"NL-RU", name:"vakantie" }.
+   Underscore is the separator; everything after the first one is the name
+   (so "NL-RU_zomer_2026" → name "zomer_2026"). Hyphens are ordinary name
+   characters, which is why domain codes (NL-RU) and Full-List both work.
+   Returns domain:null when the leading token isn't a plausible domain — the
+   import dialog then asks the user instead of guessing. */
+function parseFilename(rawName){
+  const base = (rawName || "").replace(/\.xlsx$/i, "").trim();
+  const cut = base.indexOf("_");
+  if (cut > 0){
+    const head = base.slice(0, cut).trim();
+    const tail = base.slice(cut + 1).trim();
+    // A domain token is letters/digits/hyphens only (NL-RU, BIOLOGY, NL-ES).
+    if (/^[A-Za-z0-9-]+$/.test(head) && tail){
+      return { domain: head.toUpperCase(), name: tail };
+    }
+  }
+  // No parseable domain — keep the whole thing as a candidate name.
+  return { domain: null, name: base || "Imported" };
+}
+
 /* Serialize the active list back to a WordDock xlsx (Blob).
    Uses the row's current localStorage RS, not the value that came in from file. */
-function serializeToXlsx(list){
+function serializeToXlsx(list, exportName){
   const headers = [...COLUMNS, ...(list.extraColumns || [])];
   const aoa = [headers];
   for (const row of list.rows){
@@ -1502,10 +1541,12 @@ function serializeToXlsx(list){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "1");
 
-  // Re-emit a minimal Metadata sheet with the current export info
+  // Re-emit a minimal Metadata sheet. NOTE: this sheet is INERT — the app
+  // never reads it back to decide a list's identity (a copied file's stale
+  // cells would lie). Identity lives in the filename, which the user sees.
   const today = new Date().toISOString().split("T")[0];
   const metaAoa = [
-    ["File Name", list.name],
+    ["File Name", exportName || list.name],
     ["Domain", list.domain],
     ["Date", today],
     ["Row count", list.rows.length],
@@ -1550,14 +1591,73 @@ let heavyCelebDismissed = false;   // in-memory: resets next session
 let celebState = null;             // null | "exported"
 let celebFilename = "";
 
-/* Lists registry — in-memory only for Layer 2.
-   Holds every list the user has loaded this session, keyed by listId.
-   Includes the embedded master and any imported files.
-   Layer 4 will persist this to IndexedDB. */
+/* Lists registry — in RAM, holds every list currently loaded.
+   Embedded Sources (fetched from <DOMAIN>.json) are NOT persisted: they are
+   re-fetched on every boot, so storing 675 rows twice would be waste.
+   Imported lists ARE persisted (wd_lists), because nothing else can bring
+   them back — the user's file lives on their disk, not on our server. */
 const LISTS = {};
+
+/* The one reserved list name: the curated master shipped with a domain.
+   An export can never produce it (the Save-as dialog forbids it), so a
+   user file can never collide with the curated Full-List. */
+const FULL_LIST_NAME = "Full-List";
+
+const LISTS_KEY = "wd_lists";
+
+/* Persist every imported list. Shape kept deliberately plain:
+   { listId: { listId, name, domain, rows, source } }  — rows are the parsed
+   SF25 objects, minus the getters (JSON drops those; rehydrate rebuilds them). */
+function saveLists(){
+  const out = {};
+  for (const l of Object.values(LISTS)){
+    if (l.source !== "imported") continue;          // embedded ones re-fetch
+    out[l.listId] = {
+      listId: l.listId,
+      name:   l.name,
+      domain: l.domain,
+      source: "imported",
+      rows:   l.rows.map(r => ({
+        ID: r.ID, CAT: r.CAT, CTAG: r.CTAG,
+        L: r._preserved.L, ENTRY: r._preserved.ENTRY,
+        pairs: r.pairs
+      }))
+    };
+  }
+  try { localStorage.setItem(LISTS_KEY, JSON.stringify(out)); }
+  catch(e){ console.warn("Could not save lists (storage full?):", e); }
+}
+
+/* Rehydrate imported lists from localStorage on boot. The stored rows are
+   plain JSON, so rebuild the same row shape the engine expects (getters and
+   _preserved included) — the engine must see one row shape everywhere. */
+function loadPersistedLists(){
+  let raw;
+  try { raw = JSON.parse(localStorage.getItem(LISTS_KEY)) || {}; }
+  catch { return; }
+  for (const stored of Object.values(raw)){
+    if (!stored || !Array.isArray(stored.rows)) continue;
+    LISTS[stored.listId] = {
+      listId: stored.listId,
+      name:   stored.name,
+      domain: stored.domain,
+      source: "imported",
+      extraColumns: null,
+      rows: stored.rows.map(r => ({
+        ID: r.ID, CAT: r.CAT || "", CTAG: r.CTAG || "",
+        pairs: r.pairs || [],
+        _rs_from_file: 0,
+        _preserved: { L: r.L ?? null, ENTRY: r.ENTRY ?? null },
+        _extras: null,
+        get L(){ return this._preserved.L; }
+      }))
+    };
+  }
+}
 
 function registerList(list){
   LISTS[list.listId] = list;
+  if (list.source === "imported") saveLists();
 }
 
 function switchActiveList(listId){
@@ -1602,13 +1702,30 @@ const $tabListValue   = document.getElementById("tabListValue");
 const $tabFilterValue = document.getElementById("tabFilterValue");
 
 /* ─── Domain surface ─── */
-const MY_DOMAIN = "MY";   // the user's single personal domain prefix
+/* MY LISTS is NOT a domain — it is a display ZONE in the rail that gathers
+   every domain the user brought in that the catalog doesn't curate. Each such
+   domain keeps its own identity and its own RS pool (wd_rs_<DOMAIN>), so an
+   uncurated domain later added to the catalog simply graduates to ACTIVE with
+   zero data migration. */
+const MY_ZONE_LABEL = "MY LISTS";
 
-// Display names for domains. Curated come from the catalog; MY is fixed.
+// Is this domain part of the curated catalog?
+function isCurated(domain){
+  return catalog.manifest().some(x => x.domain === domain);
+}
+
+// Every domain that exists in an imported list (i.e. the user's own).
+function importedDomains(){
+  const s = new Set();
+  for (const l of Object.values(LISTS)){
+    if (l.source === "imported" && l.domain && !isCurated(l.domain)) s.add(l.domain);
+  }
+  return [...s].sort();
+}
+
+// Display names for domains — show the code (NL-RU etc.).
 function domainDisplayName(domain){
-  if (domain === MY_DOMAIN) return "MY DOMAIN";
-  const m = catalog.manifest().find(x => x.domain === domain);
-  return m ? domain : domain;   // show the code (NL-RU etc.) for now
+  return domain;
 }
 
 // Has the user made real progress in this domain? (any RS entry != 0)
@@ -1619,10 +1736,10 @@ function domainHasProgress(domain){
   } catch { return false; }
 }
 
-// The universe: curated domains (alphabetical) + MY DOMAIN at the bottom.
+// The universe: curated domains + the user's own uncurated domains.
 function domainUniverse(){
   const curated = catalog.manifest().map(m => m.domain).sort();
-  return [...curated, MY_DOMAIN];
+  return [...curated, ...importedDomains()];
 }
 
 function renderDomainPage(){
@@ -1638,11 +1755,10 @@ function renderDomainPage(){
     name.textContent = domainDisplayName(domain);
     row.appendChild(name);
 
-    // meta: a small hint (active marker, or empty for MY DOMAIN with nothing)
+    // meta: a small hint (active marker)
     const meta = document.createElement("span");
     meta.className = "domain-entry-meta";
     if (domain === DOMAIN_RUNTIME) meta.textContent = "studying now";
-    else if (domain === MY_DOMAIN && !domainHasProgress(domain)) meta.textContent = "empty";
     row.appendChild(meta);
 
     row.addEventListener("click", () => switchToDomain(domain));
@@ -1664,7 +1780,7 @@ function switchToDomain(domain){
   if (catalog.isAvailable(domain)){
     loadDomainMaster(domain);
   } else {
-    // MY DOMAIN with nothing yet — nothing to switch to
+    // An uncurated domain with no loaded list — nothing to switch to
     closeAllSurfaces();
   }
 }
@@ -1675,7 +1791,7 @@ async function loadDomainMaster(domain){
     const listId = "embedded_" + domain;
     if (!LISTS[listId]){
       registerList({
-        listId, name:"Source", domain,
+        listId, name:FULL_LIST_NAME, domain,
         rows: normalizeEmbeddedRows(rows),
         extraColumns:[], source:"embedded"
       });
@@ -1963,6 +2079,158 @@ function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel"){
   });
 }
 
+/* Ask the user to name a list, showing the resulting filename live as they
+   type. The preview is the teaching device: naming has consequences, and the
+   user sees them assemble. Resolves to the chosen name, or null on cancel.
+   The reserved name (Full-List) is refused — only a curated master carries it,
+   so an export can never mint a file that collides with one. */
+function wdPromptName(title, body, domain, prefill){
+  return new Promise(resolve => {
+    const back    = document.getElementById("wdDialogBackdrop");
+    const field   = document.getElementById("wdDialogField");
+    const input   = document.getElementById("wdDialogInput");
+    const select  = document.getElementById("wdDialogSelect");
+    const preview = document.getElementById("wdDialogPreview");
+    const ok      = document.getElementById("wdDialogOk");
+    const cancel  = document.getElementById("wdDialogCancel");
+
+    document.getElementById("wdDialogTitle").textContent = title;
+    document.getElementById("wdDialogBody").textContent  = body;
+    ok.textContent = "Save";
+    cancel.textContent = "Cancel";
+    field.hidden = false;
+    select.hidden = true;
+    input.hidden = false;
+    input.value = prefill || "";
+    input.placeholder = "e.g. vakantie, examen-week";
+
+    function cleanName(v){ return (v || "").trim().replace(/[^\w\-]+/g, "-").replace(/^-+|-+$/g, ""); }
+    function refresh(){
+      const n = cleanName(input.value);
+      const reserved = n.toLowerCase() === FULL_LIST_NAME.toLowerCase();
+      preview.textContent = n ? domain + "_" + n + ".xlsx" : "";
+      if (reserved) preview.textContent = "\u201C" + FULL_LIST_NAME + "\u201D is reserved — choose another name.";
+      const valid = !!n && !reserved;
+      ok.disabled = !valid;
+      ok.style.opacity = valid ? "" : "0.45";
+      ok.style.cursor  = valid ? "" : "not-allowed";
+      return valid;
+    }
+    refresh();
+
+    back.hidden = false;
+    back.classList.add("open");
+    setTimeout(() => input.focus(), 30);
+
+    function cleanup(result){
+      back.classList.remove("open");
+      back.hidden = true;
+      field.hidden = true;
+      ok.disabled = false; ok.style.opacity = ""; ok.style.cursor = "";
+      input.removeEventListener("input", refresh);
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      back.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    }
+    function onOk(){ if (refresh()) cleanup(cleanName(input.value)); }
+    function onCancel(){ cleanup(null); }
+    function onBackdrop(e){ if (e.target === back) cleanup(null); }
+    function onKey(e){
+      if (e.key === "Escape") cleanup(null);
+      if (e.key === "Enter" && refresh()) cleanup(cleanName(input.value));
+    }
+    input.addEventListener("input", refresh);
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    back.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKey);
+  });
+}
+
+/* Domain picker — used when the filename doesn't name a domain we can read.
+   Offers the curated domains plus "keep <guess>" / a free-typed domain, so a
+   badly-named file is fixed IN THE APP; the user never has to go rename it.
+   Resolves to the chosen domain string, or null on cancel. */
+function wdPickDomain(title, body, suggestion){
+  return new Promise(resolve => {
+    const back    = document.getElementById("wdDialogBackdrop");
+    const field   = document.getElementById("wdDialogField");
+    const input   = document.getElementById("wdDialogInput");
+    const select  = document.getElementById("wdDialogSelect");
+    const preview = document.getElementById("wdDialogPreview");
+    const ok      = document.getElementById("wdDialogOk");
+    const cancel  = document.getElementById("wdDialogCancel");
+
+    document.getElementById("wdDialogTitle").textContent = title;
+    document.getElementById("wdDialogBody").textContent  = body;
+    ok.textContent = "Import";
+    cancel.textContent = "Cancel";
+    field.hidden = false;
+    input.hidden = true;
+    select.hidden = false;
+    select.innerHTML = "";
+
+    // Curated domains first, then "my own" (free text) — the flat list is
+    // trivial at this scale; a two-column language-pair picker drops in here
+    // unchanged when the domain count grows.
+    for (const m of catalog.manifest()){
+      const o = document.createElement("option");
+      o.value = m.domain; o.textContent = m.domain + " (curated)";
+      select.appendChild(o);
+    }
+    const own = document.createElement("option");
+    own.value = "__OWN__";
+    own.textContent = suggestion
+      ? "MY LISTS — keep \u201C" + suggestion + "\u201D"
+      : "MY LISTS — my own list";
+    select.appendChild(own);
+    select.value = "__OWN__";
+
+    function refresh(){
+      const v = select.value;
+      preview.textContent = (v === "__OWN__")
+        ? "Goes to MY LISTS as " + (suggestion || "MY-LIST")
+        : "Joins the curated " + v + " domain (shared progress)";
+    }
+    refresh();
+
+    back.hidden = false;
+    back.classList.add("open");
+
+    function cleanup(result){
+      back.classList.remove("open");
+      back.hidden = true;
+      field.hidden = true;
+      select.hidden = true;
+      input.hidden = false;
+      select.removeEventListener("change", refresh);
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      back.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    }
+    function chosen(){
+      const v = select.value;
+      return (v === "__OWN__") ? (suggestion || "MY-LIST") : v;
+    }
+    function onOk(){ cleanup(chosen()); }
+    function onCancel(){ cleanup(null); }
+    function onBackdrop(e){ if (e.target === back) cleanup(null); }
+    function onKey(e){
+      if (e.key === "Escape") cleanup(null);
+      if (e.key === "Enter")  cleanup(chosen());
+    }
+    select.addEventListener("change", refresh);
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    back.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKey);
+  });
+}
+
 function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
   $infopage.classList.remove("open");
@@ -2144,14 +2412,18 @@ function markStudied(domain){
 
 /* Sort every domain into the three rail zones. Presentation ONLY — the data
    model stays flat; this just decides where each domain shows in the rail.
-   ACTIVE = touched (RS≠0) or studying now · MY = the sandbox · MORE = rest. */
+   ACTIVE = curated + touched/studying · MY = the user's own uncurated domains
+   · MORE = untouched curated. */
 function classifyDomains(){
   const active = [], my = [], more = [];
   for (const d of domainUniverse()){
-    if (d === MY_DOMAIN){ my.push(d); continue; }
+    // Model B: anything the catalog doesn't curate is the user's own — it goes
+    // in the MY LISTS zone, keeping its own domain and its own pool.
+    if (!isCurated(d)){ my.push(d); continue; }
     if (domainHasProgress(d) || d === DOMAIN_RUNTIME) active.push(d);
     else more.push(d);
   }
+  my.sort();
   active.sort((a, b) => {
     if (a === DOMAIN_RUNTIME) return -1;   // studying now always tops
     if (b === DOMAIN_RUNTIME) return 1;
@@ -2185,6 +2457,9 @@ function makeFolderEl(domain){
   f.appendChild(count);
   f.addEventListener("click", async () => {
     browserDomain = domain;
+    // The status line is one shared element; without clearing it, a message
+    // from another domain's import would follow the user into every pane.
+    setListMessage("");
     showBrowserPane("lists");
     // If this is a curated domain whose master isn't loaded yet, fetch it
     // so its Source appears in the lists pane.
@@ -2192,7 +2467,7 @@ function makeFolderEl(domain){
       try {
         const rows = await catalog.loadMaster(domain);
         registerList({
-          listId: "embedded_" + domain, name:"Source", domain,
+          listId: "embedded_" + domain, name:FULL_LIST_NAME, domain,
           rows: normalizeEmbeddedRows(rows),
           extraColumns:[], source:"embedded"
         });
@@ -2226,12 +2501,16 @@ function renderBrowserRail(){
     active.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
   }
 
-  // MY DOMAIN — no zone label; a thin line above delineates the zone
-  my.forEach(d => {
-    const el = makeFolderEl(d);
-    el.classList.add("mydomain");
-    $browserRail.appendChild(el);
-  });
+  // MY LISTS — the zone gathering the user's own (uncurated) domains.
+  // Rendered only when they exist; a thin line above delineates the zone.
+  if (my.length){
+    addRailLabel(MY_ZONE_LABEL);
+    my.forEach(d => {
+      const el = makeFolderEl(d);
+      el.classList.add("mydomain");
+      $browserRail.appendChild(el);
+    });
+  }
 
   // MORE — collapsible. Defaults open when there's nothing in ACTIVE yet.
   if (more.length){
@@ -2259,9 +2538,7 @@ function renderBrowserLists(){
   if (!lists.length){
     const empty = document.createElement("div");
     empty.className = "browser-empty";
-    empty.textContent = (browserDomain === MY_DOMAIN)
-      ? "Your personal space is empty. Import a list to add one."
-      : "No lists loaded in this domain yet.";
+    empty.textContent = "No lists loaded in this domain yet.";
     $browserLists.appendChild(empty);
     return;
   }
@@ -2397,12 +2674,72 @@ $fileInput.addEventListener("change", async (e) => {
     setListMessage(result.error, "error");
     return;
   }
-  registerList(result.list);
-  ingestImportedRS(result.list);
-  switchActiveList(result.list.listId);
+
+  const list = result.list;
+
+  // ── Resolve the domain: the filename proposes, the USER decides. Nothing
+  // hidden (a stale Metadata cell) is allowed to decide identity silently.
+  let domain = list.domain;
+  if (domain && isCurated(domain)){
+    const ok = await wdConfirm(
+      "Import into " + domain + "?",
+      "\u201C" + list.name + "\u201D joins the curated " + domain +
+      " domain and shares its progress.",
+      "Import", "Change\u2026"
+    );
+    if (!ok) domain = await wdPickDomain(
+      "Which domain?",
+      "Pick the domain this list belongs to, or keep it as your own.",
+      list.domain
+    );
+  } else if (domain){
+    const ok = await wdConfirm(
+      domain + " isn't a curated domain",
+      "Import \u201C" + list.name + "\u201D into MY LISTS? It keeps its own " +
+      "progress, separate from the curated domains.",
+      "Import", "Change\u2026"
+    );
+    if (!ok) domain = await wdPickDomain(
+      "Which domain?",
+      "Pick the domain this list belongs to, or keep it as your own.",
+      list.domain
+    );
+  } else {
+    // The filename told us nothing (e.g. "Copy of NL-IT.xlsx"). Ask — never
+    // force the user out of the app to rename their file.
+    domain = await wdPickDomain(
+      "Couldn't read a domain from the filename",
+      "Name files as DOMAIN_name.xlsx to skip this step. For now, pick where " +
+      "this list belongs:",
+      null
+    );
+  }
+  if (!domain){                       // user cancelled out of the dialogs
+    setListMessage("Import cancelled.");
+    return;
+  }
+  list.domain = domain;
+
+  // ── Identity = domain + name. Re-importing the same list REPLACES it
+  // (the user edited their file and loaded the new version); progress is
+  // untouched, because RS lives in the pool, never in the list.
+  const existing = Object.values(LISTS).find(
+    l => l.domain === domain && l.name === list.name && l.source === "imported"
+  );
+  list.listId = existing ? existing.listId : ("imported_" + Date.now());
+
+  registerList(list);                  // persists to localStorage
+  ingestImportedRS(list);
+  switchActiveList(list.listId);
+
+  // Bug fix: the browser pane used to stay on the OLD domain, so the user
+  // never saw what they just imported. Follow the import.
+  browserDomain = domain;
+  showBrowserPane("lists");
   renderListPanel();
-  let msg = "Imported \"" + result.list.name + "\" — " +
-    result.list.rows.length + " rows in domain " + result.list.domain + ".";
+
+  let msg = "Imported \u201C" + list.name + "\u201D into " + domain +
+    " \u2014 " + list.rows.length + " rows, saved in this browser.";
   if (result.warnings && result.warnings.length){
     msg += " " + result.warnings.length + " warning" +
       (result.warnings.length > 1 ? "s" : "") + " (see console).";
@@ -2411,17 +2748,29 @@ $fileInput.addEventListener("change", async (e) => {
   setListMessage(msg, "success");
 });
 
-function exportList(listId){
+async function exportList(listId){
   const list = LISTS[listId];
   if (!list){
     setListMessage("No list to export.", "error");
     return;
   }
+  // The user names their own copy. The curated master's reserved name
+  // (Full-List) is never offered as a prefill and never accepted, so an
+  // exported file can't collide with the curated list on re-import.
+  const isFull = (list.name === FULL_LIST_NAME);
+  const name = await wdPromptName(
+    "Save this list as\u2026",
+    isFull
+      ? "This is the curated " + list.domain + " list. Give your copy a name."
+      : "Name your copy of \u201C" + list.name + "\u201D.",
+    list.domain,
+    isFull ? "" : list.name
+  );
+  if (!name) return;                       // cancelled
+
   try {
-    const blob = serializeToXlsx(list);
-    const today = new Date().toISOString().split("T")[0];
-    const safeName = list.name.replace(/[^\w\-]+/g, "_");
-    const filename = list.domain + "_" + safeName + "_" + today + ".xlsx";
+    const blob = serializeToXlsx(list, name);
+    const filename = list.domain + "_" + name + ".xlsx";
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -2647,11 +2996,16 @@ function normalizeEmbeddedRows(rawRows){
 }
 
 (async () => {
+  // Bring back the user's own imported lists first — they exist only here
+  // (their file lives on the user's disk, not on our server), so without this
+  // they'd vanish on every refresh.
+  loadPersistedLists();
+
   // Load NL-RU master via the stable catalog interface
   const rawRows = await catalog.loadMaster("NL-RU");
   const embeddedList = {
     listId: "embedded_NL-RU",
-    name: "Source",
+    name: FULL_LIST_NAME,
     domain: "NL-RU",
     rows: normalizeEmbeddedRows(rawRows),
     extraColumns: [],
