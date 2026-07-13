@@ -1097,6 +1097,17 @@ select.wd-dialog-input option{
 .list-row-name{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:3px}
 .list-row-name .dim{color:var(--tag);font-weight:400}
 .list-row-meta{font-size:12px;color:var(--tag)}
+/* The row's click starts studying — a bigger consequence than the row looks.
+   Say so on hover, so the user sees it before committing. (When it's already
+   the active list the cue reads "Resume", because clicking returns you to your
+   deck rather than rebuilding it.) */
+.list-row-cue{
+  flex-shrink:0;margin-left:10px;
+  font-size:12px;color:var(--tag);
+  opacity:0;transition:opacity .12s;
+  white-space:nowrap;
+}
+.list-row:hover .list-row-cue{opacity:1}
 .list-row-actions{display:flex;gap:3px;flex-shrink:0;margin-left:10px}
 /* Scores view — three columns: domain · breadth · depth. The sum is the number
    people watch go up, so it gets the weight; the word count keeps it honest. */
@@ -1337,17 +1348,10 @@ select.wd-dialog-input option{
       </button>
     </div>
 
-    <div class="setting-row">
-      <div class="setting-text">
-        <div class="setting-label">Back up your scores</div>
-        <div class="setting-desc">One file, every domain — the only backup of your progress, and the way to move it to another device.</div>
-        <div class="scores-actions">
-          <button class="list-btn js-export-scores" type="button">↓ Back up scores</button>
-          <button class="list-btn js-import-scores" type="button">↑ Restore from file</button>
-        </div>
-        <div class="scores-msg" aria-live="polite"></div>
-      </div>
-    </div>
+    <!-- Back up / Restore used to live here too. They act on what the SCORES
+         pane shows, so that is where they belong — and one copy means one
+         place for the messages to stay true. Settings holds preferences;
+         Scores holds the scores and what you do with them. -->
   </div>
 </div>
 
@@ -2734,6 +2738,11 @@ function renderBrowserLists(){
     main.appendChild(name);
     main.appendChild(meta);
 
+    // Tell the user what a click will do, before they do it.
+    const cue = document.createElement("div");
+    cue.className = "list-row-cue";
+    cue.textContent = (list.listId === activeListId) ? "Resume ▸" : "Study ▸";
+
     const actions = document.createElement("div");
     actions.className = "list-row-actions";
     const dl = document.createElement("button");
@@ -2751,11 +2760,21 @@ function renderBrowserLists(){
     }
 
     row.appendChild(main);
+    row.appendChild(cue);
     row.appendChild(actions);
     row.addEventListener("click", async () => {
+      // Already studying this list? Just go back to it — do NOT rebuild the
+      // deck. switchActiveList() would call initDeck() and silently discard a
+      // deck in progress (7/12 → 0/12, with no explanation). This mirrors what
+      // clicking your current DOMAIN already does in switchToDomain().
+      if (list.listId === activeListId){
+        setListMessage("");
+        closeAllSurfaces();
+        return;
+      }
       // Confirm only when this would switch study to a DIFFERENT domain
       // (changing the language/subject you're drilling). Same-domain
-      // switches (e.g. source <-> a slice) need no confirmation.
+      // switches (e.g. Full-List <-> a slice) need no confirmation.
       const switchesDomain = list.domain !== DOMAIN_RUNTIME;
       if (switchesDomain){
         const ok = await wdConfirm(
