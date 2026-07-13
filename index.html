@@ -1141,26 +1141,7 @@ select.wd-dialog-input option{
   background:none;border:none;color:var(--tag);
   font-size:19px;line-height:1;cursor:pointer;
   padding:9px 12px;border-radius:9px;
-  position:relative;
 }
-/* Custom tooltip. The native `title` attribute waits ~1s and renders in the
-   OS style — for a button this important (it's how a list leaves WordDock),
-   the label should appear at once and look like the app. */
-.list-row-actions button::after{
-  content:attr(data-tip);
-  position:absolute;
-  bottom:calc(100% + 6px);
-  left:50%;transform:translateX(-50%);
-  padding:5px 9px;border-radius:7px;
-  background:#11131a;color:var(--ink);
-  border:1px solid var(--menu-border);
-  font-size:12px;font-family:'Poppins',sans-serif;
-  white-space:nowrap;
-  opacity:0;pointer-events:none;
-  transition:opacity .12s;
-  z-index:120;
-}
-.list-row-actions button:hover::after{opacity:1}
 .list-row-actions button:hover{background:var(--menu-hover);color:var(--ink)}
 /* The remove action is the only destructive one — it earns a warmer hover,
    but stays quiet at rest (no red sitting on the screen). */
@@ -2761,23 +2742,33 @@ function renderBrowserLists(){
     main.appendChild(name);
     main.appendChild(meta);
 
-    // Tell the user what a click will do, before they do it.
+    // ONE message zone, whose text follows whatever the pointer is over. The
+    // buttons sit inside the row, so hovering the arrow used to fire the row's
+    // "Study ▸" cue as well — two messages at once. Sharing a single element
+    // makes them mutually exclusive by construction, and identical in font.
     const cue = document.createElement("div");
     cue.className = "list-row-cue";
-    cue.textContent = (list.listId === activeListId) ? "Resume ▸" : "Study ▸";
+    const defaultCue = (list.listId === activeListId) ? "Resume ▸" : "Study ▸";
+    cue.textContent = defaultCue;
+    const cueOn  = t => () => { cue.textContent = t; };
+    const cueOff = () => { cue.textContent = defaultCue; };
 
     const actions = document.createElement("div");
     actions.className = "list-row-actions";
     const dl = document.createElement("button");
-    dl.setAttribute("data-tip", "Export this list"); dl.textContent = "↓";
+    dl.textContent = "↓";
+    dl.addEventListener("mouseenter", cueOn("Export this list"));
+    dl.addEventListener("mouseleave", cueOff);
     dl.addEventListener("click", (e) => { e.stopPropagation(); exportList(list.listId); });
     actions.appendChild(dl);
     // Delete — only on the user's own imported lists. The curated Full-List
     // re-fetches on every boot, so "deleting" it would be theatre.
     if (list.source === "imported"){
       const del = document.createElement("button");
-      del.setAttribute("data-tip", "Remove this list"); del.textContent = "\u00D7";
+      del.textContent = "\u00D7";
       del.className = "list-row-del";
+      del.addEventListener("mouseenter", cueOn("Remove this list"));
+      del.addEventListener("mouseleave", cueOff);
       del.addEventListener("click", (e) => { e.stopPropagation(); deleteList(list.listId); });
       actions.appendChild(del);
     }
