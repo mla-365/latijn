@@ -1072,6 +1072,14 @@ select.wd-dialog-input option{
 .list-row-actions{display:flex;gap:3px;flex-shrink:0;margin-left:10px}
 /* Scores view — three columns: domain · breadth · depth. The sum is the number
    people watch go up, so it gets the weight; the word count keeps it honest. */
+/* Action button rows (Scores, Settings). This had no rule at all, so the
+   buttons sat flush against each other. */
+.setting-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
 .scores-table{
   margin:6px 0 22px;
 }
@@ -2657,8 +2665,8 @@ function renderBrowserRail(){
     const header = document.createElement("div");
     header.className = "rail-more-toggle";
     header.innerHTML =
-      "<span>More</span>" +
       '<span class="more-count">' + more.length + "</span>" +
+      "<span>More</span>" +
       '<span class="more-caret">' + (expanded ? "▾" : "▸") + "</span>";
     header.addEventListener("click", () => { moreExpanded = !expanded; renderBrowserRail(); });
     $browserRail.appendChild(header);
