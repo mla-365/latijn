@@ -956,34 +956,28 @@ select.wd-dialog-input option{
 .rail-meta{
   flex-shrink:0;
   margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid var(--menu-border);
 }
-/* Footer actions styled like the zone headers (centered, capitalized, hairlines
-   either side) for visual rhyme. They ARE clickable, unlike the zone labels, so
-   the hover state has to carry that difference — it brightens and lights the
-   hairlines, which a label never does. */
+/* Footer items are NAVIGATION, so they look like the domain folders above —
+   left-aligned, same size. The centered-hairline treatment is reserved for
+   zone LABELS, which aren't clickable. Shape follows behaviour. */
 .rail-meta-item{
-  display:flex;align-items:center;gap:8px;
-  margin:0 4px 6px;
+  display:flex;align-items:center;
+  padding:9px 11px;border-radius:9px;
   font-family:'Poppins',sans-serif;
-  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--tag);
-  cursor:pointer;transition:color .12s;
-  border:none;background:none;
+  font-size:14px;color:#c0c8d2;
+  cursor:pointer;margin-bottom:2px;
+  transition:background-color .12s,color .12s;
+  border:2px solid transparent;
   user-select:none;
 }
-.rail-meta-item::before,
-.rail-meta-item::after{
-  content:"";flex:1;height:1px;background:var(--menu-border);
-  transition:background-color .12s;
-}
-.rail-meta-item:hover{background:none;color:var(--ink)}
-.rail-meta-item:hover::before,
-.rail-meta-item:hover::after{background:rgba(255,255,255,0.30)}
+.rail-meta-item:hover{background:var(--menu-hover);color:var(--ink)}
 .rail-meta-item.active{
-  background:none;border:none;color:var(--ink);
+  background:var(--browsing-bg);
+  border:2px solid rgba(173,196,224,0.85);
+  color:var(--ink);
 }
-.rail-meta-item.active::before,
-.rail-meta-item.active::after{background:rgba(255,255,255,0.30)}
 .rail-label{
   font-size:10px;text-transform:uppercase;letter-spacing:.09em;
   color:var(--tag);margin:6px 8px 10px;
@@ -1076,6 +1070,27 @@ select.wd-dialog-input option{
 .list-row-name .dim{color:var(--tag);font-weight:400}
 .list-row-meta{font-size:12px;color:var(--tag)}
 .list-row-actions{display:flex;gap:3px;flex-shrink:0;margin-left:10px}
+/* Scores view — three columns: domain · breadth · depth. The sum is the number
+   people watch go up, so it gets the weight; the word count keeps it honest. */
+.scores-table{
+  margin:6px 0 22px;
+  border-top:1px solid var(--menu-border);
+}
+.scores-line{
+  display:flex;align-items:baseline;gap:12px;
+  padding:11px 2px;
+  border-bottom:1px solid var(--menu-border);
+  font-size:14px;
+}
+.scores-domain{flex:1;color:var(--ink);font-weight:600}
+.scores-words{color:var(--tag);font-size:13px}
+.scores-sum{
+  min-width:64px;text-align:right;
+  color:var(--ink);font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.scores-total{border-bottom:none}
+.scores-total .scores-domain{font-weight:400;color:var(--tag)}
 .list-row-actions button{
   background:none;border:none;color:var(--tag);font-size:15px;cursor:pointer;
   padding:4px 6px;border-radius:7px;
@@ -1212,8 +1227,8 @@ select.wd-dialog-input option{
       <div id="browserRail"></div>
       <div class="rail-meta">
         <div class="rail-meta-item" data-pane="info"><span>Info</span></div>
+        <div class="rail-meta-item" data-pane="scores"><span>Scores</span></div>
         <div class="rail-meta-item" data-pane="settings"><span>Settings</span></div>
-        <div class="rail-meta-item js-export-scores" id="railExportScores"><span>Export scores</span></div>
       </div>
     </div>
     <!-- RIGHT: swappable detail — lists (default) / info / settings -->
@@ -1229,6 +1244,8 @@ select.wd-dialog-input option{
       <div class="detail-view" id="viewInfo" hidden></div>
       <!-- SETTINGS view (content injected from the settings source) -->
       <div class="detail-view" id="viewSettings" hidden></div>
+      <!-- SCORES view (rendered fresh each time it opens) -->
+      <div class="detail-view" id="viewScores" hidden></div>
     </div>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
@@ -1264,7 +1281,7 @@ select.wd-dialog-input option{
     </details>
 
     <div class="warn">
-      <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Settings → Back up your scores) is the only backup of your progress.
+      <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Scores → Back up scores) is the only backup of your progress.
     </div>
   </div>
 </div>
@@ -1290,7 +1307,7 @@ select.wd-dialog-input option{
         <div class="setting-label">Back up your scores</div>
         <div class="setting-desc">One file, every domain — the only backup of your progress, and the way to move it to another device.</div>
         <div class="scores-actions">
-          <button class="list-btn js-export-scores" type="button">↓ Export scores</button>
+          <button class="list-btn js-export-scores" type="button">↓ Back up scores</button>
           <button class="list-btn js-import-scores" type="button">↑ Restore from file</button>
         </div>
         <div class="scores-msg" aria-live="polite"></div>
@@ -2743,11 +2760,106 @@ const $browserPaneTitle = document.getElementById("browserPaneTitle");
 
 let browserPane = "lists";   // "lists" | "info" | "settings"
 
+/* The Scores view.
+
+   Shows, per domain the user has actually touched: how many words are under
+   way, and the SUM of their RS. Two numbers, because the sum alone would lie —
+   100 words at RS 1 and 10 words at RS 10 both total 100. Count is breadth,
+   sum is depth; together they're honest.
+
+   Why a visible total is safe here, when "no engagement metrics" is the rule:
+   the deck is always the 10 LOWEST-RS items, so the user cannot choose what to
+   study. The only way to raise the number is to drill your weakest words —
+   gaming the metric IS the intended behaviour. The farming failure mode that
+   makes such counters corrosive elsewhere is structurally impossible here. */
+function renderScoresPane(){
+  const host = document.getElementById("viewScores");
+  host.innerHTML = "";
+
+  const inner = document.createElement("div");
+  inner.className = "infopage-inner";
+
+  const h = document.createElement("h2");
+  h.className = "settings-title";
+  h.textContent = "Scores";
+  inner.appendChild(h);
+
+  // Gather every pool that holds real work.
+  const rows = [];
+  let totWords = 0, totSum = 0;
+  for (const domain of domainUniverse()){
+    let pool;
+    try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
+    catch { pool = {}; }
+    const vals = Object.values(pool).filter(v => v !== 0);
+    if (!vals.length) continue;
+    const sum = vals.reduce((a, b) => a + b, 0);
+    rows.push({ domain, words: vals.length, sum });
+    totWords += vals.length;
+    totSum   += sum;
+  }
+
+  if (!rows.length){
+    const p = document.createElement("p");
+    p.className = "setting-desc";
+    p.textContent = "No scores yet — they build up as you complete decks.";
+    inner.appendChild(p);
+  } else {
+    const table = document.createElement("div");
+    table.className = "scores-table";
+    for (const r of rows){
+      const line = document.createElement("div");
+      line.className = "scores-line";
+      line.innerHTML =
+        '<span class="scores-domain">' + r.domain + "</span>" +
+        '<span class="scores-words">' + r.words + " words</span>" +
+        '<span class="scores-sum">' + (r.sum > 0 ? "+" : "") + r.sum + "</span>";
+      table.appendChild(line);
+    }
+    if (rows.length > 1){
+      const line = document.createElement("div");
+      line.className = "scores-line scores-total";
+      line.innerHTML =
+        '<span class="scores-domain">Total</span>' +
+        '<span class="scores-words">' + totWords + " words</span>" +
+        '<span class="scores-sum">' + (totSum > 0 ? "+" : "") + totSum + "</span>";
+      table.appendChild(line);
+    }
+    inner.appendChild(table);
+  }
+
+  const desc = document.createElement("p");
+  desc.className = "setting-desc";
+  desc.textContent = "Your scores live only in this browser. A backup file is " +
+                     "the only way to keep them safe, or move them to another device.";
+  inner.appendChild(desc);
+
+  // Two different acts, two different words: content is EXPORTED (it travels
+  // to other people); progress is BACKED UP (it's yours alone).
+  const actions = document.createElement("div");
+  actions.className = "setting-actions";
+  actions.innerHTML =
+    '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
+    '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>';
+  inner.appendChild(actions);
+
+  const msg = document.createElement("div");
+  msg.className = "scores-msg";
+  inner.appendChild(msg);
+
+  host.appendChild(inner);
+}
+
 function showBrowserPane(pane){
   browserPane = pane;
+  const $viewScores    = document.getElementById("viewScores");
   $viewLists.hidden    = (pane !== "lists");
   $viewInfo.hidden     = (pane !== "info");
   $viewSettings.hidden = (pane !== "settings");
+  $viewScores.hidden   = (pane !== "scores");
+
+  // Scores is a live view — always re-render, never cached.
+  if (pane === "scores") renderScoresPane();
 
   // Lazy-clone the info/settings content from their source surfaces (once)
   if (pane === "info" && !$viewInfo.dataset.loaded){
@@ -3122,11 +3234,6 @@ function gatherAllScores(){
 // Update every visible scores-message element (original + cloned settings).
 function setScoresMsg(text){
   document.querySelectorAll(".scores-msg").forEach(el => { el.textContent = text || ""; });
-  // Export can now be triggered from the rail while the LISTS pane is showing —
-  // in that case the settings message element isn't visible, so echo it there.
-  const settingsVisible = document.getElementById("viewSettings") &&
-                          !document.getElementById("viewSettings").hidden;
-  if (!settingsVisible && text) setListMessage(text);
 }
 
 function exportScores(){
