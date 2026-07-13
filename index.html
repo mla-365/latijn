@@ -956,20 +956,34 @@ select.wd-dialog-input option{
 .rail-meta{
   flex-shrink:0;
   margin-top:14px;
-  padding-top:14px;
-  border-top:1px solid var(--menu-border);
 }
+/* Footer actions styled like the zone headers (centered, capitalized, hairlines
+   either side) for visual rhyme. They ARE clickable, unlike the zone labels, so
+   the hover state has to carry that difference — it brightens and lights the
+   hairlines, which a label never does. */
 .rail-meta-item{
-  padding:5px 11px;
+  display:flex;align-items:center;gap:8px;
+  margin:0 4px 6px;
   font-family:'Poppins',sans-serif;
-  font-size:12px;font-weight:400;color:var(--tag);
-  cursor:pointer;margin-bottom:1px;transition:color .12s;
-  border:none;
+  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--tag);
+  cursor:pointer;transition:color .12s;
+  border:none;background:none;
+  user-select:none;
+}
+.rail-meta-item::before,
+.rail-meta-item::after{
+  content:"";flex:1;height:1px;background:var(--menu-border);
+  transition:background-color .12s;
 }
 .rail-meta-item:hover{background:none;color:var(--ink)}
+.rail-meta-item:hover::before,
+.rail-meta-item:hover::after{background:rgba(255,255,255,0.30)}
 .rail-meta-item.active{
   background:none;border:none;color:var(--ink);
 }
+.rail-meta-item.active::before,
+.rail-meta-item.active::after{background:rgba(255,255,255,0.30)}
 .rail-label{
   font-size:10px;text-transform:uppercase;letter-spacing:.09em;
   color:var(--tag);margin:6px 8px 10px;
@@ -1197,8 +1211,9 @@ select.wd-dialog-input option{
     <div class="browser-rail">
       <div id="browserRail"></div>
       <div class="rail-meta">
-        <div class="rail-meta-item" data-pane="info">Info</div>
-        <div class="rail-meta-item" data-pane="settings">Settings</div>
+        <div class="rail-meta-item" data-pane="info"><span>Info</span></div>
+        <div class="rail-meta-item" data-pane="settings"><span>Settings</span></div>
+        <div class="rail-meta-item js-export-scores" id="railExportScores"><span>Export scores</span></div>
       </div>
     </div>
     <!-- RIGHT: swappable detail — lists (default) / info / settings -->
@@ -2663,7 +2678,7 @@ function renderBrowserLists(){
     meta.className = "list-row-meta";
     meta.textContent = list.rows.length + " lemmas" +
       (list.listId === activeListId ? " · studying now" : "") +
-      (list.source === "embedded" ? " · source" : "");
+      (list.source === "embedded" ? " · from WordDock" : "");
     main.appendChild(name);
     main.appendChild(meta);
 
@@ -3107,6 +3122,11 @@ function gatherAllScores(){
 // Update every visible scores-message element (original + cloned settings).
 function setScoresMsg(text){
   document.querySelectorAll(".scores-msg").forEach(el => { el.textContent = text || ""; });
+  // Export can now be triggered from the rail while the LISTS pane is showing —
+  // in that case the settings message element isn't visible, so echo it there.
+  const settingsVisible = document.getElementById("viewSettings") &&
+                          !document.getElementById("viewSettings").hidden;
+  if (!settingsVisible && text) setListMessage(text);
 }
 
 function exportScores(){
