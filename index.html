@@ -1074,7 +1074,6 @@ select.wd-dialog-input option{
    people watch go up, so it gets the weight; the word count keeps it honest. */
 .scores-table{
   margin:6px 0 22px;
-  border-top:1px solid var(--menu-border);
 }
 .scores-line{
   display:flex;align-items:baseline;gap:12px;
@@ -2779,10 +2778,7 @@ function renderScoresPane(){
   const inner = document.createElement("div");
   inner.className = "infopage-inner";
 
-  const h = document.createElement("h2");
-  h.className = "settings-title";
-  h.textContent = "Scores";
-  inner.appendChild(h);
+  // No <h2> here — the pane header already says "Scores".
 
   // Gather every pool that holds real work.
   const rows = [];
@@ -2894,6 +2890,10 @@ function showBrowserPane(pane){
     it.classList.toggle("active", it.dataset.pane === pane));
   // Back-to-lists link shows only in a sub-pane (info/settings)
   document.getElementById("browserBack").hidden = (pane === "lists");
+  // The header title must follow the pane — it said "Lists" on every surface.
+  const titles = { lists: "Lists", info: "Info", scores: "Scores", settings: "Settings" };
+  const $t = document.getElementById("browserPaneTitle");
+  if ($t) $t.textContent = titles[pane] || "Lists";
   // When showing a meta pane, no domain folder is the "browse" target
   if (pane !== "lists"){
     document.querySelectorAll(".folder").forEach(f => f.classList.remove("active"));
