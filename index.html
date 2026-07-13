@@ -1103,7 +1103,7 @@ select.wd-dialog-input option{
    deck rather than rebuilding it.) */
 .list-row-cue{
   flex-shrink:0;margin-left:10px;
-  font-size:12px;color:var(--tag);
+  font-size:15px;font-weight:500;color:var(--ink);
   opacity:0;transition:opacity .12s;
   white-space:nowrap;
 }
@@ -1138,13 +1138,33 @@ select.wd-dialog-input option{
 .scores-total{border-bottom:none}
 .scores-total .scores-domain{font-weight:400;color:var(--tag)}
 .list-row-actions button{
-  background:none;border:none;color:var(--tag);font-size:15px;cursor:pointer;
-  padding:4px 6px;border-radius:7px;
+  background:none;border:none;color:var(--tag);
+  font-size:19px;line-height:1;cursor:pointer;
+  padding:9px 12px;border-radius:9px;
+  position:relative;
 }
+/* Custom tooltip. The native `title` attribute waits ~1s and renders in the
+   OS style — for a button this important (it's how a list leaves WordDock),
+   the label should appear at once and look like the app. */
+.list-row-actions button::after{
+  content:attr(data-tip);
+  position:absolute;
+  bottom:calc(100% + 6px);
+  left:50%;transform:translateX(-50%);
+  padding:5px 9px;border-radius:7px;
+  background:#11131a;color:var(--ink);
+  border:1px solid var(--menu-border);
+  font-size:12px;font-family:'Poppins',sans-serif;
+  white-space:nowrap;
+  opacity:0;pointer-events:none;
+  transition:opacity .12s;
+  z-index:120;
+}
+.list-row-actions button:hover::after{opacity:1}
 .list-row-actions button:hover{background:var(--menu-hover);color:var(--ink)}
 /* The remove action is the only destructive one — it earns a warmer hover,
    but stays quiet at rest (no red sitting on the screen). */
-.list-row-del{font-size:17px !important;line-height:1}
+.list-row-del{font-size:21px !important;line-height:1}
 .list-row-del:hover{background:rgba(220,90,90,0.16) !important;color:#ffb4b4 !important}
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
@@ -2749,14 +2769,14 @@ function renderBrowserLists(){
     const actions = document.createElement("div");
     actions.className = "list-row-actions";
     const dl = document.createElement("button");
-    dl.title = "Export this list"; dl.textContent = "↓";
+    dl.setAttribute("data-tip", "Export this list"); dl.textContent = "↓";
     dl.addEventListener("click", (e) => { e.stopPropagation(); exportList(list.listId); });
     actions.appendChild(dl);
     // Delete — only on the user's own imported lists. The curated Full-List
     // re-fetches on every boot, so "deleting" it would be theatre.
     if (list.source === "imported"){
       const del = document.createElement("button");
-      del.title = "Remove this list"; del.textContent = "\u00D7";
+      del.setAttribute("data-tip", "Remove this list"); del.textContent = "\u00D7";
       del.className = "list-row-del";
       del.addEventListener("click", (e) => { e.stopPropagation(); deleteList(list.listId); });
       actions.appendChild(del);
