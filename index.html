@@ -5,10 +5,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>WordDock</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23006600'/%3E%3Ctext x='16' y='25' font-family='Georgia,serif' font-weight='700' font-size='26' fill='%23ffffff' text-anchor='middle'%3EW%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecnFHGPc.woff2">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Poppins is SELF-HOSTED (poppins-400.woff2, Latin subset, 8.7 KB).
+
+     Why: the old setup preloaded a hardcoded Google Fonts URL, but Google
+     serves different files per weight/subset and rotates them (v24 → v25…),
+     so the browser fetched a different file and the preload was wasted —
+     hence the console warning. Our own URL never rotates, so the preload
+     always hits.
+
+     And the better reason: no visitor's browser phones Google to render this
+     page. For an app whose promise is "your data never leaves your browser",
+     a third-party font request was a quiet contradiction. Now there is none.
+
+     Two weights ship (400 and 600) — exactly the two the app uses. Latin
+     subset only: 8.7 + 8.9 KB, down from 158 KB per TTF. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-400.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-600.woff2">
+<style>
+@font-face{
+  font-family:'Poppins';
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url("poppins-400.woff2") format("woff2");
+}
+@font-face{
+  font-family:'Poppins';
+  font-style:normal;
+  font-weight:600;
+  font-display:swap;
+  src:url("poppins-600.woff2") format("woff2");
+}
+</style>
 <style>
 /* ════════════════════════════════════════════
    WordDock — Layer 1 skeleton
