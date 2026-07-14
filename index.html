@@ -2673,9 +2673,13 @@ function renderBrowserLists(){
       // switches (e.g. Full-List <-> a slice) need no confirmation.
       const switchesDomain = list.domain !== DOMAIN_RUNTIME;
       if (switchesDomain){
+        // "Your progress ... is saved" was a quiet lie: the pool is written at
+        // DECK COMPLETION only, so a deck in progress (7/12) is discarded by
+        // this switch. Naming "finished decks" is true in every case, and tells
+        // a mid-deck reader what they need to know without a second warning.
         const ok = await wdConfirm(
           "Switch to studying " + domainDisplayName(list.domain) + "?",
-          "Your progress in " + domainDisplayName(DOMAIN_RUNTIME) + " is saved.",
+          "Your finished decks in " + domainDisplayName(DOMAIN_RUNTIME) + " are saved.",
           "Study " + domainDisplayName(list.domain)
         );
         if (!ok) return;
