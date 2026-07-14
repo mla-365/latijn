@@ -1149,13 +1149,18 @@ body{
   font-weight:600;color:var(--ink);
   font-variant-numeric:tabular-nums;
 }
-/* Orphan pools — real progress, but for a list that isn't here. Set apart so
-   it can't be mistaken for the live domains above. */
+/* Orphan pools — real progress, but for a list that isn't here. They come LAST
+   and they look quiet: bold is for live domains. A dead thing that shouts over
+   the backup warning has the hierarchy exactly backwards. */
 .scores-orphan-head{
-  margin:26px 0 8px;
+  margin:34px 0 8px;
+  padding-top:22px;
+  border-top:1px solid var(--menu-border);
   font-size:10px;text-transform:uppercase;letter-spacing:.09em;
   color:var(--tag);
 }
+.scores-orphan .scores-domain{font-weight:400;color:var(--tag)}
+.scores-orphan .scores-sum{font-weight:400;color:var(--tag)}
 .scores-forget{
   margin-left:12px;flex-shrink:0;
   background:none;border:none;cursor:pointer;
@@ -2913,6 +2918,25 @@ function renderScoresPane(){
     }
   }
 
+  const desc = document.createElement("p");
+  desc.className = "setting-desc";
+  desc.textContent = "Your scores live only in this browser. A backup file is " +
+                     "the only way to keep them safe, or move them to another device.";
+  inner.appendChild(desc);
+
+  // Two different acts, two different words: content is EXPORTED (it travels
+  // to other people); progress is BACKED UP (it's yours alone).
+  const actions = document.createElement("div");
+  actions.className = "setting-actions";
+  actions.innerHTML =
+    '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
+    '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>';
+  inner.appendChild(actions);
+
+  const msg = document.createElement("div");
+  msg.className = "scores-msg";
+  inner.appendChild(msg);
+
   if (orphans.length){
     const h = document.createElement("div");
     h.className = "scores-orphan-head";
@@ -2930,7 +2954,7 @@ function renderScoresPane(){
     table.className = "scores-table";
     for (const o of orphans){
       const line = document.createElement("div");
-      line.className = "scores-line";
+      line.className = "scores-line scores-orphan";
       line.innerHTML =
         '<span class="scores-domain">' + o.domain + "</span>" +
         '<span class="scores-words">' + o.words + " words</span>" +
@@ -2956,24 +2980,6 @@ function renderScoresPane(){
     inner.appendChild(table);
   }
 
-  const desc = document.createElement("p");
-  desc.className = "setting-desc";
-  desc.textContent = "Your scores live only in this browser. A backup file is " +
-                     "the only way to keep them safe, or move them to another device.";
-  inner.appendChild(desc);
-
-  // Two different acts, two different words: content is EXPORTED (it travels
-  // to other people); progress is BACKED UP (it's yours alone).
-  const actions = document.createElement("div");
-  actions.className = "setting-actions";
-  actions.innerHTML =
-    '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
-    '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>';
-  inner.appendChild(actions);
-
-  const msg = document.createElement("div");
-  msg.className = "scores-msg";
-  inner.appendChild(msg);
 
   host.appendChild(inner);
 }
