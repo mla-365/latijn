@@ -213,6 +213,18 @@ body{
   font-size:14px; line-height:1.55; color:rgba(255,255,255,0.78);
   margin-bottom:22px;
 }
+/* The file-requirements list, shown in place rather than sending the user off
+   to the Info page. */
+.dlg-rules{
+  margin:4px 0 0;padding-left:20px;
+  line-height:1.7;
+}
+.dlg-rules li{margin-bottom:9px}
+.dlg-rules code{
+  background:rgba(255,255,255,0.07);
+  padding:1px 5px;border-radius:4px;
+  font-size:12.5px;
+}
 /* Optional field area — the Save-as input and the domain picker live here. */
 .wd-dialog-field{
   margin:-8px 0 22px;
@@ -2283,11 +2295,15 @@ const $listbrowser = document.getElementById("listbrowser");
 const $logoMenu = document.getElementById("logoMenu");
 
 /* ─── In-app confirm dialog (promise-based; replaces native confirm) ─── */
-function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel"){
+function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel", isHtml = false){
   return new Promise(resolve => {
     const back = document.getElementById("wdDialogBackdrop");
     document.getElementById("wdDialogTitle").textContent = title;
-    document.getElementById("wdDialogBody").textContent = body;
+    const $body = document.getElementById("wdDialogBody");
+    // Plain text by default — a dialog that renders arbitrary HTML is a footgun.
+    // The one exception is the file-requirements dialog, which is a LIST and
+    // reads as mush without structure.
+    if (isHtml) $body.innerHTML = body; else $body.textContent = body;
     const ok = document.getElementById("wdDialogOk");
     const cancel = document.getElementById("wdDialogCancel");
     ok.textContent = okLabel;
@@ -3019,6 +3035,10 @@ function renderScoresPane(){
 function showBrowserPane(pane){
   browserPane = pane;
   saveView(pane);            // a refresh comes back here (tab-lifetime only)
+  // A rejected import left its error — and the rules link — sitting there while
+  // the user moved on to something else entirely. A message is about the thing
+  // you just did, not a permanent fixture.
+  setListMessage("");
   const $viewScores    = document.getElementById("viewScores");
   $viewLists.hidden    = (pane !== "lists");
   $viewInfo.hidden     = (pane !== "info");
@@ -3366,8 +3386,26 @@ async function deleteList(listId){
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 document.getElementById("browserDomainsHeader").addEventListener("click", () => showBrowserPane("lists"));
+/* The five requirements, shown on the spot. Clicking through to the whole Info
+   page answered a question the user didn't ask ("what is WordDock? how do I
+   study?") and lost their place. They asked one thing; answer that one thing,
+   and leave them where they were. */
+const FILE_RULES_HTML =
+  "<ol class='dlg-rules'>" +
+  "<li>A sheet whose <b>cell A1 is literally <code>ID</code></b>.</li>" +
+  "<li>The <b>25 columns</b>, in this exact order:<br>" +
+  "<code>ID · ENTRY · CAT · CTAG · L · Q1 · A1 · … · Q10 · A10</code></li>" +
+  "<li>At least <b>10 rows</b> where <code>ID</code>, <code>Q1</code> and " +
+  "<code>A1</code> are all filled.</li>" +
+  "<li>A filename shaped <b><code>DOMAIN_name.xlsx</code></b> — domain first, " +
+  "then an underscore, then your own name. Like <code>NL-RU_holiday.xlsx</code>." +
+  "</li>" +
+  "<li>Within one domain, <b>every entry needs its own ID</b> — never restart " +
+  "numbering in a new file.</li>" +
+  "</ol>";
+
 document.getElementById("importRulesLink").addEventListener("click", () => {
-  showBrowserPane("info");
+  wdConfirm("What a WordDock file needs", FILE_RULES_HTML, "OK", null, true);
 });
 
 // Both import entry points do the same thing: the FILENAME decides the domain,
