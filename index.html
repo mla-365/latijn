@@ -1295,7 +1295,7 @@ body{
       <div class="detail-view" id="viewLists">
         <div class="detail-head" id="browserDetailHead">Lists</div>
         <div id="browserLists" class="browser-lists"></div>
-        <div class="upload-row" id="browserUpload">+ Upload list (.xlsx)</div>
+        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)</div>
         <div id="listMessage" class="list-message"></div>
       </div>
       <!-- INFO view (content injected from the info page source) -->
@@ -3051,6 +3051,22 @@ $fileInput.addEventListener("change", async (e) => {
   );
   list.listId = existing ? existing.listId : ("imported_" + Date.now());
 
+  // Replacing is usually what the user means ("I edited my file, load the new
+  // version") — but it can also be an accident: two DIFFERENT lists that happen
+  // to share a name (yours, and one a friend sent you). The old one would then
+  // vanish with no undo and no message. Ask. And say the thing they'd worry
+  // about first: their progress is not what's being replaced.
+  if (existing){
+    const ok = await wdConfirm(
+      "Replace \u201C" + list.name + "\u201D?",
+      domain + " already has a list with this name (" + existing.rows.length +
+      " rows). Importing replaces its contents with this file's " +
+      list.rows.length + ". Your progress in " + domain + " is not affected.",
+      "Replace", "Cancel"
+    );
+    if (!ok){ setListMessage("Import cancelled."); return; }
+  }
+
   // ── ID collision check. Progress is keyed by (domain + ID), so two lists in
   // one domain that reuse an ID for DIFFERENT words would share scores wrongly
   // — drilling "cat" would credit "photosynthesis". The natural human mistake
@@ -3072,16 +3088,23 @@ $fileInput.addEventListener("change", async (e) => {
 
   registerList(list);                  // persists to localStorage
   ingestImportedRS(list);
-  switchActiveList(list.listId);
 
-  // Bug fix: the browser pane used to stay on the OLD domain, so the user
-  // never saw what they just imported. Follow the import.
+  // Import does NOT start studying. It is a librarian's act — put this on the
+  // shelf — not a study act. Auto-switching had three faults: it labelled the
+  // new list "studying now" before you had studied a word of it; it made the
+  // row's hover cue read "Resume ▸" on a list you'd never opened; and, worst,
+  // it silently abandoned a deck in progress (7/12 → gone) and could move you
+  // to a whole different domain without the "Switch to studying…?" confirm.
+  // The list appears in the pane; the user decides when to study it.
+
+  // Show the imported list where it landed — the pane used to stay on the old
+  // domain, so the user never saw what they'd just brought in.
   browserDomain = domain;
   showBrowserPane("lists");
-  renderListPanel();
+  renderBrowser();
 
   let msg = "Imported \u201C" + list.name + "\u201D into " + domain +
-    " \u2014 " + list.rows.length + " rows, saved in this browser.";
+    " \u2014 " + list.rows.length + " rows, saved in this browser. Click it to study.";
   if (result.warnings && result.warnings.length){
     msg += " " + result.warnings.length + " warning" +
       (result.warnings.length > 1 ? "s" : "") + " (see console).";
