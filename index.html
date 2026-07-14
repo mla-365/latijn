@@ -234,6 +234,7 @@ body{
   padding:10px 12px; border-radius:10px;
   border:1px solid rgba(255,255,255,0.16);
   background:rgba(255,255,255,0.05); color:#fff;
+  caret-color:#fff;              /* the caret must be visible on a dark field */
   font-size:14px; font-family:'Poppins',sans-serif;
   outline:none;
 }
@@ -1191,19 +1192,30 @@ body{
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
 }
-/* Quiet until wanted: a curator can reach the file rules before failing an
-   import, but the mark never competes with the action it sits beside. */
+/* Quiet until wanted, but not timid: a curator reaching for the file rules
+   shouldn't have to hunt for a 22px dot. It announces itself on hover with the
+   same "say what this does before you click it" logic as the list rows — but
+   with its own label, since the import row has no cue element and inventing a
+   second message zone would be two mechanisms doing one job. */
 .import-rules-help{
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  width:22px;height:22px;border-radius:50%;
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:7px;
+  height:30px;padding:0 12px;border-radius:15px;
   background:none;border:1px solid var(--menu-border);
-  color:var(--tag);font-size:12px;line-height:1;
+  color:var(--tag);font-size:13px;line-height:1;
   font-family:'Poppins',sans-serif;cursor:pointer;
-  opacity:.55;transition:opacity .12s,color .12s,border-color .12s;
+  transition:color .12s,border-color .12s,background-color .12s;
+  white-space:nowrap;
+}
+.import-rules-help .rules-word{
+  max-width:0;overflow:hidden;opacity:0;
+  transition:max-width .18s ease,opacity .14s ease;
 }
 .import-rules-help:hover{
-  opacity:1;color:var(--ink);border-color:rgba(255,255,255,0.4);
+  color:var(--ink);border-color:rgba(255,255,255,0.4);
+  background:var(--menu-hover);
 }
+.import-rules-help:hover .rules-word{max-width:170px;opacity:1}
 /* Info page: the file-requirements checklist. */
 .info-rules-title{
   margin:22px 0 6px;font-size:15px;color:var(--ink);
@@ -1350,7 +1362,7 @@ body{
       <div class="detail-view" id="viewLists">
         <div class="detail-head" id="browserDetailHead">Lists</div>
         <div id="browserLists" class="browser-lists"></div>
-        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs">?</button></div>
+        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs"><span>?</span><span class="rules-word">What a file needs</span></button></div>
         <div id="listMessage" class="list-message"></div>
       </div>
       <!-- INFO view (content injected from the info page source) -->
@@ -2374,7 +2386,14 @@ function wdPromptName(title, body, domain, prefill){
 
     back.hidden = false;
     back.classList.add("open");
-    setTimeout(() => input.focus(), 30);
+    // Focus AFTER the dialog has actually painted. Calling focus() while the
+    // backdrop is still transitioning in can silently fail — the element isn't
+    // laid out yet — which left the field looking dead: correct, but with no
+    // blinking caret to say "type here".
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    }));
 
     function cleanup(result){
       back.classList.remove("open");
@@ -3342,11 +3361,13 @@ async function deleteList(listId){
   );
   const lastOfDomain = !curated && siblings.length === 0;
 
+  // Tense matters: this dialog appears BEFORE anything is deleted. "…are both
+  // deleted" read as if the deed were done. Say what the button will do.
   let body;
   if (curated){
     body = "Your progress stays in the " + list.domain + " Full-List.";
   } else if (lastOfDomain){
-    body = "The list and its progress are both deleted. You'd need the file to bring it back.";
+    body = "This deletes the list and its progress. You'd need the file to bring it back.";
   } else {
     body = "Your progress stays — your other " + list.domain + " lists still use it.";
   }
