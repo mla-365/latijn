@@ -206,24 +206,6 @@ body{
   outline:none;
 }
 .wd-dialog-input:focus{ border-color:rgba(255,255,255,0.38); }
-/* The native <select> popup follows the OS, not our CSS — color-scheme tells
-   the browser to render it dark. The option rules cover the browsers that do
-   honour them. */
-select.wd-dialog-input{
-  color-scheme:dark;
-  appearance:none;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23a8b4c4' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
-  background-repeat:no-repeat;
-  background-position:right 12px center;
-  padding-right:34px;
-  cursor:pointer;
-}
-select.wd-dialog-input option{
-  background:#2a2e37;
-  color:#fff;
-}
-/* Live preview of the resulting filename — teaches the naming rule by showing
-   it assemble as the user types, instead of explaining it. */
 .wd-dialog-preview{
   margin-top:10px; font-size:12px; color:var(--tag);
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -1221,7 +1203,6 @@ select.wd-dialog-input option{
          Hidden for a plain confirm. -->
     <div class="wd-dialog-field" id="wdDialogField" hidden>
       <input type="text" id="wdDialogInput" class="wd-dialog-input" autocomplete="off" spellcheck="false">
-      <select id="wdDialogSelect" class="wd-dialog-input" hidden></select>
       <div class="wd-dialog-preview" id="wdDialogPreview"></div>
     </div>
     <div class="wd-dialog-actions">
@@ -1606,20 +1587,6 @@ async function parseWordDockXlsx(file){
    characters, which is why domain codes (NL-RU) and Full-List both work.
    Returns domain:null when the leading token isn't a plausible domain — the
    import dialog then asks the user instead of guessing. */
-/* Turn a messy filename into a usable domain token: "Copy of biology" →
-   "COPY-OF-BIOLOGY". Used when a file names no domain and the user keeps it as
-   their own — it becomes its own domain, so it gets its own pool. */
-function toDomainToken(raw){
-  const t = (raw || "")
-    .trim()
-    .replace(/[^\w\- ]+/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toUpperCase();
-  return t || "MY-LIST";
-}
-
 function parseFilename(rawName){
   const base = (rawName || "").replace(/\.xlsx$/i, "").trim();
   const cut = base.indexOf("_");
@@ -2218,10 +2185,14 @@ function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel"){
     const ok = document.getElementById("wdDialogOk");
     const cancel = document.getElementById("wdDialogCancel");
     ok.textContent = okLabel;
-    cancel.textContent = cancelLabel;
+    // A null cancelLabel makes this a single-button dialog — used where there
+    // is nothing to decide, only something to be told.
+    cancel.hidden = (cancelLabel === null);
+    if (cancelLabel !== null) cancel.textContent = cancelLabel;
     back.hidden = false;
     back.classList.add("open");
     function cleanup(result){
+      cancel.hidden = false;   // restore for the next dialog
       back.classList.remove("open");
       back.hidden = true;
       ok.removeEventListener("click", onOk);
@@ -2254,7 +2225,6 @@ function wdPromptName(title, body, domain, prefill){
     const back    = document.getElementById("wdDialogBackdrop");
     const field   = document.getElementById("wdDialogField");
     const input   = document.getElementById("wdDialogInput");
-    const select  = document.getElementById("wdDialogSelect");
     const preview = document.getElementById("wdDialogPreview");
     const ok      = document.getElementById("wdDialogOk");
     const cancel  = document.getElementById("wdDialogCancel");
@@ -2264,8 +2234,6 @@ function wdPromptName(title, body, domain, prefill){
     ok.textContent = "Save";
     cancel.textContent = "Cancel";
     field.hidden = false;
-    select.hidden = true;
-    input.hidden = false;
     input.value = prefill || "";
     input.placeholder = "e.g. vakantie, examen-week";
 
@@ -2307,92 +2275,6 @@ function wdPromptName(title, body, domain, prefill){
       if (e.key === "Enter" && refresh()) cleanup(cleanName(input.value));
     }
     input.addEventListener("input", refresh);
-    ok.addEventListener("click", onOk);
-    cancel.addEventListener("click", onCancel);
-    back.addEventListener("click", onBackdrop);
-    document.addEventListener("keydown", onKey);
-  });
-}
-
-/* Domain picker — used when the filename doesn't name a domain we can read.
-   Offers the curated domains plus "keep <guess>" / a free-typed domain, so a
-   badly-named file is fixed IN THE APP; the user never has to go rename it.
-   Resolves to the chosen domain string, or null on cancel. */
-function wdPickDomain(title, body, suggestion, defaultDomain){
-  return new Promise(resolve => {
-    const back    = document.getElementById("wdDialogBackdrop");
-    const field   = document.getElementById("wdDialogField");
-    const input   = document.getElementById("wdDialogInput");
-    const select  = document.getElementById("wdDialogSelect");
-    const preview = document.getElementById("wdDialogPreview");
-    const ok      = document.getElementById("wdDialogOk");
-    const cancel  = document.getElementById("wdDialogCancel");
-
-    document.getElementById("wdDialogTitle").textContent = title;
-    document.getElementById("wdDialogBody").textContent  = body;
-    ok.textContent = "Import";
-    cancel.textContent = "Cancel";
-    field.hidden = false;
-    input.hidden = true;
-    select.hidden = false;
-    select.innerHTML = "";
-
-    // Curated domains first, then "my own" (free text) — the flat list is
-    // trivial at this scale; a two-column language-pair picker drops in here
-    // unchanged when the domain count grows.
-    for (const m of catalog.manifest()){
-      const o = document.createElement("option");
-      o.value = m.domain; o.textContent = m.domain + " (curated)";
-      select.appendChild(o);
-    }
-    const own = document.createElement("option");
-    own.value = "__OWN__";
-    own.textContent = suggestion
-      ? "MY LISTS — import as \u201C" + suggestion + "\u201D"
-      : "MY LISTS — my own list";
-    select.appendChild(own);
-    // Default: the pane the user came from (if it's curated), else "my own".
-    select.value = (defaultDomain && isCurated(defaultDomain)) ? defaultDomain : "__OWN__";
-
-    function refresh(){
-      const v = select.value;
-      preview.textContent = (v === "__OWN__")
-        ? "Goes to MY LISTS as its own list, with its own progress."
-        : "Joins the curated " + v + " domain and shares its progress.";
-    }
-    refresh();
-
-    back.hidden = false;
-    back.classList.add("open");
-
-    function cleanup(result){
-      back.classList.remove("open");
-      back.hidden = true;
-      field.hidden = true;
-      select.hidden = true;
-      input.hidden = false;
-      select.removeEventListener("change", refresh);
-      ok.removeEventListener("click", onOk);
-      cancel.removeEventListener("click", onCancel);
-      back.removeEventListener("click", onBackdrop);
-      document.removeEventListener("keydown", onKey);
-      resolve(result);
-    }
-    function chosen(){
-      const v = select.value;
-      // "My own" means the file becomes ITS OWN domain, named after itself.
-      // A shared catch-all domain would put two unrelated files in one pool —
-      // exactly the ID collision we warn about elsewhere.
-      return (v === "__OWN__") ? (suggestion || "MY-LIST") : v;
-    }
-    function onOk(){ cleanup(chosen()); }
-    function onCancel(){ cleanup(null); }
-    function onBackdrop(e){ if (e.target === back) cleanup(null); }
-    function onKey(e){
-      if (e.key === "Escape") cleanup(null);
-      if (e.key === "Enter")  cleanup(chosen());
-    }
-    select.addEventListener("change", refresh);
     ok.addEventListener("click", onOk);
     cancel.addEventListener("click", onCancel);
     back.addEventListener("click", onBackdrop);
@@ -2560,10 +2442,6 @@ function setListMessage(text, kind){
 // Which domain the browser's right pane is showing. Defaults to the active
 // study domain, but the user can browse another domain without switching study.
 let browserDomain = null;
-/* Which domain the user was standing in when they hit import. Used ONLY as the
-   picker's default when the filename can't name a domain — the filename always
-   wins when it parses (locked rule: identity comes from what the user sees). */
-let importIntent = null;
 
 function listsInDomain(domain){
   return Object.values(LISTS).filter(l => l.domain === domain);
@@ -2692,7 +2570,7 @@ function renderBrowserRail(){
   imp.innerHTML = "<span>+</span><span>Import a list</span>";
   // Importing from HERE means "this is my own" — so when the filename can't
   // name a domain, the picker defaults to MY LISTS rather than a curated one.
-  imp.addEventListener("click", () => { importIntent = null; $fileInput.click(); });
+  imp.addEventListener("click", () => $fileInput.click());
   $browserRail.appendChild(imp);
 
   // MORE — collapsible. Defaults open when there's nothing in ACTIVE yet.
@@ -2733,7 +2611,11 @@ function renderBrowserLists(){
     main.className = "list-row-main";
     const name = document.createElement("div");
     name.className = "list-row-name";
-    name.textContent = list.name;
+    // Show the FULL identity (NL-RU_Full-List), not just the name. It repeats
+    // the pane header, and that redundancy is accepted deliberately: a new user
+    // hasn't yet internalised the left-pane/right-pane structure, and seeing the
+    // whole name teaches the naming convention they must use when exporting.
+    name.textContent = list.domain + "_" + list.name;
     const meta = document.createElement("div");
     meta.className = "list-row-meta";
     meta.textContent = list.rows.length + " lemmas" +
@@ -3037,51 +2919,52 @@ $fileInput.addEventListener("change", async (e) => {
 
   const list = result.list;
 
-  // ── Resolve the domain: the filename proposes, the USER decides. Nothing
-  // hidden (a stale Metadata cell) is allowed to decide identity silently.
-  let domain = list.domain;
-  if (domain && isCurated(domain)){
-    const ok = await wdConfirm(
-      "Import into " + domain + "?",
-      "\u201C" + list.name + "\u201D joins the curated " + domain +
-      " domain and shares its progress.",
-      "Import", "Change\u2026"
+  // ── The filename IS the identity. There is no picker.
+  //
+  // A picker was built and then removed, deliberately. It let the user patch a
+  // badly-named file inside the app — which fixed our data and left the defect
+  // in the world: the file goes on to another user still misnamed, and this one
+  // never learns the convention. Worse, it offered a choice that doesn't exist
+  // (nobody sanely files an NL-RU list under NL-IT), and it let an escape hatch
+  // permanently bypass a load-bearing rule. Now: name the file correctly, or
+  // the app tells you how. Cancel is always the "rename and retry" door.
+  const domain = list.domain;
+
+  if (!domain){
+    // No parseable domain token at all (e.g. "Copy of biology.xlsx").
+    await wdConfirm(
+      "This file needs a domain in its name",
+      "Start the filename with the domain, then an underscore, then your own " +
+      "name — like NL-RU_holiday.xlsx or BIOLOGY_plants.xlsx. Rename the file " +
+      "and import it again.",
+      "OK", null
     );
-    if (!ok) domain = await wdPickDomain(
-      "Which domain?",
-      "Pick the domain this list belongs to, or keep it as your own.",
-      list.domain
-    );
-  } else if (domain){
-    const ok = await wdConfirm(
-      domain + " isn't a curated domain",
-      "Import \u201C" + list.name + "\u201D into MY LISTS? It keeps its own " +
-      "progress, separate from the curated domains.",
-      "Import", "Change\u2026"
-    );
-    if (!ok) domain = await wdPickDomain(
-      "Which domain?",
-      "Pick the domain this list belongs to, or keep it as your own.",
-      list.domain
-    );
-  } else {
-    // The filename told us nothing (e.g. "Copy of biology.xlsx"). Ask — never
-    // force the user out of the app to rename their file. If they keep it as
-    // their own, it becomes ITS OWN domain named after the file, so two
-    // unrelated imports can never end up sharing one pool.
-    domain = await wdPickDomain(
-      "Couldn't read a domain from the filename",
-      "Name files as DOMAIN_name.xlsx to skip this step. For now, pick where " +
-      "this list belongs:",
-      toDomainToken(list.name),
-      importIntent
-    );
-  }
-  if (!domain){                       // user cancelled out of the dialogs
-    setListMessage("Import cancelled.");
+    setListMessage("");
     return;
   }
-  list.domain = domain;
+
+  if (isCurated(domain)){
+    const ok = await wdConfirm(
+      "Import into " + domain + "?",
+      "\u201C" + list.name + "\u201D will be added to " + domain +
+      " and will share progress with the lists already there.",
+      "Import", "Cancel"
+    );
+    if (!ok){ setListMessage("Import cancelled."); return; }
+  } else {
+    // A token that isn't curated. The app CANNOT tell a deliberate new domain
+    // (BIOLOGY) from an accident (COPY, from "Copy_of_biology.xlsx") — only the
+    // human knows. So state the consequence plainly and let them judge: someone
+    // who meant BIOLOGY imports; someone who reads "COPY" cancels and renames.
+    const ok = await wdConfirm(
+      domain + " isn't a WordDock domain",
+      "This list would become its own domain in MY LISTS, with its own separate " +
+      "progress. If that isn't what you meant, cancel and rename the file to " +
+      "start with the right domain — like NL-RU_holiday.xlsx.",
+      "Import into MY LISTS", "Cancel"
+    );
+    if (!ok){ setListMessage("Import cancelled."); return; }
+  }
 
   // ── Identity = domain + name. Re-importing the same list REPLACES it (the
   // user edited their file and loaded the new version); progress is untouched,
@@ -3238,12 +3121,10 @@ async function deleteList(listId){
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 document.getElementById("browserDomainsHeader").addEventListener("click", () => showBrowserPane("lists"));
-document.getElementById("browserUpload").addEventListener("click", () => {
-  // Importing from inside a domain's pane means "probably into this domain" —
-  // it seeds the picker only if the filename can't decide.
-  importIntent = browserDomain;
-  $fileInput.click();
-});
+// Both import entry points do the same thing: the FILENAME decides the domain,
+// not which pane you clicked from. (The pane used to seed a picker's default;
+// the picker is gone, so the context signal has no job.)
+document.getElementById("browserUpload").addEventListener("click", () => $fileInput.click());
 
 /* ════════════════════════════════════════════════════════════════════════
    Score backup — export / import ALL domains as one JSON file.
