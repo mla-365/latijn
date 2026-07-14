@@ -1119,6 +1119,16 @@ body{
 }
 .scores-total{border-bottom:none}
 .scores-total .scores-domain{font-weight:400;color:var(--tag)}
+/* Quieter than the table above: this is context, not a headline. */
+.scores-since{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin:-10px 0 20px;padding:0 2px;
+  font-size:13px;color:var(--tag);
+}
+.scores-since-num{
+  font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
 .list-row-actions button{
   background:none;border:none;color:var(--tag);
   font-size:19px;line-height:1;cursor:pointer;
@@ -1323,7 +1333,7 @@ body{
     <div class="setting-row">
       <div class="setting-text">
         <div class="setting-label">Backup reminders</div>
-        <div class="setting-desc">After finishing a deck, show a quiet reminder once you've built up a real body of progress that isn't backed up yet.</div>
+        <div class="setting-desc">After finishing a deck, show a quiet reminder once you've earned 100 points of new progress since your last backup. You can see that number under Scores.</div>
       </div>
       <button class="toggle" id="toggleReminders" role="switch" aria-checked="false">
         <span class="toggle-knob"></span>
@@ -2802,6 +2812,22 @@ function renderScoresPane(){
       table.appendChild(line);
     }
     inner.appendChild(table);
+
+    // The number the backup rule actually watches, made visible. Until now it
+    // was invisible machinery, so Settings could only describe it vaguely.
+    // Shown only when there IS unbacked-up progress — a row reading "+0" right
+    // after a backup would be noise. For a competitive user it's a second,
+    // healthier counter (it only rises by drilling your weakest words); for
+    // everyone else it simply isn't there.
+    const gains = readBackupMeta().gains || 0;
+    if (gains > 0){
+      const since = document.createElement("div");
+      since.className = "scores-since";
+      since.innerHTML =
+        "<span>Since your last backup</span>" +
+        '<span class="scores-since-num">+' + gains + "</span>";
+      inner.appendChild(since);
+    }
   }
 
   const desc = document.createElement("p");
