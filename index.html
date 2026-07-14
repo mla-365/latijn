@@ -21,7 +21,27 @@
      subset only: 8.7 + 8.9 KB, down from 158 KB per TTF. -->
 <link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-400.woff2">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-600.woff2">
+<script>
+/* Runs before the body paints. If this boot is a refresh that happened while
+   the user was in the browser, mark the document at once, so the study stage
+   is never painted — otherwise the card and buttons flash for a few frames
+   while the JSON is fetched, and only then get covered.
+   Attack the flicker where it starts: don't paint it, rather than paint it
+   and hide it a moment later. */
+try {
+  if (sessionStorage.getItem("wd_view")) {
+    document.documentElement.classList.add("restoring-view");
+  }
+} catch (e) {}
+</script>
 <style>
+/* Stage hidden (not removed — layout must stay stable) until the browser
+   opens over it; the class is dropped as soon as that happens. */
+html.restoring-view .stage{visibility:hidden}
+/* Failsafe: if boot ever throws before the class is removed, this reveals the
+   stage anyway after a moment — a blank screen is worse than a brief flash. */
+@keyframes wd-stage-failsafe{to{visibility:visible}}
+html.restoring-view .stage{animation:wd-stage-failsafe 0s linear 2s forwards}
 @font-face{
   font-family:'Poppins';
   font-style:normal;
@@ -3448,6 +3468,9 @@ function readLastList(){
     openSurface("list");
     showBrowserPane(view);
   }
+  // The stage was hidden pre-paint to avoid a flash; it's safe to reveal now —
+  // either the browser is covering it, or there was nothing to restore.
+  document.documentElement.classList.remove("restoring-view");
 })();
 </script>
 </body>
