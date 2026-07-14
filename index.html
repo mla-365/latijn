@@ -1191,6 +1191,19 @@ body{
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
 }
+/* Quiet until wanted: a curator can reach the file rules before failing an
+   import, but the mark never competes with the action it sits beside. */
+.import-rules-help{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  width:22px;height:22px;border-radius:50%;
+  background:none;border:1px solid var(--menu-border);
+  color:var(--tag);font-size:12px;line-height:1;
+  font-family:'Poppins',sans-serif;cursor:pointer;
+  opacity:.55;transition:opacity .12s,color .12s,border-color .12s;
+}
+.import-rules-help:hover{
+  opacity:1;color:var(--ink);border-color:rgba(255,255,255,0.4);
+}
 /* Shown only after a rejected import: the whole rulebook, one click away. */
 .import-rules-link{
   display:block;margin:8px 2px 0;padding:0;
@@ -1212,6 +1225,7 @@ body{
   font-size:13px;color:var(--tag);font-style:italic;
 }
 .upload-row{
+  position:relative;
   margin-top:6px;
   padding:12px 14px;
   min-height:62px;
@@ -1344,7 +1358,7 @@ body{
       <div class="detail-view" id="viewLists">
         <div class="detail-head" id="browserDetailHead">Lists</div>
         <div id="browserLists" class="browser-lists"></div>
-        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)</div>
+        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs">?</button></div>
         <div id="listMessage" class="list-message"></div>
         <button type="button" id="importRulesLink" class="import-rules-link" hidden>What a WordDock file needs →</button>
       </div>
@@ -3392,8 +3406,8 @@ document.getElementById("browserDomainsHeader").addEventListener("click", () => 
    and leave them where they were. */
 const FILE_RULES_HTML =
   "<ol class='dlg-rules'>" +
-  "<li>A sheet whose <b>cell A1 is literally <code>ID</code></b>.</li>" +
-  "<li>The <b>25 columns</b>, in this exact order:<br>" +
+  "<li>A sheet whose <b>header row is exactly these 25 columns</b>, in order — " +
+  "so cell A1 reads <code>ID</code>:<br>" +
   "<code>ID · ENTRY · CAT · CTAG · L · Q1 · A1 · … · Q10 · A10</code></li>" +
   "<li>At least <b>10 rows</b> where <code>ID</code>, <code>Q1</code> and " +
   "<code>A1</code> are all filled.</li>" +
@@ -3404,8 +3418,18 @@ const FILE_RULES_HTML =
   "numbering in a new file.</li>" +
   "</ol>";
 
-document.getElementById("importRulesLink").addEventListener("click", () => {
+function showFileRules(){
   wdConfirm("What a WordDock file needs", FILE_RULES_HTML, "OK", null, true);
+}
+
+document.getElementById("importRulesLink").addEventListener("click", showFileRules);
+
+// The same rules, reachable BEFORE you fail — a curator wants them while making
+// the file, not as a punishment for getting it wrong. A small "?" rather than a
+// hover reveal, because hover doesn't exist on a phone.
+document.getElementById("importRulesHelp").addEventListener("click", (e) => {
+  e.stopPropagation();            // don't open the file picker
+  showFileRules();
 });
 
 // Both import entry points do the same thing: the FILENAME decides the domain,
