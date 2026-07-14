@@ -1204,14 +1204,6 @@ body{
 .import-rules-help:hover{
   opacity:1;color:var(--ink);border-color:rgba(255,255,255,0.4);
 }
-/* Shown only after a rejected import: the whole rulebook, one click away. */
-.import-rules-link{
-  display:block;margin:8px 2px 0;padding:0;
-  background:none;border:none;cursor:pointer;
-  font-family:'Poppins',sans-serif;font-size:13px;
-  color:#8fb4e8;text-decoration:underline;
-}
-.import-rules-link:hover{color:#b9d3f5}
 /* Info page: the file-requirements checklist. */
 .info-rules-title{
   margin:22px 0 6px;font-size:15px;color:var(--ink);
@@ -1360,7 +1352,6 @@ body{
         <div id="browserLists" class="browser-lists"></div>
         <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs">?</button></div>
         <div id="listMessage" class="list-message"></div>
-        <button type="button" id="importRulesLink" class="import-rules-link" hidden>What a WordDock file needs →</button>
       </div>
       <!-- INFO view (content injected from the info page source) -->
       <div class="detail-view" id="viewInfo" hidden></div>
@@ -2598,9 +2589,6 @@ const $browserDetailHead = document.getElementById("browserDetailHead");
 function setListMessage(text, kind){
   $listMessage.textContent = text || "";
   $listMessage.className = "list-message" + (kind ? " " + kind : "");
-  // The "what a file needs" link belongs to a rejection, and to nothing else.
-  const $rulesLink = document.getElementById("importRulesLink");
-  if ($rulesLink && kind !== "error") $rulesLink.hidden = true;
 }
 
 // Which domain the browser's right pane is showing. Defaults to the active
@@ -3167,12 +3155,9 @@ $fileInput.addEventListener("change", async (e) => {
   // reset so the same file can be re-picked
   $fileInput.value = "";
   if (!result.ok){
-    // The rules used to be revealed one failed import at a time: fix A1, try
-    // again, learn about the 25 columns, try again, learn about the 10 rows…
-    // Show the reason, and offer the whole list of requirements in one place.
+    // The full rulebook is always one click away on the import row's "?" — no
+    // need for a second, louder link that then sits in every domain forever.
     setListMessage(result.error, "error");
-    const $rulesLink = document.getElementById("importRulesLink");
-    if ($rulesLink) $rulesLink.hidden = false;
     return;
   }
 
@@ -3421,8 +3406,6 @@ const FILE_RULES_HTML =
 function showFileRules(){
   wdConfirm("What a WordDock file needs", FILE_RULES_HTML, "OK", null, true);
 }
-
-document.getElementById("importRulesLink").addEventListener("click", showFileRules);
 
 // The same rules, reachable BEFORE you fail — a curator wants them while making
 // the file, not as a punishment for getting it wrong. A small "?" rather than a
