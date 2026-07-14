@@ -1149,6 +1149,18 @@ body{
   font-weight:600;color:var(--ink);
   font-variant-numeric:tabular-nums;
 }
+/* Orphan pools — real progress, but for a list that isn't here. Set apart so
+   it can't be mistaken for the live domains above. */
+.scores-orphan-head{
+  margin:26px 0 8px;
+  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--tag);
+}
+.scores-forget{
+  margin-left:12px;flex-shrink:0;
+  background:none;border:none;cursor:pointer;
+  color:var(--tag);padding:2px 6px;border-radius:7px;
+}
 .list-row-actions button{
   background:none;border:none;color:var(--tag);
   font-size:19px;line-height:1;cursor:pointer;
@@ -1811,6 +1823,35 @@ function resolveIdLists(domain, fullRows){
   }
 }
 
+/* Cut the dead keys out of a curated domain's pool.
+
+   A curated domain's Full-List IS the complete list of its words, so any pool
+   key that isn't one of its IDs can never match a card again: it will never be
+   looked up, never shown, never scored. Dead weight — but not harmless, because
+   gatherAllScores() sweeps every pool into the backup file, so the junk rides
+   along and any restore puts it straight back. The file becomes a carrier.
+   (This is exactly how pre-rename composite keys like "NL-IT_A1_0001" kept
+   reappearing after we thought we had wiped them.)
+
+   Only ever runs against a curated domain, where the truth is complete. An
+   uncurated domain has no Full-List, so nothing there is provably dead. */
+function pruneDomainPool(domain, fullRows){
+  const valid = new Set(fullRows.map(r => r.ID));
+  let pool;
+  try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
+  catch { return; }
+
+  const dead = Object.keys(pool).filter(k => !valid.has(k));
+  if (!dead.length) return;
+
+  for (const k of dead) delete pool[k];
+  try {
+    localStorage.setItem("wd_rs_" + domain, JSON.stringify(pool));
+    console.info("WordDock: pruned " + dead.length + " dead score key(s) from " +
+                 domain + " (they match no word in its Full-List).");
+  } catch {}
+}
+
 function registerList(list){
   LISTS[list.listId] = list;
   if (list.source === "imported") saveLists();
@@ -1954,6 +1995,7 @@ async function loadDomainMaster(domain){
         extraColumns:[], source:"embedded"
       });
       resolveIdLists(domain, fullRows);   // stored slices of this domain
+      pruneDomainPool(domain, fullRows); // drop score keys that match no word
     }
     switchActiveList(listId);
   } catch(e){ /* unknown domain — no-op */ }
@@ -2579,6 +2621,7 @@ function makeFolderEl(domain){
           extraColumns:[], source:"embedded"
         });
         resolveIdLists(domain, fullRows);   // stored slices of this domain
+        pruneDomainPool(domain, fullRows); // drop score keys that match no word
       } catch(e){ /* fetch failed — leave pane empty */ }
     }
     renderBrowser();
@@ -2805,6 +2848,26 @@ function renderScoresPane(){
     totSum   += sum;
   }
 
+  // Orphan pools: scores for a domain with no list loaded. NOT automatically
+  // deleted, because they aren't always junk — restoring a backup on a fresh
+  // machine BEFORE importing the list leaves exactly this state, and those
+  // scores are waiting to rejoin. But they must not stay invisible either:
+  // they ride along in every backup. So: show them, and let the user decide.
+  const known = new Set(domainUniverse());
+  const orphans = [];
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith("wd_rs_")) continue;
+    const domain = k.slice("wd_rs_".length);
+    if (known.has(domain)) continue;
+    let pool;
+    try { pool = JSON.parse(localStorage.getItem(k)) || {}; } catch { continue; }
+    const vals = Object.values(pool).filter(v => v !== 0);
+    if (vals.length) orphans.push({ domain, words: vals.length,
+                                    sum: vals.reduce((a,b)=>a+b,0) });
+  }
+  orphans.sort((a,b) => a.domain < b.domain ? -1 : 1);
+
   if (!rows.length){
     const p = document.createElement("p");
     p.className = "setting-desc";
@@ -2848,6 +2911,49 @@ function renderScoresPane(){
         '<span class="scores-since-num">+' + gains + "</span>";
       inner.appendChild(since);
     }
+  }
+
+  if (orphans.length){
+    const h = document.createElement("div");
+    h.className = "scores-orphan-head";
+    h.textContent = "Scores with no list";
+    inner.appendChild(h);
+
+    const note = document.createElement("p");
+    note.className = "setting-desc";
+    note.textContent = "Progress kept for lists that aren't loaded here. If you " +
+      "import the list again, it picks these scores back up. If you don't want " +
+      "them any more, forget them — they're in every backup until you do.";
+    inner.appendChild(note);
+
+    const table = document.createElement("div");
+    table.className = "scores-table";
+    for (const o of orphans){
+      const line = document.createElement("div");
+      line.className = "scores-line";
+      line.innerHTML =
+        '<span class="scores-domain">' + o.domain + "</span>" +
+        '<span class="scores-words">' + o.words + " words</span>" +
+        '<span class="scores-sum">' + (o.sum > 0 ? "+" : "") + o.sum + "</span>";
+      const forget = document.createElement("button");
+      forget.className = "list-row-del scores-forget";
+      forget.textContent = "\u00D7";
+      forget.addEventListener("click", async () => {
+        const ok = await wdConfirm(
+          "Forget " + o.domain + "?",
+          "These " + o.words + " scores are deleted from this browser and from " +
+          "every future backup. Backup files you've already saved still contain " +
+          "them.",
+          "Forget", "Keep"
+        );
+        if (!ok) return;
+        try { localStorage.removeItem("wd_rs_" + o.domain); } catch {}
+        renderScoresPane();
+      });
+      line.appendChild(forget);
+      table.appendChild(line);
+    }
+    inner.appendChild(table);
   }
 
   const desc = document.createElement("p");
@@ -3019,53 +3125,50 @@ $fileInput.addEventListener("change", async (e) => {
     return;
   }
 
-  if (isCurated(domain)){
-    const ok = await wdConfirm(
+  // Identity = domain + name. Resolve it BEFORE asking anything, so the ONE
+  // dialog we show can tell the whole truth. (It used to ask "Import into
+  // NL-RU?" — implying the deed was done — and only then reveal "Replace
+  // 'partial'?". Two questions for one decision, with the consequence hidden
+  // behind the first answer.)
+  const existing = Object.values(LISTS).find(
+    l => l.domain === domain && l.name === list.name && l.source === "imported"
+  );
+  list.listId = existing ? existing.listId : ("imported_" + Date.now());
+
+  let ok;
+  if (existing){
+    // Replacing is usually what the user means ("I edited my file, load the new
+    // version") — but it can also be an accident: two DIFFERENT lists that
+    // happen to share a name (yours, and one a friend sent). The old one would
+    // vanish with no undo. Say what's replaced, and say the thing they'd worry
+    // about first: their progress isn't it.
+    ok = await wdConfirm(
+      "Replace \u201C" + list.name + "\u201D in " + domain + "?",
+      domain + " already has a list with this name (" + existing.rows.length +
+      " rows). Importing replaces its contents with this file's " +
+      list.rows.length + ". Your progress in " + domain + " is not affected.",
+      "Replace", "Cancel"
+    );
+  } else if (isCurated(domain)){
+    ok = await wdConfirm(
       "Import into " + domain + "?",
       "\u201C" + list.name + "\u201D will be added to " + domain +
       " and will share progress with the lists already there.",
       "Import", "Cancel"
     );
-    if (!ok){ setListMessage("Import cancelled."); return; }
   } else {
     // A token that isn't curated. The app CANNOT tell a deliberate new domain
     // (BIOLOGY) from an accident (COPY, from "Copy_of_biology.xlsx") — only the
-    // human knows. So state the consequence plainly and let them judge: someone
-    // who meant BIOLOGY imports; someone who reads "COPY" cancels and renames.
-    const ok = await wdConfirm(
+    // human knows. So state the consequence plainly and let them judge.
+    ok = await wdConfirm(
       domain + " isn't a WordDock domain",
       "This list would become its own domain in MY LISTS, with its own separate " +
       "progress. If that isn't what you meant, cancel and rename the file to " +
       "start with the right domain — like NL-RU_holiday.xlsx.",
       "Import into MY LISTS", "Cancel"
     );
-    if (!ok){ setListMessage("Import cancelled."); return; }
   }
-
-  // ── Identity = domain + name. Re-importing the same list REPLACES it (the
-  // user edited their file and loaded the new version); progress is untouched,
-  // because RS lives in the pool, never in the list. Resolved BEFORE the clash
-  // check below, so a list can't be found to collide with its own old version.
-  const existing = Object.values(LISTS).find(
-    l => l.domain === domain && l.name === list.name && l.source === "imported"
-  );
-  list.listId = existing ? existing.listId : ("imported_" + Date.now());
-
-  // Replacing is usually what the user means ("I edited my file, load the new
-  // version") — but it can also be an accident: two DIFFERENT lists that happen
-  // to share a name (yours, and one a friend sent you). The old one would then
-  // vanish with no undo and no message. Ask. And say the thing they'd worry
-  // about first: their progress is not what's being replaced.
-  if (existing){
-    const ok = await wdConfirm(
-      "Replace \u201C" + list.name + "\u201D?",
-      domain + " already has a list with this name (" + existing.rows.length +
-      " rows). Importing replaces its contents with this file's " +
-      list.rows.length + ". Your progress in " + domain + " is not affected.",
-      "Replace", "Cancel"
-    );
-    if (!ok){ setListMessage("Import cancelled."); return; }
-  }
+  if (!ok){ setListMessage("Import cancelled."); return; }
 
   // ── ID collision check. Progress is keyed by (domain + ID), so two lists in
   // one domain that reuse an ID for DIFFERENT words would share scores wrongly
@@ -3474,6 +3577,7 @@ function readLastList(){
     source: "embedded"
   });
   resolveIdLists(bootDomain, fullRows);   // stored slices of this domain can now resolve
+  pruneDomainPool(bootDomain, fullRows); // drop score keys that match no word in it
 
   loadRS();
   $tabDomainValue.textContent = DOMAIN_RUNTIME;
