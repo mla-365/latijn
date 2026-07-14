@@ -3200,14 +3200,18 @@ function exportScores(){
   const today = new Date().toISOString().split("T")[0];
   const payload = { type: SCORES_FILE_TYPE, version: 1, exported: today, scores };
   const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
-  const filename = "worddock-scores_" + today + ".json";
+  const filename = "WordDock-scores_" + today + ".json";
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   writeBackupMeta({ lastExportTs: Date.now(), gains: 0 });   // fresh backup
-  setScoresMsg("Exported your scores to " + filename + ".");
+  // "Exported" was the wrong verb (lists are exported; scores are backed up),
+  // and claiming the backup is DONE is not something the app can know: the
+  // browser gives no callback for "user cancelled the save dialog". What IS
+  // certain is that the file was created and handed to the browser. Say that.
+  setScoresMsg("Your backup file is ready: " + filename);
   return { filename, domainCount };
 }
 
@@ -3292,7 +3296,7 @@ document.getElementById("scoresFileInput").addEventListener("change", async (e) 
 document.getElementById("backupNudge").addEventListener("click", (e) => {
   e.stopPropagation();
   exportScores();
-  e.currentTarget.textContent = "Exported ✓";
+  e.currentTarget.textContent = "Backup file ready ✓";
 });
 
 // Celebration buttons (considerable progress)
