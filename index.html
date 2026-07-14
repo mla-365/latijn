@@ -1462,21 +1462,19 @@ const DOMAIN = "NL-RU";
 // domain after an import that targets a different one.
 let DOMAIN_RUNTIME = DOMAIN;
 
-/* ─── one-time wipe of old schema keys (per Decision C: silent wipe) ─── */
-(function migrateSchema(){
-  const stored = localStorage.getItem("wd_schema_version");
-  if (stored === SCHEMA_VERSION) return;          // already current
-  // wipe everything WordDock-related — old keys won't map to new IDs
-  const toRemove = [];
-  for (let i = 0; i < localStorage.length; i++){
-    const k = localStorage.key(i);
-    if (k && (k.startsWith("wd_rs_") || k.startsWith("wd_") )) {
-      toRemove.push(k);
-    }
-  }
-  for (const k of toRemove) localStorage.removeItem(k);
-  localStorage.setItem("wd_schema_version", SCHEMA_VERSION);
-})();
+/* REMOVED 2026-07-14: a "migrateSchema" step that wiped EVERY wd_* key —
+   scores, imported lists, preferences, all of it — whenever the stored schema
+   version didn't match. It existed for the one-time SEQ_ID → ID migration,
+   which is long finished.
+
+   It is a landmine: the flag lives in the same storage it wipes, so anything
+   that clears localStorage (a test, a browser cleanup) makes the NEXT boot
+   look like a version mismatch, and the app deletes the user's data for them.
+   A migration that runs itself again after every reset isn't a migration.
+
+   If a future schema change ever needs data cleared, it must (a) name exactly
+   which keys, (b) never touch scores without asking, and (c) not treat "no
+   flag" as "wrong version". */
 
 /* The NL-RU master (and every other domain) now lives in a fetched
    <domain>.json file next to index.html, not embedded here. See catalog. */
