@@ -2282,6 +2282,30 @@ function wdPromptName(title, body, domain, prefill){
   });
 }
 
+/* Was the user in the browser when the page reloaded?
+
+   sessionStorage — not localStorage — is exactly the right tool: it survives a
+   REFRESH but dies when the tab closes. So the browser itself draws the line we
+   need and we don't have to guess:
+
+     • refresh while browsing   → same visit continuing → come back to the browser
+     • close the tab, return tomorrow → a new visit → land in study, on your deck
+
+   Booting a returning learner into a file manager instead of a card would be
+   the worse mistake; this avoids it without the developer's annoyance of being
+   thrown out of the browser on every refresh. */
+const VIEW_KEY = "wd_view";
+
+function saveView(pane){          // pane = null when the browser is closed
+  try {
+    if (pane) sessionStorage.setItem(VIEW_KEY, pane);
+    else      sessionStorage.removeItem(VIEW_KEY);
+  } catch {}
+}
+function readView(){
+  try { return sessionStorage.getItem(VIEW_KEY); } catch { return null; }
+}
+
 function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
   $infopage.classList.remove("open");
@@ -2289,6 +2313,7 @@ function closeAllSurfaces(){
   $domainpage.classList.remove("open");
   $listbrowser.classList.remove("open");
   for (const k in tabs) tabs[k].classList.remove("active");
+  saveView(null);                 // back to study
 }
 
 function openSurface(which){
@@ -2803,6 +2828,7 @@ function renderScoresPane(){
 
 function showBrowserPane(pane){
   browserPane = pane;
+  saveView(pane);            // a refresh comes back here (tab-lifetime only)
   const $viewScores    = document.getElementById("viewScores");
   $viewLists.hidden    = (pane !== "lists");
   $viewInfo.hidden     = (pane !== "info");
@@ -3387,6 +3413,15 @@ function readLastList(){
   // Resume the last list if it still exists; otherwise the domain's Full-List.
   const resume = (wanted && LISTS[wanted]) ? wanted : ("embedded_" + bootDomain);
   switchActiveList(resume);
+
+  // If this boot is a REFRESH that happened while the user was in the browser,
+  // put them back where they were. sessionStorage is empty on a fresh visit, so
+  // a returning learner still lands on their deck — never in a file manager.
+  const view = readView();
+  if (view){
+    openSurface("list");
+    showBrowserPane(view);
+  }
 })();
 </script>
 </body>
