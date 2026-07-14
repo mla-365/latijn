@@ -1637,8 +1637,7 @@ async function parseWordDockXlsx(file){
       CAT: arr[COL_INDEX.CAT]  ? String(arr[COL_INDEX.CAT])  : "",
       CTAG: arr[COL_INDEX.CTAG] ? String(arr[COL_INDEX.CTAG]) : "",
       pairs,
-      _rs_from_file: 0,
-      _preserved: {
+        _preserved: {
         L: arr[COL_INDEX.L]     ?? null,
         ENTRY: arr[COL_INDEX.ENTRY] ?? null
       },
@@ -1740,22 +1739,6 @@ function serializeToXlsx(list, exportName){
 
 /* On a successful import: write the file's RS values into localStorage
    for the IDs this file covers. Rows not in this file are untouched. */
-function ingestImportedRS(list){
-  // Make sure we're operating on the RS map for the *list's* domain,
-  // not necessarily the currently-active domain.
-  const key = rsKey(list.domain);
-  let map;
-  try { map = JSON.parse(localStorage.getItem(key)) || {}; }
-  catch(e){ map = {}; }
-  for (const row of list.rows){
-    if (!(row.ID in map)) map[row.ID] = row._rs_from_file;  // join, don't clobber existing scores
-  }
-  localStorage.setItem(key, JSON.stringify(map));
-  // If this list's domain is the currently-active runtime domain,
-  // also refresh in-memory RS so getRS() sees the new values immediately.
-  if (list.domain === DOMAIN_RUNTIME) RS = map;
-}
-
 /* ─── Active state ─── */
 let ALL = [];              // currently loaded rows (the active list's rows)
 let activeListName = "—";  // shown in List tab
@@ -1824,7 +1807,6 @@ function hydrateRow(r){
   return {
     ID: r.ID, CAT: r.CAT || "", CTAG: r.CTAG || "",
     pairs: r.pairs || [],
-    _rs_from_file: 0,
     _preserved: { L: r.L ?? null, ENTRY: r.ENTRY ?? null },
     _extras: null,
     get L(){ return this._preserved.L; }
@@ -1892,14 +1874,28 @@ function pruneDomainPool(domain, fullRows){
   try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
   catch { return; }
 
-  const dead = Object.keys(pool).filter(k => !valid.has(k));
+  // Two kinds of junk:
+  //   • keys that match no word in the Full-List (pre-rename composite keys,
+  //     IDs from a corpus that has since changed) — they can never be looked up;
+  //   • entries sitting at exactly 0. A pool entry must mean "this word has been
+  //     touched"; an untouched word is absent, and absent sorts identically to
+  //     zero, so a zero buys nothing locally.
+  //
+  // ⚠ OPEN, COUPLED TO SYNC: this also drops an EARNED zero (a word drilled
+  // from −2 back up to exactly 0). Today that is unobservable — absent and 0
+  // sort the same. It only matters if the future sync payload ships zeros, so
+  // that a device which has never seen a word cannot out-vote one that has
+  // (max(absent, −2) must not resolve to 0). If that argument wins when sync is
+  // built, STOP PRUNING ZEROS HERE — one line. Until then, cleaning the ~675
+  // seeded zeros the old import path wrote is worth far more than the loss.
+  const dead = Object.keys(pool).filter(k => !valid.has(k) || pool[k] === 0);
   if (!dead.length) return;
 
   for (const k of dead) delete pool[k];
   try {
     localStorage.setItem("wd_rs_" + domain, JSON.stringify(pool));
-    console.info("WordDock: pruned " + dead.length + " dead score key(s) from " +
-                 domain + " (they match no word in its Full-List).");
+    console.info("WordDock: pruned " + dead.length + " empty/dead score key(s) from " +
+                 domain + ".");
   } catch {}
 }
 
@@ -3252,7 +3248,19 @@ $fileInput.addEventListener("change", async (e) => {
   }
 
   registerList(list);                  // persists to localStorage
-  ingestImportedRS(list);
+
+  // NOTE: importing writes NOTHING to the RS pool.
+  //
+  // It used to "seed" the pool with an entry at 0 for every row of the imported
+  // list — 675 zeros for a full NL-RU file. That bought nothing: getRS() already
+  // reads an absent ID as 0, so absent and zero sort identically. What it cost
+  // was a pool full of padding, and (later) a sync payload replicating hundreds
+  // of meaningless zeros forever.
+  //
+  // A pool entry now means exactly one thing: THIS WORD HAS BEEN TOUCHED. An
+  // untouched word is simply absent — which is not the same as zero, it's
+  // "no information". The distinction matters at the moment two devices merge:
+  // a device that has never seen a word must not out-vote one that has.
 
   // Import does NOT start studying. It is a librarian's act — put this on the
   // shelf — not a study act. Auto-switching had three faults: it labelled the
@@ -3626,7 +3634,6 @@ function normalizeEmbeddedRows(rawRows){
     CAT: r.CAT || "",
     CTAG: r.CTAG || "",
     pairs:   r.pairs || [],
-    _rs_from_file: 0,
     _preserved: {
       L: r.L || null,
       ENTRY: r.ENTRY || null
