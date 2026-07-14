@@ -1179,6 +1179,26 @@ body{
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
 }
+/* Shown only after a rejected import: the whole rulebook, one click away. */
+.import-rules-link{
+  display:block;margin:8px 2px 0;padding:0;
+  background:none;border:none;cursor:pointer;
+  font-family:'Poppins',sans-serif;font-size:13px;
+  color:#8fb4e8;text-decoration:underline;
+}
+.import-rules-link:hover{color:#b9d3f5}
+/* Info page: the file-requirements checklist. */
+.info-rules-title{
+  margin:22px 0 6px;font-size:15px;color:var(--ink);
+}
+.info-rules{
+  margin:0 0 12px;padding-left:20px;
+  line-height:1.75;
+}
+.info-rules li{margin-bottom:7px}
+.info-rules-note{
+  font-size:13px;color:var(--tag);font-style:italic;
+}
 .upload-row{
   margin-top:6px;
   padding:12px 14px;
@@ -1314,6 +1334,7 @@ body{
         <div id="browserLists" class="browser-lists"></div>
         <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)</div>
         <div id="listMessage" class="list-message"></div>
+        <button type="button" id="importRulesLink" class="import-rules-link" hidden>What a WordDock file needs →</button>
       </div>
       <!-- INFO view (content injected from the info page source) -->
       <div class="detail-view" id="viewInfo" hidden></div>
@@ -1349,11 +1370,19 @@ body{
     <p>Click the WordDock logo to switch between studying and the browser. <strong>Domain</strong> is your broad subject (a language pair like NL-RU, or a field like BIO). Inside a domain, the <strong>Source</strong> is the whole set; a <strong>slice</strong> is a narrower lens onto it, or your own file. Pick a list to study it; your progress is shared across the domain.</p>
 
     <h3>How to import and export lists</h3>
-    <p>In the List menu you can upload an <code>.xlsx</code> file to add a list, or download the active list to save it to disk. The file holds the list's content — its words and cards — not your scores. Your running scores live only in this browser.</p>
-    <details class="info-more">
-      <summary>More on the file format</summary>
-      <p>WordDock files are 25-column spreadsheets with a fixed layout (the SF25 shape): <code>ID</code>, <code>ENTRY</code>, <code>CAT</code>, <code>CTAG</code>, <code>L</code> (level), then up to ten question/answer pairs (<code>Q1/A1</code> … <code>Q10/A10</code>). The app reads the ID, the Q/A pairs, and the grammatical tags. Your running scores are <strong>not</strong> in the file — they live only in your browser, keyed by ID.</p>
-    </details>
+    <p>In the browser you can import an <code>.xlsx</code> file to add a list, or export any list to save it to disk and hand it to someone else. The file holds the list's content — its words and cards — <strong>not</strong> your scores. Your running scores live only in this browser.</p>
+
+    <h4 class="info-rules-title">What a WordDock file needs</h4>
+    <p>All five, or the import is refused:</p>
+    <ol class="info-rules">
+      <li>A sheet whose <strong>cell A1 is literally <code>ID</code></strong>.</li>
+      <li>The <strong>25 columns</strong>, in this exact order:<br>
+        <code>ID · ENTRY · CAT · CTAG · L · Q1 · A1 · Q2 · A2 · … · Q10 · A10</code></li>
+      <li>At least <strong>10 rows</strong> where <code>ID</code>, <code>Q1</code> and <code>A1</code> are all filled.</li>
+      <li>A filename shaped <strong><code>DOMAIN_name.xlsx</code></strong> — the domain first, then an underscore, then your own name. For example <code>NL-RU_holiday.xlsx</code> or <code>BIOLOGY_plants.xlsx</code>. The filename is the list's identity; nothing hidden inside the file decides it.</li>
+      <li>Within one domain, <strong>every entry needs its own ID</strong> — never restart numbering in a new file. Progress is tracked per ID, so two files that both start at <code>0001</code> would make different words share scores. WordDock checks this when you import and warns you.</li>
+    </ol>
+    <p class="info-rules-note">The <code>Metadata</code> sheet WordDock writes on export is only a description of the file. The app never reads it back — a copied file's stale cells would lie with confidence.</p>
 
     <div class="warn">
       <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Scores → Back up scores) is the only backup of your progress.
@@ -1548,7 +1577,7 @@ async function parseWordDockXlsx(file){
     if (header[i] !== COLUMNS[i]){
       return { ok: false, error:
         `Column ${i+1} should be "${COLUMNS[i]}" but is "${header[i] || "(empty)"}". ` +
-        `WordDock files use a fixed 25-column order (SF25).` };
+        `WordDock files use a fixed 25-column order.` };
     }
   }
   // Capture any extra columns beyond the canonical 25 (preserve through round-trip)
@@ -2539,6 +2568,9 @@ const $browserDetailHead = document.getElementById("browserDetailHead");
 function setListMessage(text, kind){
   $listMessage.textContent = text || "";
   $listMessage.className = "list-message" + (kind ? " " + kind : "");
+  // The "what a file needs" link belongs to a rejection, and to nothing else.
+  const $rulesLink = document.getElementById("importRulesLink");
+  if ($rulesLink && kind !== "error") $rulesLink.hidden = true;
 }
 
 // Which domain the browser's right pane is showing. Defaults to the active
@@ -3101,7 +3133,12 @@ $fileInput.addEventListener("change", async (e) => {
   // reset so the same file can be re-picked
   $fileInput.value = "";
   if (!result.ok){
+    // The rules used to be revealed one failed import at a time: fix A1, try
+    // again, learn about the 25 columns, try again, learn about the 10 rows…
+    // Show the reason, and offer the whole list of requirements in one place.
     setListMessage(result.error, "error");
+    const $rulesLink = document.getElementById("importRulesLink");
+    if ($rulesLink) $rulesLink.hidden = false;
     return;
   }
 
@@ -3329,6 +3366,10 @@ async function deleteList(listId){
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 document.getElementById("browserDomainsHeader").addEventListener("click", () => showBrowserPane("lists"));
+document.getElementById("importRulesLink").addEventListener("click", () => {
+  showBrowserPane("info");
+});
+
 // Both import entry points do the same thing: the FILENAME decides the domain,
 // not which pane you clicked from. (The pane used to seed a picker's default;
 // the picker is gone, so the context signal has no job.)
@@ -3401,10 +3442,19 @@ function exportScores(){
     setScoresMsg("Nothing to export yet — scores build up as you complete decks.");
     return null;
   }
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
   const payload = { type: SCORES_FILE_TYPE, version: 1, exported: today, scores };
   const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
-  const filename = "WordDock-scores_" + today + ".json";
+  // Time as well as date. The app cannot overwrite a file — the browser owns
+  // everything after the download is handed over — so a second backup on the
+  // same day used to land as "… (1).json", and our "your file is ready: X"
+  // message then named a file that didn't exist. HHMM makes the collision
+  // impossible instead of managing it. Date stays first, so files still sort
+  // chronologically.
+  const hhmm = String(now.getHours()).padStart(2, "0") +
+               String(now.getMinutes()).padStart(2, "0");
+  const filename = "WordDock-scores_" + today + "_" + hhmm + ".json";
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename;
