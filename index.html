@@ -3578,13 +3578,35 @@ async function importScoresFromFile(file){
   } else {
     setScoresMsg("Nothing changed — kept this browser's scores.");
   }
+
+  // Redraw what the user is looking at. The restore wrote the new values, but
+  // the Scores pane was rendered BEFORE it — so the screen kept showing the old
+  // numbers and the replace looked like it had silently failed. The rail too:
+  // a domain can gain or lose progress here, which moves it between zones.
+  const msg = document.querySelector("#viewScores .scores-msg");
+  const keep = msg ? msg.textContent : "";
+  if (browserPane === "scores") renderScoresPane();
+  if (keep) setScoresMsg(keep);          // re-render wipes the message; put it back
+  renderBrowserRail();
 }
 
 // Delegated clicks: works for the settings page AND its browser-pane clone.
 document.addEventListener("click", (e) => {
   const exp = e.target.closest && e.target.closest(".js-export-scores");
   const imp = e.target.closest && e.target.closest(".js-import-scores");
-  if (exp){ e.preventDefault(); exportScores(); }
+  if (exp){
+    e.preventDefault();
+    exportScores();
+    // Backing up resets the gains counter to 0, so the "Since your last backup"
+    // line on this very pane is now wrong. Redraw it — keeping the message that
+    // exportScores just set.
+    if (browserPane === "scores"){
+      const m = document.querySelector("#viewScores .scores-msg");
+      const keep = m ? m.textContent : "";
+      renderScoresPane();
+      if (keep) setScoresMsg(keep);
+    }
+  }
   else if (imp){ e.preventDefault(); document.getElementById("scoresFileInput").click(); }
 });
 
