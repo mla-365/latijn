@@ -1866,49 +1866,6 @@ function resolveIdLists(domain, fullRows){
   }
 }
 
-/* Cut the dead keys out of a curated domain's pool.
-
-   A curated domain's Full-List IS the complete list of its words, so any pool
-   key that isn't one of its IDs can never match a card again: it will never be
-   looked up, never shown, never scored. Dead weight — but not harmless, because
-   gatherAllScores() sweeps every pool into the backup file, so the junk rides
-   along and any restore puts it straight back. The file becomes a carrier.
-   (This is exactly how pre-rename composite keys like "NL-IT_A1_0001" kept
-   reappearing after we thought we had wiped them.)
-
-   Only ever runs against a curated domain, where the truth is complete. An
-   uncurated domain has no Full-List, so nothing there is provably dead. */
-function pruneDomainPool(domain, fullRows){
-  const valid = new Set(fullRows.map(r => r.ID));
-  let pool;
-  try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
-  catch { return; }
-
-  // Two kinds of junk:
-  //   • keys that match no word in the Full-List (pre-rename composite keys,
-  //     IDs from a corpus that has since changed) — they can never be looked up;
-  //   • entries sitting at exactly 0. A pool entry must mean "this word has been
-  //     touched"; an untouched word is absent, and absent sorts identically to
-  //     zero, so a zero buys nothing locally.
-  //
-  // ⚠ OPEN, COUPLED TO SYNC: this also drops an EARNED zero (a word drilled
-  // from −2 back up to exactly 0). Today that is unobservable — absent and 0
-  // sort the same. It only matters if the future sync payload ships zeros, so
-  // that a device which has never seen a word cannot out-vote one that has
-  // (max(absent, −2) must not resolve to 0). If that argument wins when sync is
-  // built, STOP PRUNING ZEROS HERE — one line. Until then, cleaning the ~675
-  // seeded zeros the old import path wrote is worth far more than the loss.
-  const dead = Object.keys(pool).filter(k => !valid.has(k) || pool[k] === 0);
-  if (!dead.length) return;
-
-  for (const k of dead) delete pool[k];
-  try {
-    localStorage.setItem("wd_rs_" + domain, JSON.stringify(pool));
-    console.info("WordDock: pruned " + dead.length + " empty/dead score key(s) from " +
-                 domain + ".");
-  } catch {}
-}
-
 function registerList(list){
   LISTS[list.listId] = list;
   if (list.source === "imported") saveLists();
@@ -2052,7 +2009,6 @@ async function loadDomainMaster(domain){
         extraColumns:[], source:"embedded"
       });
       resolveIdLists(domain, fullRows);   // stored slices of this domain
-      pruneDomainPool(domain, fullRows); // drop score keys that match no word
     }
     switchActiveList(listId);
   } catch(e){ /* unknown domain — no-op */ }
@@ -2689,7 +2645,6 @@ function makeFolderEl(domain){
           extraColumns:[], source:"embedded"
         });
         resolveIdLists(domain, fullRows);   // stored slices of this domain
-        pruneDomainPool(domain, fullRows); // drop score keys that match no word
       } catch(e){ /* fetch failed — leave pane empty */ }
     }
     renderBrowser();
@@ -3726,7 +3681,6 @@ function readLastList(){
     source: "embedded"
   });
   resolveIdLists(bootDomain, fullRows);   // stored slices of this domain can now resolve
-  pruneDomainPool(bootDomain, fullRows); // drop score keys that match no word in it
 
   loadRS();
   $tabDomainValue.textContent = DOMAIN_RUNTIME;
