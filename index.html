@@ -1256,11 +1256,32 @@ body{
 /* Mobile: stack to tabs (handled with a class toggle in JS) */
 @media (max-width:560px){
   .browser-rail{
-    width:100%;border-right:none;border-bottom:1px solid var(--menu-border);
+    width:100%;border-right:none;border-bottom:none;
+    overflow-y:auto;                 /* MY LISTS, MORE and the footer must reach */
   }
   .browser-panes{flex-direction:column}
   .browser.show-detail .browser-rail{display:none}
   .browser.show-rail   .browser-detail{display:none}
+
+  /* One pane at a time means one header at a time. Showing both left a dead
+     "Domains" column beside the lists — it looked like a control, highlighted
+     on touch, and did nothing. */
+  .browser.show-rail .browser-head-detail{display:none}
+  .browser.show-rail .browser-head-rail{width:100%;border-right:none}
+
+  /* In the detail, "Domains" is the only route back to the rail — so it has to
+     look like one. */
+  .browser.show-detail .browser-head-rail{
+    width:auto;flex:0 0 auto;padding-right:14px;border-right:none;
+    font-size:15px;color:var(--tag);
+  }
+  .browser.show-detail .browser-head-rail::before{
+    content:"\2190\00a0";            /* ← */
+  }
+  .browser.show-detail .browser-head-detail{flex:1 1 auto}
+
+  /* Touch targets: rail rows and footer items need a thumb-sized hit area. */
+  .folder,.rail-meta-item,.rail-import{min-height:46px;display:flex;align-items:center}
 }
 </style>
 </head>
@@ -3005,6 +3026,12 @@ function renderScoresPane(){
 function showBrowserPane(pane){
   browserPane = pane;
   saveView(pane);            // a refresh comes back here (tab-lifetime only)
+
+  // Mobile is one pane at a time: going TO a detail pane (lists, info, scores,
+  // settings) must reveal it and hide the rail. Above the breakpoint the CSS
+  // ignores these classes entirely, so this is a no-op on desktop.
+  $listbrowser.classList.add("show-detail");
+  $listbrowser.classList.remove("show-rail");
   // A rejected import left its error — and the rules link — sitting there while
   // the user moved on to something else entirely. A message is about the thing
   // you just did, not a permanent fixture.
@@ -3366,7 +3393,19 @@ async function deleteList(listId){
 // Back link (in Info/Settings) returns to the lists view, staying in the browser
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
-document.getElementById("browserDomainsHeader").addEventListener("click", () => showBrowserPane("lists"));
+/* The "Domains" header is the way back to the rail.
+
+   On desktop both panes are visible, so it just returns the detail pane to the
+   lists view (leaving Info/Scores/Settings). On mobile only one pane shows at a
+   time, and this is the ONLY route back to the domain list — the rail, with
+   MY LISTS, MORE and the Info · Scores · Settings footer, is hidden inside it.
+   Without this the header looked tappable, highlighted on touch, and did
+   nothing. */
+document.getElementById("browserDomainsHeader").addEventListener("click", () => {
+  showBrowserPane("lists");                       // detail returns to the lists view
+  $listbrowser.classList.remove("show-detail");   // …then, on mobile, show the rail
+  $listbrowser.classList.add("show-rail");
+});
 /* The five requirements, shown on the spot. Clicking through to the whole Info
    page answered a question the user didn't ask ("what is WordDock? how do I
    study?") and lost their place. They asked one thing; answer that one thing,
