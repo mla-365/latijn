@@ -1214,6 +1214,20 @@ body{
 }
 .study-toast.on{opacity:1}
 
+/* The pairing key. Read off one screen and typed into another, so it is set
+   large, monospaced and selectable — legibility is the whole job. */
+.sync-key{
+  margin:14px 0 4px;
+  padding:14px 16px;
+  border:1px solid var(--menu-border);
+  border-radius:11px;
+  background:rgba(255,255,255,0.04);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:19px;letter-spacing:.06em;color:var(--ink);
+  text-align:center;
+  user-select:all;                  /* one tap selects the whole key */
+}
+
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
 }
@@ -1489,6 +1503,11 @@ body{
          pane shows, so that is where they belong — and one copy means one
          place for the messages to stay true. Settings holds preferences;
          Scores holds the scores and what you do with them. -->
+
+    <!-- Sync. Rendered fresh on every open rather than cloned-and-rewired:
+         it has several controls whose state changes, and one copy of the
+         wiring is one place for it to be right. -->
+    <div id="syncSection"></div>
   </div>
 </div>
 
@@ -1946,6 +1965,254 @@ function showStudyToast(text){
     el.classList.remove("on");
     setTimeout(() => { el.hidden = true; }, 300);
   }, 2200);
+}
+
+/* ─── Sync identity: a pairing key ─────────────────────────────────────────
+   WordDock's account is a random key the user carries between their own
+   devices. No email, no password, no personal data — the server never learns
+   anything about a person, only that some opaque key has some vocabulary
+   scores.
+
+   Why a key rather than a magic-link email: it needs no email-sending service
+   (a whole third-party dependency, an API key, a sender domain), and email
+   delivery is unreliable in exactly the places a phone-first audience lives.
+   The cost is that losing every device loses the account — acceptable here,
+   because RS is a proxy for mastery, not the asset: it is rebuilt by studying,
+   and the scores file is the real backup.
+
+   Alphabet excludes 0/O and 1/I/L — a key is read off one screen and typed on
+   another, so characters that can be misread would cost more than the entropy
+   they add. */
+const SYNC_KEY_STORE = "wd_sync_key";
+const KEY_ALPHABET   = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+
+const SYNC_KEY_LEN = 8;           // WD-XXXX-XXXX
+
+function generateSyncKey(){
+  const bytes = new Uint32Array(SYNC_KEY_LEN);
+  crypto.getRandomValues(bytes);
+  let raw = "";
+  for (const b of bytes) raw += KEY_ALPHABET[b % KEY_ALPHABET.length];
+  return raw;                       // stored bare, formatted only for display
+}
+
+/* Display form: grouped so the eye can track it while typing on another
+   device. The stored form stays bare — display is never the identity. */
+function formatSyncKey(raw){
+  return "WD-" + raw.slice(0,4) + "-" + raw.slice(4,8);
+}
+
+/* Accept whatever the user types: lowercase, spaces, missing or extra dashes,
+   with or without the WD prefix. Being strict here would only punish someone
+   for copying a key correctly but formatting it differently. */
+function normalizeSyncKey(input){
+  let s = (input || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (s.startsWith("WD")) s = s.slice(2);
+  return s;
+}
+
+function isValidSyncKey(raw){
+  return raw.length === SYNC_KEY_LEN && [...raw].every(c => KEY_ALPHABET.includes(c));
+}
+
+function getSyncKey(){
+  try { return localStorage.getItem(SYNC_KEY_STORE) || null; } catch { return null; }
+}
+function setSyncKey(raw){
+  try { localStorage.setItem(SYNC_KEY_STORE, raw); } catch {}
+}
+function clearSyncKey(){
+  try { localStorage.removeItem(SYNC_KEY_STORE); } catch {}
+}
+
+/* A plain text prompt. wdPromptName() is filename-specific (it validates and
+   previews a list name); this is the general one. Resolves to the typed string,
+   or null if cancelled. */
+function wdPrompt(title, body, placeholder, okLabel){
+  return new Promise(resolve => {
+    const back   = document.getElementById("wdDialogBackdrop");
+    const field  = document.getElementById("wdDialogField");
+    const input  = document.getElementById("wdDialogInput");
+    const prev   = document.getElementById("wdDialogPreview");
+    const ok     = document.getElementById("wdDialogOk");
+    const cancel = document.getElementById("wdDialogCancel");
+
+    document.getElementById("wdDialogTitle").textContent = title;
+    document.getElementById("wdDialogBody").textContent  = body;
+    ok.textContent = okLabel || "OK";
+    cancel.textContent = "Cancel";
+    cancel.hidden = false;
+    field.hidden = false;
+    prev.textContent = "";
+    input.value = "";
+    input.placeholder = placeholder || "";
+    back.hidden = false;
+    back.classList.add("open");
+    requestAnimationFrame(() => requestAnimationFrame(() => input.focus()));
+
+    function done(val){
+      back.classList.remove("open");
+      back.hidden = true;
+      field.hidden = true;
+      input.placeholder = "";
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      input.removeEventListener("keydown", onKey);
+      resolve(val);
+    }
+    function onOk(){ done(input.value); }
+    function onCancel(){ done(null); }
+    function onKey(e){
+      if (e.key === "Enter"){ e.preventDefault(); onOk(); }
+      if (e.key === "Escape"){ e.preventDefault(); onCancel(); }
+    }
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    input.addEventListener("keydown", onKey);
+  });
+}
+
+/* The Sync section of Settings. Rendered fresh each time the pane opens.
+
+   The comparison is not decoration: the user must be able to see, BEFORE
+   opting in, exactly what does and does not leave their browser. Off-grid is
+   the default and stays fully functional forever — sync is a convenience
+   layer, never a requirement, and saying so plainly is what makes the default
+   an honest one rather than a hidden downgrade. */
+function renderSyncSection(root){
+  if (!root) return;
+  root.innerHTML = "";
+  const key = getSyncKey();
+
+  const h = document.createElement("h2");
+  h.className = "settings-title";
+  h.style.marginTop = "34px";
+  h.textContent = "Sync";
+  root.appendChild(h);
+
+  if (!key){
+    const p = document.createElement("p");
+    p.className = "setting-desc";
+    p.innerHTML =
+      "Right now your progress lives <b>only in this browser</b> \u2014 nothing " +
+      "leaves it. Turn sync on and this browser's progress is also kept on " +
+      "WordDock's server, so your other devices can pick it up.<br><br>" +
+      "There are no accounts, no email, no password. Sync uses a random key " +
+      "you carry to your other device. WordDock never learns who you are \u2014 " +
+      "only that some key has some scores.";
+    root.appendChild(p);
+
+    const warn = document.createElement("div");
+    warn.className = "warn";
+    warn.innerHTML =
+      "<strong>Sharing this computer?</strong> Progress belongs to the browser, " +
+      "so everyone studying here already shares one set of scores \u2014 and sync " +
+      "would carry all of it to your devices. If more than one person uses this " +
+      "computer, give each their own browser profile (or a different browser) " +
+      "first.";
+    root.appendChild(warn);
+
+    const actions = document.createElement("div");
+    actions.className = "scores-actions";
+
+    const on = document.createElement("button");
+    on.className = "list-btn";
+    on.type = "button";
+    on.textContent = "Turn on sync";
+    on.addEventListener("click", async () => {
+      const fresh = generateSyncKey();
+      setSyncKey(fresh);
+      renderSyncSection(root);
+      await wdConfirm(
+        "Sync is on",
+        "Your key is " + formatSyncKey(fresh) + ". On your other device open " +
+        "Settings \u2192 Sync \u2192 \u201CI have a key\u201D and type it in. " +
+        "The key stays visible here, so you can come back for it.",
+        "OK", null
+      );
+    });
+
+    const have = document.createElement("button");
+    have.className = "list-btn";
+    have.type = "button";
+    have.textContent = "I have a key";
+    have.addEventListener("click", async () => {
+      const typed = await wdPrompt(
+        "Enter your key",
+        "Type the key shown under Settings \u2192 Sync on your other device. " +
+        "The WD and the dashes are optional, and capitals don't matter \u2014 " +
+        "just the 8 characters is enough.",
+        "e.g. 7K2M9XQF", "Connect"
+      );
+      if (typed === null) return;
+      const raw = normalizeSyncKey(typed);
+      if (!isValidSyncKey(raw)){
+        await wdConfirm(
+          "That key doesn't look right",
+          "A WordDock key is 8 characters, like WD-7K2M-9XQF. Check it " +
+          "against the other device and try again.",
+          "OK", null
+        );
+        return;
+      }
+      setSyncKey(raw);
+      renderSyncSection(root);
+    });
+
+    actions.appendChild(on);
+    actions.appendChild(have);
+    root.appendChild(actions);
+    return;
+  }
+
+  // ── Sync is on ──────────────────────────────────────────────────────────
+  const p = document.createElement("p");
+  p.className = "setting-desc";
+  p.textContent = "This browser's progress is linked to the key below. Enter " +
+    "the same key on another device to join it to this progress.";
+  root.appendChild(p);
+
+  const keyBox = document.createElement("div");
+  keyBox.className = "sync-key";
+  keyBox.textContent = formatSyncKey(key);
+  root.appendChild(keyBox);
+
+  const actions = document.createElement("div");
+  actions.className = "scores-actions";
+
+  const copy = document.createElement("button");
+  copy.className = "list-btn";
+  copy.type = "button";
+  copy.textContent = "Copy key";
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(formatSyncKey(key));
+      copy.textContent = "Copied";
+    } catch {
+      copy.textContent = "Select it above";
+    }
+    setTimeout(() => { copy.textContent = "Copy key"; }, 1600);
+  });
+
+  const off = document.createElement("button");
+  off.className = "list-btn";
+  off.type = "button";
+  off.textContent = "Turn off sync";
+  off.addEventListener("click", async () => {
+    const ok = await wdConfirm(
+      "Turn off sync?",
+      "This browser stops syncing. Your progress here is untouched, and the " +
+      "copy on the server stays \u2014 entering this key again reconnects you.",
+      "Turn off", "Keep sync on"
+    );
+    if (!ok) return;
+    clearSyncKey();
+    renderSyncSection(root);
+  });
+
+  actions.appendChild(copy);
+  actions.appendChild(off);
+  root.appendChild(actions);
 }
 
 function switchActiveList(listId){
@@ -3142,7 +3409,17 @@ function showBrowserPane(pane){
           paintReminderToggle(remindersOn);
         });
       }
+      // The cloned placeholder must not keep the template's id — two elements
+      // sharing an id is how the wrong one gets rendered into.
+      const ph = clone.querySelector("#syncSection");
+      if (ph){ ph.removeAttribute("id"); ph.className = "sync-section"; }
     }
+  }
+  // Sync state changes (key added, key removed), so it is rendered on EVERY
+  // open rather than cloned once. A stale panel here would be lying about
+  // whether the user's progress leaves the browser.
+  if (pane === "settings"){
+    renderSyncSection($viewSettings.querySelector(".sync-section"));
   }
 
   // Header title + rail highlight
