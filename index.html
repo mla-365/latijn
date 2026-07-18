@@ -1214,6 +1214,16 @@ body{
 }
 .study-toast.on{opacity:1}
 
+/* A heading for a section WITHIN Settings. Distinct from .settings-title,
+   which names the whole page and is hidden in the detail pane because the pane
+   header already shows it. */
+.section-title{
+  margin:34px 0 10px;
+  padding-top:26px;
+  border-top:1px solid var(--menu-border);
+  font-size:17px;font-weight:600;color:var(--ink);
+}
+
 /* The pairing key. Read off one screen and typed into another, so it is set
    large, monospaced and selectable — legibility is the whole job. */
 .sync-key{
@@ -2085,8 +2095,7 @@ function renderSyncSection(root){
   const key = getSyncKey();
 
   const h = document.createElement("h2");
-  h.className = "settings-title";
-  h.style.marginTop = "34px";
+  h.className = "section-title";
   h.textContent = "Sync";
   root.appendChild(h);
 
