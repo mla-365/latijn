@@ -19,6 +19,11 @@
 
      Two weights ship (400 and 600) — exactly the two the app uses. Latin
      subset only: 8.7 + 8.9 KB, down from 158 KB per TTF. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#22252c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-400.woff2">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-600.woff2">
 <script>
@@ -1123,6 +1128,11 @@ body{
   white-space:nowrap;
 }
 .list-row:hover .list-row-cue{opacity:1}
+/* Touch has no hover, so the cue never appeared — leaving a tap ambiguous:
+   does this show me the list, or start drilling it? Show it always there. */
+@media (hover:none){
+  .list-row-cue{opacity:.65}
+}
 .list-row-actions{display:flex;gap:3px;flex-shrink:0;margin-left:10px}
 /* Scores view — three columns: domain · breadth · depth. The sum is the number
    people watch go up, so it gets the weight; the word count keeps it honest. */
@@ -1189,6 +1199,21 @@ body{
    but stays quiet at rest (no red sitting on the screen). */
 .list-row-del{font-size:21px !important;line-height:1}
 .list-row-del:hover{background:rgba(220,90,90,0.16) !important;color:#ffb4b4 !important}
+/* Arrival acknowledgement. Quiet by design: it confirms the mode changed and
+   names the list, then gets out of the way. Never intercepts taps. */
+.study-toast{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  z-index:5;pointer-events:none;
+  max-width:88%;
+  padding:7px 15px;border-radius:999px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid var(--menu-border);
+  color:var(--tag);font-size:12.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transition:opacity .25s ease;
+}
+.study-toast.on{opacity:1}
+
 .browser-empty{
   font-size:13px;color:var(--tag);padding:14px 2px;font-style:italic;
 }
@@ -1332,6 +1357,10 @@ body{
 
 <!-- ─── Stage: card-area (tag + card) + action zone ─── -->
 <div class="stage">
+  <!-- Brief acknowledgement when the user arrives from the browser: browsing and
+       studying are opposite modes, and landing in study shouldn't feel like
+       nothing changed. Fades on its own; never blocks. -->
+  <div class="study-toast" id="studyToast" hidden></div>
   <div class="card-area">
     <div class="card-frame" id="stage">
       <div class="card">
@@ -1890,6 +1919,22 @@ function resolveIdLists(domain, fullRows){
 function registerList(list){
   LISTS[list.listId] = list;
   if (list.source === "imported") saveLists();
+}
+
+let studyToastTimer = null;
+function showStudyToast(text){
+  const el = document.getElementById("studyToast");
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  // Two frames: the element must be laid out before the transition can run,
+  // or it appears at full opacity with no fade.
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("on")));
+  clearTimeout(studyToastTimer);
+  studyToastTimer = setTimeout(() => {
+    el.classList.remove("on");
+    setTimeout(() => { el.hidden = true; }, 300);
+  }, 2200);
 }
 
 function switchActiveList(listId){
@@ -2810,27 +2855,45 @@ function renderBrowserLists(){
         closeAllSurfaces();
         return;
       }
-      // Confirm only when this would switch study to a DIFFERENT domain
-      // (changing the language/subject you're drilling). Same-domain
-      // switches (e.g. Full-List <-> a slice) need no confirmation.
-      const switchesDomain = list.domain !== DOMAIN_RUNTIME;
-      if (switchesDomain){
-        // "Your progress ... is saved" was a quiet lie: the pool is written at
-        // DECK COMPLETION only, so a deck in progress (7/12) is discarded by
-        // this switch. Naming "finished decks" is true in every case, and tells
-        // a mid-deck reader what they need to know without a second warning.
-        const ok = await wdConfirm(
-          "Switch to studying " + domainDisplayName(list.domain) + "?",
-          "Your finished decks in " + domainDisplayName(DOMAIN_RUNTIME) + " are saved.",
-          "Study " + domainDisplayName(list.domain)
-        );
-        if (!ok) return;
+      // EVERY switch asks. Not because every switch destroys something, but
+      // because switching lists is the erratic behaviour WordDock exists to
+      // counter: ideally you leave a list when you have mastered it, not
+      // because you drifted. A moment of deliberation is the point. It also
+      // resolves a real ambiguity on touch, where there is no hover cue to say
+      // whether a tap means "show me this" or "start drilling this".
+      //
+      // The wording carries only what is TRUE in that case — a dialog that
+      // claims a loss which isn't happening is the kind of small dishonesty
+      // that teaches people to stop reading dialogs.
+      const leavingDomain = list.domain !== DOMAIN_RUNTIME;
+      const midDeck       = deckScore > 0 && !deckDone;
+      const deckClause    = midDeck
+        ? " Unfinished decks lose progress."
+        : "";
+
+      let title, body, okLabel;
+      if (leavingDomain){
+        // A change of domain is a change of undertaking, not a navigation step.
+        title   = "Switch to studying " + domainDisplayName(list.domain) + "?";
+        body    = "You're leaving " + domainDisplayName(DOMAIN_RUNTIME) + "." + deckClause;
+        okLabel = "Study " + domainDisplayName(list.domain);
+      } else {
+        title   = "Switch to \u201C" + list.name + "\u201D?";
+        body    = "You're leaving \u201C" + activeListName + "\u201D." + deckClause;
+        okLabel = "Switch list";
       }
+      const go = await wdConfirm(title, body, okLabel, "Keep studying");
+      if (!go) return;
       switchActiveList(list.listId);
       markStudied(list.domain);   // for ACTIVE ordering
       setListMessage("");
       // Honor the intent: go straight to the study page.
       closeAllSurfaces();
+      // Browsing and studying are opposite modes; arriving in study should not
+      // feel like nothing happened. Name what you're now drilling — this also
+      // makes a DOMAIN change visible without spending a dialog on it.
+      showStudyToast("Now studying " + domainDisplayName(list.domain) +
+                     " \u00B7 " + list.name);
     });
     $browserLists.appendChild(row);
   }
@@ -3741,6 +3804,23 @@ function readLastList(){
   // either the browser is covering it, or there was nothing to restore.
   document.documentElement.classList.remove("restoring-view");
 })();
+</script>
+
+<script>
+/* Register the service worker — the one thing that makes WordDock installable
+   and openable with no connection.
+
+   Deliberately after 'load': registration must never compete with the first
+   paint or the corpus fetch. And deliberately silent on failure — a browser
+   without service workers, or a page opened over file://, simply gets the
+   ordinary app. Nothing here is load-bearing. */
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {
+      /* no offline support; the app works exactly as before */
+    });
+  });
+}
 </script>
 </body>
 </html>
