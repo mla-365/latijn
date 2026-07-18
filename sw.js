@@ -23,12 +23,15 @@
    The result: offline works, and a deploy still reaches everyone the next time
    they open the app with a connection. */
 
-const VERSION    = "wd-2026-07-18";
+const VERSION    = "wd-2026-07-18b";
 const SHELL      = "wd-shell-" + VERSION;   // the app + its data
 const IMMUTABLE  = "wd-static-" + VERSION;  // fonts, icons
 
-/* Enough to open and study offline. The JSONs are listed so a first visit
-   while online makes the corpus available later without a connection. */
+/* Enough to open and study offline. The corpus is NOT precached — it lives
+   under lists/ and may grow to hundreds of files; forcing every visitor to
+   download all of them would be absurd. Each list is cached the first time it
+   is actually fetched (the network-first rule below), so the pairs a user
+   really studies become available offline and the rest cost nothing. */
 const PRECACHE = [
   "/",
   "/index.html",

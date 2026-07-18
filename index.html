@@ -1547,6 +1547,10 @@ let DOMAIN_RUNTIME = DOMAIN;
    Today both resolve from embedded constants. When the catalog migrates
    to separate fetched files, only the bodies of these functions change.
    ──────────────────────────────────────────────────────────────────── */
+/* Where the corpus lives. One constant, so moving the collection is a one-line
+   change rather than a hunt. */
+const LISTS_DIR = "lists/";
+
 const catalog = {
   // The list of available masters. Adding a domain = adding an entry here
   // plus hosting its <domain>.json file next to index.html.
@@ -1565,10 +1569,17 @@ const catalog = {
   },
   async loadMaster(domain){
     if (!this.isAvailable(domain)) throw new Error("Unknown domain: " + domain);
-    // Fetch-on-demand: each master lives in its own <domain>.json file next
-    // to index.html, not baked into this code.
-    const resp = await fetch(domain + ".json", { cache: "no-cache" });
-    if (!resp.ok) throw new Error("Could not fetch " + domain + ".json (HTTP " + resp.status + ")");
+    // Fetch-on-demand: each master lives in its own file under lists/, not
+    // baked into this code and not mixed in with the app.
+    //
+    // The folder is the boundary between the APP (index.html, sw.js, the
+    // manifest, the fonts — a fixed handful that only we touch) and the CORPUS
+    // (which grows without limit and is where another curator works). Keeping
+    // a language pair beside the application file would blur exactly the line
+    // that collaboration depends on.
+    const path = LISTS_DIR + domain + ".json";
+    const resp = await fetch(path, { cache: "no-cache" });
+    if (!resp.ok) throw new Error("Could not fetch " + path + " (HTTP " + resp.status + ")");
     return await resp.json();
   },
   isAvailable(domain){
