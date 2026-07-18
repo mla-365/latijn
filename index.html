@@ -2120,9 +2120,26 @@ function renderSyncSection(root){
     on.type = "button";
     on.textContent = "Turn on sync";
     on.addEventListener("click", async () => {
-      const fresh = generateSyncKey();
+      // Claim at the server so two users can never share a key. The client
+      // generates offline, so a collision is possible in principle; this makes
+      // it impossible in fact. Retry a few times — with 853 billion keys, one
+      // collision would already be remarkable.
+      let fresh = null;
+      for (let attempt = 0; attempt < 5 && !fresh; attempt++){
+        fresh = await syncClaim(generateSyncKey());
+      }
+      if (!fresh){
+        await wdConfirm(
+          "Couldn't set up sync",
+          "Something went wrong claiming a key. Your progress is untouched \u2014 " +
+          "try again in a moment.",
+          "OK", null
+        );
+        return;
+      }
       setSyncKey(fresh);
       renderSyncSection(root);
+      syncPush();                        // seed the server with what's here
       await wdConfirm(
         "Sync is on",
         "Your key is " + formatSyncKey(fresh) + ". On your other device open " +
@@ -2157,6 +2174,12 @@ function renderSyncSection(root){
       }
       setSyncKey(raw);
       renderSyncSection(root);
+      // Pull straight away: the whole point of typing a key is to see the
+      // other device's progress here, now, rather than at some later moment.
+      await syncPull();
+      renderSyncSection(root);
+      if (browserPane === "scores") renderScoresPane();
+      renderBrowserRail();
     });
 
     actions.appendChild(on);
@@ -2214,6 +2237,139 @@ function renderSyncSection(root){
   actions.appendChild(off);
   root.appendChild(actions);
 }
+
+/* ─── Sync client ──────────────────────────────────────────────────────────
+   Pull on foreground, push on background. Nothing else.
+
+   The server is dumb storage; ALL reconciliation happens here, in one rule:
+   per (domain, ID), take the MAX. No timestamps, no version counters, no
+   conflict dialogs. Max is idempotent and commutative, so syncing twice, out
+   of order, or after a dropped connection cannot corrupt anything — which is
+   what makes it safe to do silently.
+
+   Reads are effectively free and writes are not, so we pull often and push
+   once per session. Push fires on `visibilitychange -> hidden` rather than on
+   close: closing is not a reliable event (a phone may kill a backgrounded tab
+   without warning), while backgrounding fires every time the user switches
+   away or locks the screen.
+
+   Every failure is swallowed. Local storage remains the source of truth, so a
+   failed sync costs nothing and the next foreground heals it. */
+
+const SYNC_API = "https://worddock-sync.michellanssens.workers.dev";
+let syncBusy = false;
+
+function allPools(){
+  const out = {};
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith("wd_rs_")) continue;
+    try {
+      const pool = JSON.parse(localStorage.getItem(k)) || {};
+      if (Object.keys(pool).length) out[k.slice("wd_rs_".length)] = pool;
+    } catch {}
+  }
+  return out;
+}
+
+/* The whole algorithm. Present in both -> max; present in one -> take it.
+   "Present in one" matters: an absent entry means "this device has no
+   information about that word", NOT "zero". A device that has never seen a
+   word must not out-vote one that has. */
+function mergePools(local, remote){
+  const merged = {};
+  const domains = new Set([...Object.keys(local), ...Object.keys(remote)]);
+  for (const d of domains){
+    const a = local[d] || {}, b = remote[d] || {};
+    const ids = new Set([...Object.keys(a), ...Object.keys(b)]);
+    const pool = {};
+    for (const id of ids){
+      if (id in a && id in b) pool[id] = Math.max(a[id], b[id]);
+      else                    pool[id] = (id in a) ? a[id] : b[id];
+    }
+    merged[d] = pool;
+  }
+  return merged;
+}
+
+function writePools(pools){
+  for (const [domain, pool] of Object.entries(pools)){
+    try { localStorage.setItem("wd_rs_" + domain, JSON.stringify(pool)); } catch {}
+  }
+  loadRS();   // refresh the in-memory copy for the active domain
+}
+
+async function syncPull(){
+  const key = getSyncKey();
+  if (!key || syncBusy) return;
+  syncBusy = true;
+  try {
+    const res  = await fetch(SYNC_API + "/pull?key=" + key);
+    const data = await res.json();
+    if (data.empty) return;                    // nothing on the server yet
+    if (!data.progress) return;
+
+    const local  = allPools();
+    const merged = mergePools(local, data.progress);
+    writePools(merged);
+
+    // A running deck is untouched: deck completion re-reads the live pool and
+    // applies only its own deltas, so a mid-session pull can no more clobber a
+    // deck than a scores restore can.
+    if (browserPane === "scores") renderScoresPane();
+  } catch {
+    /* offline or server down — local stays authoritative */
+  } finally {
+    syncBusy = false;
+  }
+}
+
+async function syncPush(){
+  const key = getSyncKey();
+  if (!key) return;
+  const body = JSON.stringify({
+    key,
+    progress: allPools(),
+    lastList: readLastList() || null
+  });
+  try {
+    // keepalive lets the request survive the page being backgrounded or closed
+    // — without it the push would often be cancelled mid-flight, which is the
+    // one moment we actually need it to complete.
+    await fetch(SYNC_API + "/push", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+      keepalive: true
+    });
+  } catch {
+    /* swallowed: the next background push carries the same state */
+  }
+}
+
+/* Claim a key at the server, so two users can never end up sharing one.
+   Returns the key actually claimed (possibly a regenerated one), or null. */
+async function syncClaim(key){
+  try {
+    const res  = await fetch(SYNC_API + "/claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key })
+    });
+    const data = await res.json();
+    if (data.ok)    return key;
+    if (data.taken) return null;      // caller regenerates
+    return key;                       // server unreachable: proceed offline
+  } catch {
+    return key;                       // offline: the key still works locally
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") syncPush();
+  else                                       syncPull();
+});
+window.addEventListener("pagehide", syncPush);
 
 function switchActiveList(listId){
   const list = LISTS[listId];
@@ -4091,6 +4247,11 @@ function readLastList(){
   // The stage was hidden pre-paint to avoid a flash; it's safe to reveal now —
   // either the browser is covering it, or there was nothing to restore.
   document.documentElement.classList.remove("restoring-view");
+
+  // Pull after the app is up and usable, never before: sync is a convenience
+  // layer and must not delay the first card by a single frame. If it fails,
+  // nothing here notices.
+  syncPull();
 })();
 </script>
 
