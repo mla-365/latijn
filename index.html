@@ -1338,10 +1338,9 @@ body{
       <div class="rail-meta">
         <div class="rail-meta-item" data-pane="info"><span>Info</span></div>
         <div class="rail-meta-item" data-pane="scores"><span>Scores</span></div>
-        <div class="rail-meta-item" data-pane="settings"><span>Settings</span></div>
       </div>
     </div>
-    <!-- RIGHT: swappable detail — lists (default) / info / settings -->
+    <!-- RIGHT: swappable detail — lists (default) / info / scores -->
     <div class="browser-detail">
       <!-- LISTS view -->
       <div class="detail-view" id="viewLists">
@@ -1352,8 +1351,6 @@ body{
       </div>
       <!-- INFO view (content injected from the info page source) -->
       <div class="detail-view" id="viewInfo" hidden></div>
-      <!-- SETTINGS view (content injected from the settings source) -->
-      <div class="detail-view" id="viewSettings" hidden></div>
       <!-- SCORES view (rendered fresh each time it opens) -->
       <div class="detail-view" id="viewScores" hidden></div>
     </div>
@@ -1404,20 +1401,7 @@ body{
   </div>
 </div>
 
-<!-- ─── Settings page (full screen, like Info) ─── -->
-<div class="infopage" id="settingspage">
-  <div class="infopage-inner">
-    <button class="info-close" id="settingsBack" aria-label="Close">×</button>
-    <h2 class="settings-title">Settings</h2>
-
-    <!-- Sync. Rendered fresh on every open rather than cloned-and-rewired:
-         it has several controls whose state changes, and one copy of the
-         wiring is one place for it to be right. -->
-    <div id="syncSection"></div>
-  </div>
-</div>
-
-<!-- ─── Domain page (full screen, like Info/Settings) ─── -->
+<!-- ─── Domain page (full screen, like Info) ─── -->
 <div class="infopage" id="domainpage">
   <div class="infopage-inner">
     <button class="info-close" id="domainBack" aria-label="Close">×</button>
@@ -2585,7 +2569,6 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (document.getElementById("infopage").classList.contains("open") ||
-      document.getElementById("settingspage").classList.contains("open") ||
       document.getElementById("domainpage").classList.contains("open") ||
       document.getElementById("listbrowser").classList.contains("open")) {
     if (e.key === "Escape") closeAllSurfaces();
@@ -2617,7 +2600,6 @@ const tabs = {
 };
 const overlays = {};   // (all overlays retired; kept empty so loops are no-ops)
 const $infopage = document.getElementById("infopage");
-const $settingspage = document.getElementById("settingspage");
 const $domainpage = document.getElementById("domainpage");
 const $domainCurrent = document.getElementById("domainCurrent");
 const $domainUniverse = document.getElementById("domainUniverse");
@@ -2768,7 +2750,6 @@ function readView(){
 function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
   $infopage.classList.remove("open");
-  $settingspage.classList.remove("open");
   $domainpage.classList.remove("open");
   $listbrowser.classList.remove("open");
   for (const k in tabs) tabs[k].classList.remove("active");
@@ -2780,8 +2761,6 @@ function openSurface(which){
   closeAllSurfaces();
   if (which === "wd" || which === "info"){
     $infopage.classList.add("open");
-  } else if (which === "settings"){
-    $settingspage.classList.add("open");
   } else if (which === "domain"){
     renderDomainPage();
     $domainpage.classList.add("open");
@@ -2813,11 +2792,6 @@ document.getElementById("infoBack").addEventListener("click", () => {
   closeAllSurfaces();
 });
 
-// Settings page close button
-document.getElementById("settingsBack").addEventListener("click", () => {
-  closeAllSurfaces();
-});
-
 // Domain page close button
 document.getElementById("domainBack").addEventListener("click", () => {
   closeAllSurfaces();
@@ -2829,7 +2803,6 @@ tabs.wd.addEventListener("click", (e) => {
   // nothing open -> open the browser.
   const surfaceOpen =
     $infopage.classList.contains("open") ||
-    $settingspage.classList.contains("open") ||
     $domainpage.classList.contains("open") ||
     $listbrowser.classList.contains("open") ||
     document.querySelector(".overlay.open");
@@ -2852,8 +2825,6 @@ $logoMenu.querySelectorAll(".logo-menu-item").forEach(item => {
     closeLogoMenu();
     if (which === "info"){
       openSurface("info");
-    } else if (which === "settings"){
-      openSurface("settings");
     } else if (which === "domain"){
       openSurface("domain");
     } else if (which === "list"){
@@ -3188,10 +3159,8 @@ function renderListPanel(){ renderBrowser(); }
 /* ─── Browser pane switching: lists / info / settings ─── */
 const $viewLists    = document.getElementById("viewLists");
 const $viewInfo     = document.getElementById("viewInfo");
-const $viewSettings = document.getElementById("viewSettings");
+let browserPane = "lists";   // "lists" | "info" | "scores"
 const $browserPaneTitle = document.getElementById("browserPaneTitle");
-
-let browserPane = "lists";   // "lists" | "info" | "settings"
 
 /* The Scores view.
 
@@ -3356,6 +3325,14 @@ function renderScoresPane(){
     inner.appendChild(table);
   }
 
+  // Sync lives here, on the Progress page, because it is about your progress
+  // and where it lives — the same reason backup/restore is here. There is no
+  // separate Settings page any more. Rendered fresh each time so its state
+  // (connected or not, which key) is never stale.
+  const syncHost = document.createElement("div");
+  syncHost.className = "sync-section";
+  inner.appendChild(syncHost);
+  renderSyncSection(syncHost);
 
   host.appendChild(inner);
 }
@@ -3376,45 +3353,26 @@ function showBrowserPane(pane){
   const $viewScores    = document.getElementById("viewScores");
   $viewLists.hidden    = (pane !== "lists");
   $viewInfo.hidden     = (pane !== "info");
-  $viewSettings.hidden = (pane !== "settings");
   $viewScores.hidden   = (pane !== "scores");
 
-  // Scores is a live view — always re-render, never cached.
+  // Scores is a live view — always re-render, never cached. It now also hosts
+  // the sync section (rendered inside renderScoresPane), since sync is about
+  // your progress and where it lives.
   if (pane === "scores") renderScoresPane();
 
-  // Lazy-clone the info/settings content from their source surfaces (once)
+  // Lazy-clone the info content from its source surface (once).
   if (pane === "info" && !$viewInfo.dataset.loaded){
     const src = document.querySelector("#infopage .infopage-inner");
     if (src){ $viewInfo.appendChild(src.cloneNode(true)); $viewInfo.dataset.loaded = "1"; }
   }
-  if (pane === "settings" && !$viewSettings.dataset.loaded){
-    const src = document.querySelector("#settingspage .infopage-inner");
-    if (src){
-      const clone = src.cloneNode(true);
-      $viewSettings.appendChild(clone);
-      $viewSettings.dataset.loaded = "1";
-      // The cloned placeholder must not keep the template's id — two elements
-      // sharing an id is how the wrong one gets rendered into.
-      const ph = clone.querySelector("#syncSection");
-      if (ph){ ph.removeAttribute("id"); ph.className = "sync-section"; }
-    }
-  }
-  // Sync state changes (key added, key removed), so it is rendered on EVERY
-  // open rather than cloned once. A stale panel here would be lying about
-  // whether the user's progress leaves the browser.
-  if (pane === "settings"){
-    renderSyncSection($viewSettings.querySelector(".sync-section"));
-  }
 
   // Header title + rail highlight
-  $browserPaneTitle.textContent =
-    pane === "info" ? "Info" : pane === "settings" ? "Settings" : "Lists";
   document.querySelectorAll(".rail-meta-item").forEach(it =>
     it.classList.toggle("active", it.dataset.pane === pane));
-  // Back-to-lists link shows only in a sub-pane (info/settings)
+  // Back-to-lists link shows only in a sub-pane (info/scores)
   document.getElementById("browserBack").hidden = (pane === "lists");
-  // The header title must follow the pane — it said "Lists" on every surface.
-  const titles = { lists: "Lists", info: "Info", scores: "Scores", settings: "Settings" };
+  // The header title must follow the pane.
+  const titles = { lists: "Lists", info: "Info", scores: "Scores" };
   const $t = document.getElementById("browserPaneTitle");
   if ($t) $t.textContent = titles[pane] || "Lists";
   // When showing a meta pane, no domain folder is the "browse" target
