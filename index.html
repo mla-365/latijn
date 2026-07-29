@@ -771,64 +771,11 @@ body{
   color:var(--ink);
   margin:20px 0 24px;
 }
-.setting-row{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:24px;
-  padding:18px 0;
-  border-top:1px solid var(--menu-border);
-}
-.setting-text{flex:1;min-width:0}
-.setting-label{
-  font-size:15px;
-  font-weight:600;
-  color:var(--ink);
-  margin-bottom:5px;
-}
 .setting-desc{
   font-size:13px;
   line-height:1.55;
   color:#9aa3b0;
 }
-/* Quiet backup nudge on the deck-done card — one line, no modal */
-.card-backup-nudge{
-  position:absolute;
-  bottom:14%;
-  left:0;right:0;
-  text-align:center;
-  font-size:13px;
-  color:var(--tag);
-  cursor:pointer;
-  padding:0 24px;
-}
-.card-backup-nudge:hover{color:var(--ink);text-decoration:underline}
-
-/* Considerable-progress celebration: question + two buttons on the green card */
-.card-celeb{
-  position:absolute;
-  bottom:9%;
-  left:0;right:0;
-  text-align:center;
-  padding:0 24px;
-}
-.card-celeb-q{
-  font-size:14px;
-  color:rgba(255,255,255,0.92);
-  margin-bottom:12px;
-}
-.card-celeb-actions{display:flex;gap:10px;justify-content:center}
-.celeb-btn{
-  padding:8px 18px;border:none;border-radius:9px;cursor:pointer;
-  font-size:14px;font-weight:500;
-  background:rgba(255,255,255,0.92);color:#0a5c0a;
-}
-.celeb-btn:hover{background:#ffffff}
-.celeb-later{
-  background:transparent;color:rgba(255,255,255,0.75);
-  border:1px solid rgba(255,255,255,0.35);
-}
-.celeb-later:hover{color:#ffffff;border-color:rgba(255,255,255,0.7)}
 
 /* Scores backup: action row + message */
 .scores-actions{
@@ -844,33 +791,6 @@ body{
   margin-top:10px;
   min-height:1em;
 }
-/* Toggle switch */
-.toggle{
-  flex-shrink:0;
-  width:46px;
-  height:26px;
-  border-radius:13px;
-  border:none;
-  background:var(--menu-border);
-  cursor:pointer;
-  outline:none;
-  position:relative;
-  padding:0;
-  transition:background-color .15s;
-  margin-top:2px;
-}
-.toggle.on{background:var(--domain-bg)}   /* green when on */
-.toggle-knob{
-  position:absolute;
-  top:3px;
-  left:3px;
-  width:20px;
-  height:20px;
-  border-radius:50%;
-  background:#ffffff;
-  transition:transform .15s;
-}
-.toggle.on .toggle-knob{transform:translateX(20px)}
 
 /* ─── Domain page ─── */
 .domain-current-label,
@@ -1299,7 +1219,6 @@ body{
 .detail-view .infopage-inner{max-width:none;margin:0;padding:0}
 .detail-view .info-close{display:none}   /* close handled by logo toggle / back */
 .detail-view .settings-title{display:none}  /* pane header already shows the title */
-.detail-view .setting-row:first-of-type{border-top:none;padding-top:0}
 .detail-view .info-intro{padding-top:0}     /* fix #2: no extra top push in panes */
 
 /* Mobile: stack to tabs (handled with a class toggle in JS) */
@@ -1390,14 +1309,6 @@ body{
       <div class="card">
         <div class="card-tag" id="cardTag"></div>
         <div class="card-text state-question" id="cardText">…</div>
-        <div class="card-backup-nudge" id="backupNudge" hidden></div>
-        <div class="card-celeb" id="backupCeleb" hidden>
-          <div class="card-celeb-q" id="celebQ">Back up your progress now?</div>
-          <div class="card-celeb-actions" id="celebActions">
-            <button class="celeb-btn" id="celebBackup" type="button">Back up</button>
-            <button class="celeb-btn celeb-later" id="celebLater" type="button">Later</button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -1498,21 +1409,6 @@ body{
   <div class="infopage-inner">
     <button class="info-close" id="settingsBack" aria-label="Close">×</button>
     <h2 class="settings-title">Settings</h2>
-
-    <div class="setting-row">
-      <div class="setting-text">
-        <div class="setting-label">Backup reminders</div>
-        <div class="setting-desc">After finishing a deck, show a quiet reminder once you've earned 100 points of new progress since your last backup. You can see that number under Scores.</div>
-      </div>
-      <button class="toggle" id="toggleReminders" role="switch" aria-checked="false">
-        <span class="toggle-knob"></span>
-      </button>
-    </div>
-
-    <!-- Back up / Restore used to live here too. They act on what the SCORES
-         pane shows, so that is where they belong — and one copy means one
-         place for the messages to stay true. Settings holds preferences;
-         Scores holds the scores and what you do with them. -->
 
     <!-- Sync. Rendered fresh on every open rather than cloned-and-rewired:
          it has several controls whose state changes, and one copy of the
@@ -1848,10 +1744,6 @@ let deckScore = 0;
 let deckDone = false;
 let showingA = false;
 let peeking = false;
-// Considerable-progress celebration state
-let heavyCelebDismissed = false;   // in-memory: resets next session
-let celebState = null;             // null | "exported"
-let celebFilename = "";
 
 /* Lists registry — in RAM, holds every list currently loaded.
    Embedded Sources (fetched from <DOMAIN>.json) are NOT persisted: they are
@@ -2546,7 +2438,6 @@ function initDeck(){
   deckDone = false;
   showingA = false;
   peeking = false;
-  celebState = null;
   render();
 }
 
@@ -2605,7 +2496,7 @@ function gradeGood(){
       localStorage.setItem(poolKey, JSON.stringify(pool));
       RS = pool;   // keep the in-memory copy in sync with the store
       markStudied(DOMAIN_RUNTIME);   // for ACTIVE ordering
-      addBackupGains(backupGains);   // for the export-reminder nudge
+      addBackupGains(backupGains);   // feeds the "since last backup" number
     }
     render();
     return;
@@ -2632,58 +2523,21 @@ function moveTo(targetIdx){
 }
 
 function render(){
-  const $nudge = document.getElementById("backupNudge");
-  const $celeb = document.getElementById("backupCeleb");
-  const $celebQ = document.getElementById("celebQ");
-  const $celebActions = document.getElementById("celebActions");
   if (deckDone){
+    // The green tint and the "done" message stay — that is the reward for
+    // finishing a deck. What was removed here: the one-line backup nudge and
+    // the "back up now?" celebration prompt that used to appear on top of it.
+    // Backup is no longer pushed at the user; it is a choice they make on the
+    // Progress page, where the passive "since last backup" number is the only
+    // signal. An interruption that fires on a schedule is exactly the kind of
+    // active nag we set out to remove.
     $card.classList.add("deck-done");
     $cardTag.textContent  = "";
     paintCounter(deckScore, true);
-    const m = readBackupMeta();
-    // ONE rule, no clock: nudge when there is a real body of unbacked work
-    // (~10 clean decks). Time deliberately plays no part — RS has no decay, no
-    // timestamps, no "days since review"; the whole system is deterministic on
-    // scores alone. A 7-day rule was the only place a clock entered WordDock,
-    // and it nudged people who had 20 points at risk — five minutes of work.
-    // Gains reset to 0 on every backup, so the rule re-arms by itself.
-    const NUDGE_GAINS = 100;
-    const stale = m.gains >= NUDGE_GAINS;
-    const heavy = m.gains > 365;
-
-    if (celebState === "exported"){
-      // State 2: backup done, still celebratory
-      $cardText.textContent = "Your progress is backed up ✓";
-      $cardText.className   = "card-text state-answer";
-      $celebQ.textContent = celebFilename;
-      $celebActions.hidden = true;
-      $celeb.hidden = false;
-      $nudge.hidden = true;
-    } else if (remindersOn && heavy && !heavyCelebDismissed){
-      // State 1: considerable progress — celebrate + offer backup
-      $cardText.textContent = "You made considerable progress — congratulations!";
-      $cardText.className   = "card-text state-answer";
-      $celebQ.textContent = "Back up your progress now?";
-      $celebActions.hidden = false;
-      $celeb.hidden = false;
-      $nudge.hidden = true;
-    } else {
-      // Normal deck-done card, with the quiet one-line nudge when stale
-      $cardText.textContent = "Another WordDeck Done!";
-      $cardText.className   = "card-text state-answer";
-      $celeb.hidden = true;
-      if (remindersOn && (stale || heavy)){
-        // No date here either: the trigger is the work at risk, not the clock.
-        $nudge.textContent = "You have progress that isn't backed up — Back up";
-        $nudge.hidden = false;
-      } else {
-        $nudge.hidden = true;
-      }
-    }
+    $cardText.textContent = "Another WordDeck Done!";
+    $cardText.className   = "card-text state-answer";
     return;
   }
-  $nudge.hidden = true;
-  $celeb.hidden = true;
   $card.classList.remove("deck-done");
   const s     = cur();
   const field = s.row.pairs[s.fi];
@@ -2967,29 +2821,6 @@ document.getElementById("settingsBack").addEventListener("click", () => {
 // Domain page close button
 document.getElementById("domainBack").addEventListener("click", () => {
   closeAllSurfaces();
-});
-
-/* ─── Settings: export-reminders toggle (persists in localStorage) ─── */
-const $toggleReminders = document.getElementById("toggleReminders");
-const REMINDERS_KEY = "wd_export_reminders";
-function loadReminderPref(){
-  // Default ON — the browser-only model makes backup reminders sensible.
-  const stored = localStorage.getItem(REMINDERS_KEY);
-  return stored === null ? true : stored === "true";
-}
-function paintReminderToggle(on){
-  $toggleReminders.classList.toggle("on", on);
-  $toggleReminders.setAttribute("aria-checked", on ? "true" : "false");
-}
-let remindersOn = loadReminderPref();
-paintReminderToggle(remindersOn);
-$toggleReminders.addEventListener("click", () => {
-  remindersOn = !remindersOn;
-  localStorage.setItem(REMINDERS_KEY, remindersOn ? "true" : "false");
-  paintReminderToggle(remindersOn);
-  // NOTE: the staleness MECHANISM (tracking last-export date, surfacing the
-  // nudge) is a separate piece — not yet built. This toggle persists the
-  // preference so it's ready to wire in.
 });
 
 tabs.wd.addEventListener("click", (e) => {
@@ -3562,18 +3393,6 @@ function showBrowserPane(pane){
       const clone = src.cloneNode(true);
       $viewSettings.appendChild(clone);
       $viewSettings.dataset.loaded = "1";
-      // re-wire the cloned reminder toggle to the live preference
-      const t = clone.querySelector("#toggleReminders");
-      if (t){
-        t.removeAttribute("id");
-        t.classList.toggle("on", remindersOn);
-        t.addEventListener("click", () => {
-          remindersOn = !remindersOn;
-          localStorage.setItem(REMINDERS_KEY, remindersOn ? "true" : "false");
-          t.classList.toggle("on", remindersOn);
-          paintReminderToggle(remindersOn);
-        });
-      }
       // The cloned placeholder must not keep the template's id — two elements
       // sharing an id is how the wrong one gets rendered into.
       const ph = clone.querySelector("#syncSection");
@@ -3966,8 +3785,9 @@ document.getElementById("browserUpload").addEventListener("click", () => $fileIn
 const SCORES_FILE_TYPE = "worddock-scores";
 
 /* Backup staleness meta: when scores were last exported + positive-delta
-   gains accumulated since. Drives the deck-done nudge. Gains count ONLY
-   +1s (a −1/−2 adds nothing). Reset to 0 on every scores export. */
+   gains accumulated since. Surfaces ONLY as the passive "since last backup:
+   +N" number on the Progress page — there is no active nudge. Gains count
+   ONLY +1s (a −1/−2 adds nothing). Reset to 0 on every scores export. */
 const BACKUP_META_KEY = "wd_backup_meta";
 function readBackupMeta(){
   try { return JSON.parse(localStorage.getItem(BACKUP_META_KEY)) || { lastExportTs: null, gains: 0 }; }
@@ -4147,31 +3967,6 @@ document.getElementById("scoresFileInput").addEventListener("change", async (e) 
   if (!file) return;
   setScoresMsg("Reading " + file.name + "…");
   await importScoresFromFile(file);
-});
-
-// Deck-done nudge: export scores; stopPropagation so the card's own click
-// (which starts a new deck when deckDone) doesn't fire.
-document.getElementById("backupNudge").addEventListener("click", (e) => {
-  e.stopPropagation();
-  exportScores();
-  e.currentTarget.textContent = "Backup file ready ✓";
-});
-
-// Celebration buttons (considerable progress)
-document.getElementById("celebBackup").addEventListener("click", (e) => {
-  e.stopPropagation();
-  const res = exportScores();
-  if (res){
-    celebState = "exported";
-    celebFilename = res.filename;
-    heavyCelebDismissed = true;   // don't re-ask after the next deck
-    render();
-  }
-});
-document.getElementById("celebLater").addEventListener("click", (e) => {
-  e.stopPropagation();
-  heavyCelebDismissed = true;   // not again until next session
-  render();
 });
 
 /* ─── Boot ─── */
