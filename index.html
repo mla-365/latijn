@@ -764,7 +764,7 @@ body{
 }
 .infopage .warn strong{color:#e8d4a0}
 
-/* ─── Settings page ─── */
+/* ─── Panel title (used by Basics, Progress, Domain) ─── */
 .settings-title{
   font-size:20px;
   font-weight:600;
@@ -1056,7 +1056,7 @@ body{
 .list-row-actions{display:flex;gap:3px;flex-shrink:0;margin-left:10px}
 /* Scores view — three columns: domain · breadth · depth. The sum is the number
    people watch go up, so it gets the weight; the word count keeps it honest. */
-/* Action button rows (Scores, Settings). This had no rule at all, so the
+/* Action button rows (Progress). This had no rule at all, so the
    buttons sat flush against each other. */
 .setting-actions{
   display:flex;
@@ -1134,7 +1134,7 @@ body{
 }
 .study-toast.on{opacity:1}
 
-/* A heading for a section WITHIN Settings. Distinct from .settings-title,
+/* A heading for a section WITHIN a pane (e.g. Sync on Progress). Distinct from .settings-title,
    which names the whole page and is hidden in the detail pane because the pane
    header already shows it. */
 .section-title{
@@ -1215,7 +1215,7 @@ body{
 
 /* Swappable detail views */
 .detail-view[hidden]{display:none}
-/* Info/Settings content rendered inside the right pane */
+/* Basics content rendered inside the right pane */
 .detail-view .infopage-inner{max-width:none;margin:0;padding:0}
 .detail-view .info-close{display:none}   /* close handled by logo toggle / back */
 .detail-view .settings-title{display:none}  /* pane header already shows the title */
@@ -1336,8 +1336,8 @@ body{
     <div class="browser-rail">
       <div id="browserRail"></div>
       <div class="rail-meta">
-        <div class="rail-meta-item" data-pane="info"><span>Info</span></div>
-        <div class="rail-meta-item" data-pane="scores"><span>Scores</span></div>
+        <div class="rail-meta-item" data-pane="basics"><span>Basics</span></div>
+        <div class="rail-meta-item" data-pane="progress"><span>Progress</span></div>
       </div>
     </div>
     <!-- RIGHT: swappable detail — lists (default) / info / scores -->
@@ -1349,10 +1349,10 @@ body{
         <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs"><span>?</span><span class="rules-word">What a file needs</span></button></div>
         <div id="listMessage" class="list-message"></div>
       </div>
-      <!-- INFO view (content injected from the info page source) -->
-      <div class="detail-view" id="viewInfo" hidden></div>
-      <!-- SCORES view (rendered fresh each time it opens) -->
-      <div class="detail-view" id="viewScores" hidden></div>
+      <!-- BASICS view (content injected from the basics page source) -->
+      <div class="detail-view" id="viewBasics" hidden></div>
+      <!-- PROGRESS view (rendered fresh each time it opens) -->
+      <div class="detail-view" id="viewProgress" hidden></div>
     </div>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
@@ -1364,9 +1364,9 @@ body{
 <!-- (old overlayList retired; browser above is its replacement) -->
 
 <!-- ─── Info page (full screen, behind WordDock tab) ─── -->
-<div class="infopage" id="infopage">
+<div class="infopage" id="basicspage">
   <div class="infopage-inner">
-    <button class="info-close" id="infoBack" aria-label="Close">×</button>
+    <button class="info-close" id="basicsBack" aria-label="Close">×</button>
 
     <p class="info-intro">WordDock is a browser-based spaced-repetition tool for learning vocabulary and facts. No accounts, no server, no cloud sync — everything lives in your browser, on your device.</p>
 
@@ -1396,7 +1396,7 @@ body{
     <p class="info-rules-note">The <code>Metadata</code> sheet WordDock writes on export is only a description of the file. The app never reads it back — a copied file's stale cells would lie with confidence.</p>
 
     <div class="warn">
-      <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Scores → Back up scores) is the only backup of your progress.
+      <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Progress → Back up scores) is the only backup of your progress.
     </div>
   </div>
 </div>
@@ -1958,7 +1958,7 @@ function wdPrompt(title, body, placeholder, okLabel){
   });
 }
 
-/* The Sync section of Settings. Rendered fresh each time the pane opens.
+/* The Sync section of the Progress pane. Rendered fresh each time it opens.
 
    The comparison is not decoration: the user must be able to see, BEFORE
    opting in, exactly what does and does not leave their browser. Off-grid is
@@ -2028,7 +2028,7 @@ function renderSyncSection(root){
       await wdConfirm(
         "Sync is on",
         "Your key is " + formatSyncKey(fresh) + ". On your other device open " +
-        "Settings \u2192 Sync \u2192 \u201CI have a key\u201D and type it in. " +
+        "Progress \u2192 Sync \u2192 \u201CI have a key\u201D and type it in. " +
         "The key stays visible here, so you can come back for it.",
         "OK", null
       );
@@ -2041,7 +2041,7 @@ function renderSyncSection(root){
     have.addEventListener("click", async () => {
       const typed = await wdPrompt(
         "Enter your key",
-        "Type the key shown under Settings \u2192 Sync on your other device. " +
+        "Type the key shown under Progress \u2192 Sync on your other device. " +
         "The WD and the dashes are optional, and capitals don't matter \u2014 " +
         "just the 8 characters is enough.",
         "e.g. 7K2M9XQF", "Connect"
@@ -2063,7 +2063,7 @@ function renderSyncSection(root){
       // other device's progress here, now, rather than at some later moment.
       await syncPull();
       renderSyncSection(root);
-      if (browserPane === "scores") renderScoresPane();
+      if (browserPane === "progress") renderProgressPane();
       renderBrowserRail();
     });
 
@@ -2201,7 +2201,7 @@ async function syncPull(){
     // A running deck is untouched: deck completion re-reads the live pool and
     // applies only its own deltas, so a mid-session pull can no more clobber a
     // deck than a scores restore can.
-    if (browserPane === "scores") renderScoresPane();
+    if (browserPane === "progress") renderProgressPane();
   } catch {
     /* offline or server down — local stays authoritative */
   } finally {
@@ -2568,7 +2568,7 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeAllSurfaces();
     return;
   }
-  if (document.getElementById("infopage").classList.contains("open") ||
+  if (document.getElementById("basicspage").classList.contains("open") ||
       document.getElementById("domainpage").classList.contains("open") ||
       document.getElementById("listbrowser").classList.contains("open")) {
     if (e.key === "Escape") closeAllSurfaces();
@@ -2599,7 +2599,7 @@ const tabs = {
   filter: document.getElementById("tabFilter")
 };
 const overlays = {};   // (all overlays retired; kept empty so loops are no-ops)
-const $infopage = document.getElementById("infopage");
+const $basicspage = document.getElementById("basicspage");
 const $domainpage = document.getElementById("domainpage");
 const $domainCurrent = document.getElementById("domainCurrent");
 const $domainUniverse = document.getElementById("domainUniverse");
@@ -2749,7 +2749,7 @@ function readView(){
 
 function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
-  $infopage.classList.remove("open");
+  $basicspage.classList.remove("open");
   $domainpage.classList.remove("open");
   $listbrowser.classList.remove("open");
   for (const k in tabs) tabs[k].classList.remove("active");
@@ -2759,8 +2759,8 @@ function closeAllSurfaces(){
 function openSurface(which){
   // surfaces are mutually exclusive
   closeAllSurfaces();
-  if (which === "wd" || which === "info"){
-    $infopage.classList.add("open");
+  if (which === "wd" || which === "basics"){
+    $basicspage.classList.add("open");
   } else if (which === "domain"){
     renderDomainPage();
     $domainpage.classList.add("open");
@@ -2788,7 +2788,7 @@ function closeLogoMenu(){
 }
 
 // Info page "back to studying" button
-document.getElementById("infoBack").addEventListener("click", () => {
+document.getElementById("basicsBack").addEventListener("click", () => {
   closeAllSurfaces();
 });
 
@@ -2802,7 +2802,7 @@ tabs.wd.addEventListener("click", (e) => {
   // Two-state toggle: any surface open -> back to studying;
   // nothing open -> open the browser.
   const surfaceOpen =
-    $infopage.classList.contains("open") ||
+    $basicspage.classList.contains("open") ||
     $domainpage.classList.contains("open") ||
     $listbrowser.classList.contains("open") ||
     document.querySelector(".overlay.open");
@@ -2823,8 +2823,8 @@ $logoMenu.querySelectorAll(".logo-menu-item").forEach(item => {
     e.stopPropagation();
     const which = item.dataset.menu;
     closeLogoMenu();
-    if (which === "info"){
-      openSurface("info");
+    if (which === "basics"){
+      openSurface("basics");
     } else if (which === "domain"){
       openSurface("domain");
     } else if (which === "list"){
@@ -3158,8 +3158,8 @@ function renderListPanel(){ renderBrowser(); }
 
 /* ─── Browser pane switching: lists / info / settings ─── */
 const $viewLists    = document.getElementById("viewLists");
-const $viewInfo     = document.getElementById("viewInfo");
-let browserPane = "lists";   // "lists" | "info" | "scores"
+const $viewBasics     = document.getElementById("viewBasics");
+let browserPane = "lists";   // "lists" | "basics" | "progress"
 const $browserPaneTitle = document.getElementById("browserPaneTitle");
 
 /* The Scores view.
@@ -3174,14 +3174,14 @@ const $browserPaneTitle = document.getElementById("browserPaneTitle");
    study. The only way to raise the number is to drill your weakest words —
    gaming the metric IS the intended behaviour. The farming failure mode that
    makes such counters corrosive elsewhere is structurally impossible here. */
-function renderScoresPane(){
-  const host = document.getElementById("viewScores");
+function renderProgressPane(){
+  const host = document.getElementById("viewProgress");
   host.innerHTML = "";
 
   const inner = document.createElement("div");
   inner.className = "infopage-inner";
 
-  // No <h2> here — the pane header already says "Scores".
+  // No <h2> here — the pane header already says "Progress".
 
   // Gather every pool that holds real work.
   const rows = [];
@@ -3317,7 +3317,7 @@ function renderScoresPane(){
         );
         if (!ok) return;
         try { localStorage.removeItem("wd_rs_" + o.domain); } catch {}
-        renderScoresPane();
+        renderProgressPane();
       });
       line.appendChild(forget);
       table.appendChild(line);
@@ -3350,20 +3350,20 @@ function showBrowserPane(pane){
   // the user moved on to something else entirely. A message is about the thing
   // you just did, not a permanent fixture.
   setListMessage("");
-  const $viewScores    = document.getElementById("viewScores");
+  const $viewProgress    = document.getElementById("viewProgress");
   $viewLists.hidden    = (pane !== "lists");
-  $viewInfo.hidden     = (pane !== "info");
-  $viewScores.hidden   = (pane !== "scores");
+  $viewBasics.hidden     = (pane !== "basics");
+  $viewProgress.hidden   = (pane !== "progress");
 
   // Scores is a live view — always re-render, never cached. It now also hosts
-  // the sync section (rendered inside renderScoresPane), since sync is about
+  // the sync section (rendered inside renderProgressPane), since sync is about
   // your progress and where it lives.
-  if (pane === "scores") renderScoresPane();
+  if (pane === "progress") renderProgressPane();
 
   // Lazy-clone the info content from its source surface (once).
-  if (pane === "info" && !$viewInfo.dataset.loaded){
-    const src = document.querySelector("#infopage .infopage-inner");
-    if (src){ $viewInfo.appendChild(src.cloneNode(true)); $viewInfo.dataset.loaded = "1"; }
+  if (pane === "basics" && !$viewBasics.dataset.loaded){
+    const src = document.querySelector("#basicspage .infopage-inner");
+    if (src){ $viewBasics.appendChild(src.cloneNode(true)); $viewBasics.dataset.loaded = "1"; }
   }
 
   // Header title + rail highlight
@@ -3372,7 +3372,7 @@ function showBrowserPane(pane){
   // Back-to-lists link shows only in a sub-pane (info/scores)
   document.getElementById("browserBack").hidden = (pane === "lists");
   // The header title must follow the pane.
-  const titles = { lists: "Lists", info: "Info", scores: "Scores" };
+  const titles = { lists: "Lists", basics: "Basics", progress: "Progress" };
   const $t = document.getElementById("browserPaneTitle");
   if ($t) $t.textContent = titles[pane] || "Lists";
   // When showing a meta pane, no domain folder is the "browse" target
@@ -3383,7 +3383,7 @@ function showBrowserPane(pane){
   }
 }
 
-// Rail meta items (Info / Settings) switch the right pane
+// Rail meta items (Basics / Progress) switch the right pane
 document.querySelectorAll(".rail-meta-item").forEach(item => {
   item.addEventListener("click", () => showBrowserPane(item.dataset.pane));
 });
@@ -3683,15 +3683,15 @@ async function deleteList(listId){
 }
 
 // List browser: back button closes; dashed upload row triggers file picker
-// Back link (in Info/Settings) returns to the lists view, staying in the browser
+// Back link (in Basics/Progress) returns to the lists view, staying in the browser
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 /* The "Domains" header is the way back to the rail.
 
    On desktop both panes are visible, so it just returns the detail pane to the
-   lists view (leaving Info/Scores/Settings). On mobile only one pane shows at a
+   lists view (leaving Basics/Progress). On mobile only one pane shows at a
    time, and this is the ONLY route back to the domain list — the rail, with
-   MY LISTS, MORE and the Info · Scores · Settings footer, is hidden inside it.
+   MY LISTS, MORE and the Basics · Progress footer, is hidden inside it.
    Without this the header looked tappable, highlighted on touch, and did
    nothing. */
 document.getElementById("browserDomainsHeader").addEventListener("click", () => {
@@ -3889,12 +3889,12 @@ async function importScoresFromFile(file){
   }
 
   // Redraw what the user is looking at. The restore wrote the new values, but
-  // the Scores pane was rendered BEFORE it — so the screen kept showing the old
+  // the Progress pane was rendered BEFORE it — so the screen kept showing the old
   // numbers and the replace looked like it had silently failed. The rail too:
   // a domain can gain or lose progress here, which moves it between zones.
-  const msg = document.querySelector("#viewScores .scores-msg");
+  const msg = document.querySelector("#viewProgress .scores-msg");
   const keep = msg ? msg.textContent : "";
-  if (browserPane === "scores") renderScoresPane();
+  if (browserPane === "progress") renderProgressPane();
   if (keep) setScoresMsg(keep);          // re-render wipes the message; put it back
   renderBrowserRail();
 }
@@ -3909,10 +3909,10 @@ document.addEventListener("click", (e) => {
     // Backing up resets the gains counter to 0, so the "Since your last backup"
     // line on this very pane is now wrong. Redraw it — keeping the message that
     // exportScores just set.
-    if (browserPane === "scores"){
-      const m = document.querySelector("#viewScores .scores-msg");
+    if (browserPane === "progress"){
+      const m = document.querySelector("#viewProgress .scores-msg");
       const keep = m ? m.textContent : "";
-      renderScoresPane();
+      renderProgressPane();
       if (keep) setScoresMsg(keep);
     }
   }
