@@ -1080,16 +1080,10 @@ body{
   color:var(--ink);font-weight:700;
   font-variant-numeric:tabular-nums;
 }
-.scores-total{border-bottom:none}
-.scores-total .scores-domain{font-weight:400;color:var(--tag)}
-/* Quieter than the table above: this is context, not a headline. */
-.scores-since{
-  display:flex;justify-content:space-between;align-items:baseline;
-  margin:-10px 0 20px;padding:0 2px;
-  font-size:13px;color:var(--tag);
-}
-.scores-since-num{
-  font-weight:600;color:var(--ink);
+/* Coverage percentage — the headline number on the Progress page. */
+.scores-cov{
+  min-width:56px;text-align:right;
+  color:var(--ink);font-weight:700;
   font-variant-numeric:tabular-nums;
 }
 /* Orphan pools — real progress, but for a list that isn't here. They come LAST
@@ -1394,6 +1388,8 @@ body{
       <li>Within one domain, <strong>every entry needs its own ID</strong> — never restart numbering in a new file. Progress is tracked per ID, so two files that both start at <code>0001</code> would make different words share scores. WordDock checks this when you import and warns you.</li>
     </ol>
     <p class="info-rules-note">The <code>Metadata</code> sheet WordDock writes on export is only a description of the file. The app never reads it back — a copied file's stale cells would lie with confidence.</p>
+
+    <p><strong>Progress and mastery.</strong> Every word carries a score that rises each time you recall it cleanly and dips when you slip. The Progress page shows, per domain, the share of its words you've mastered — a word counts as mastered once its score reaches <strong>10</strong> (about ten clean recalls). The same score also decides study order: your weakest words always come up first.</p>
 
     <div class="warn">
       <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Progress → Back up scores) is the only backup of your progress.
@@ -2469,18 +2465,16 @@ function gradeGood(){
       let pool;
       try { pool = JSON.parse(localStorage.getItem(poolKey)) || {}; }
       catch (e) { pool = {}; }
-      let backupGains = 0;
       pipe.forEach(x => {
         const id = x.row.ID;
         const base = (id in pool) ? pool[id] : 0;
-        if      (x.timesDirty === 0){ pool[id] = base + 1; backupGains++; }
+        if      (x.timesDirty === 0) pool[id] = base + 1;
         else if (x.timesDirty === 1) pool[id] = base - 1;
         else                          pool[id] = base - 2;
       });
       localStorage.setItem(poolKey, JSON.stringify(pool));
       RS = pool;   // keep the in-memory copy in sync with the store
       markStudied(DOMAIN_RUNTIME);   // for ACTIVE ordering
-      addBackupGains(backupGains);   // feeds the "since last backup" number
     }
     render();
     return;
@@ -3174,6 +3168,33 @@ const $browserPaneTitle = document.getElementById("browserPaneTitle");
    study. The only way to raise the number is to drill your weakest words —
    gaming the metric IS the intended behaviour. The farming failure mode that
    makes such counters corrosive elsewhere is structurally impossible here. */
+/* Mastery: a word counts as mastered once its RS reaches this value — i.e. you
+   have answered it cleanly about this many times (net of slips). RS is one
+   number doing three jobs at once: a score (higher = more), a sort key (lower
+   surfaces first in your next deck), and — past this line — a mastery signal.
+   Those don't conflict; mastery is just "far enough along the same honest
+   quantity." The value is fixed and the same for everyone (stated in Basics),
+   never a per-user setting — a configurable threshold would fracture what
+   "mastered" means across people, the same trap as a preferences toggle. */
+const MASTERY_RS = 10;
+
+/* Coverage for one domain: how many of its words are mastered, out of how many
+   exist. The denominator is the domain's true size (from the catalog), NOT the
+   pool — the pool only holds words you've touched, so it could never tell you
+   what fraction of the whole you've covered. Returns null for total when the
+   size is unknown (an imported list the catalog can't size), so the caller can
+   show a bare count instead of a meaningless percentage. */
+function domainCoverage(domain){
+  let pool;
+  try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
+  catch { pool = {}; }
+  const mastered = Object.values(pool).filter(v => v >= MASTERY_RS).length;
+  const entry = catalog.manifest().find(m => m.domain === domain);
+  const total = entry ? entry.rowCount : null;
+  const pct   = (total && total > 0) ? Math.round((mastered / total) * 100) : null;
+  return { mastered, total, pct };
+}
+
 function renderProgressPane(){
   const host = document.getElementById("viewProgress");
   host.innerHTML = "";
@@ -3183,19 +3204,16 @@ function renderProgressPane(){
 
   // No <h2> here — the pane header already says "Progress".
 
-  // Gather every pool that holds real work.
+  // Gather every domain that holds real work, with its mastery coverage.
   const rows = [];
-  let totWords = 0, totSum = 0;
   for (const domain of domainUniverse()){
     let pool;
     try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
     catch { pool = {}; }
-    const vals = Object.values(pool).filter(v => v !== 0);
-    if (!vals.length) continue;
-    const sum = vals.reduce((a, b) => a + b, 0);
-    rows.push({ domain, words: vals.length, sum });
-    totWords += vals.length;
-    totSum   += sum;
+    const touched = Object.values(pool).filter(v => v !== 0).length;
+    if (!touched) continue;                       // nothing studied here yet
+    const cov = domainCoverage(domain);
+    rows.push({ domain, ...cov });
   }
 
   // Orphan pools: scores for a domain with no list loaded. NOT automatically
@@ -3221,52 +3239,32 @@ function renderProgressPane(){
   if (!rows.length){
     const p = document.createElement("p");
     p.className = "setting-desc";
-    p.textContent = "No scores yet — they build up as you complete decks.";
+    p.textContent = "No progress yet — it builds as you study and master words.";
     inner.appendChild(p);
   } else {
     const table = document.createElement("div");
     table.className = "scores-table";
     for (const r of rows){
+      // "NL-RU · 50%" — the domain code and the bare percentage. Scale-free,
+      // so pools of very different sizes stay comparable. What the percentage
+      // means (mastery at RS 10) is explained once in Basics, not repeated on
+      // every row. The raw RS sum is machinery and is not shown.
+      const face = (r.pct !== null) ? r.pct + "%" : r.mastered + " mastered";
       const line = document.createElement("div");
       line.className = "scores-line";
       line.innerHTML =
         '<span class="scores-domain">' + r.domain + "</span>" +
-        '<span class="scores-words">' + r.words + " words</span>" +
-        '<span class="scores-sum">' + (r.sum > 0 ? "+" : "") + r.sum + "</span>";
-      table.appendChild(line);
-    }
-    if (rows.length > 1){
-      const line = document.createElement("div");
-      line.className = "scores-line scores-total";
-      line.innerHTML =
-        '<span class="scores-domain">Total</span>' +
-        '<span class="scores-words">' + totWords + " words</span>" +
-        '<span class="scores-sum">' + (totSum > 0 ? "+" : "") + totSum + "</span>";
+        '<span class="scores-cov">' + face + "</span>";
       table.appendChild(line);
     }
     inner.appendChild(table);
-
-    // The number the backup rule actually watches, made visible. Until now it
-    // was invisible machinery, so Settings could only describe it vaguely.
-    // Shown only when there IS unbacked-up progress — a row reading "+0" right
-    // after a backup would be noise. For a competitive user it's a second,
-    // healthier counter (it only rises by drilling your weakest words); for
-    // everyone else it simply isn't there.
-    const gains = readBackupMeta().gains || 0;
-    if (gains > 0){
-      const since = document.createElement("div");
-      since.className = "scores-since";
-      since.innerHTML =
-        "<span>Since your last backup</span>" +
-        '<span class="scores-since-num">+' + gains + "</span>";
-      inner.appendChild(since);
-    }
   }
 
   const desc = document.createElement("p");
   desc.className = "setting-desc";
-  desc.textContent = "Your scores live only in this browser. A backup file is " +
-                     "the only way to keep them safe, or move them to another device.";
+  desc.textContent = "A backup file is the only true snapshot of your progress. " +
+                     "Connecting devices keeps them in step, but if you ever " +
+                     "clear all of them, a file is what brings your progress back.";
   inner.appendChild(desc);
 
   // Two different acts, two different words: content is EXPORTED (it travels
@@ -3742,23 +3740,6 @@ document.getElementById("browserUpload").addEventListener("click", () => $fileIn
 
 const SCORES_FILE_TYPE = "worddock-scores";
 
-/* Backup staleness meta: when scores were last exported + positive-delta
-   gains accumulated since. Surfaces ONLY as the passive "since last backup:
-   +N" number on the Progress page — there is no active nudge. Gains count
-   ONLY +1s (a −1/−2 adds nothing). Reset to 0 on every scores export. */
-const BACKUP_META_KEY = "wd_backup_meta";
-function readBackupMeta(){
-  try { return JSON.parse(localStorage.getItem(BACKUP_META_KEY)) || { lastExportTs: null, gains: 0 }; }
-  catch { return { lastExportTs: null, gains: 0 }; }
-}
-function writeBackupMeta(m){ localStorage.setItem(BACKUP_META_KEY, JSON.stringify(m)); }
-function addBackupGains(n){
-  if (!n) return;
-  const m = readBackupMeta();
-  m.gains = (m.gains || 0) + n;
-  writeBackupMeta(m);
-}
-
 // Stable key ordering, so "identical" comparisons don't trip on order.
 function sortedObj(o){
   const out = {};
@@ -3820,7 +3801,6 @@ function exportScores(){
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  writeBackupMeta({ lastExportTs: Date.now(), gains: 0 });   // fresh backup
   // "Exported" was the wrong verb (lists are exported; scores are backed up),
   // and claiming the backup is DONE is not something the app can know: the
   // browser gives no callback for "user cancelled the save dialog". What IS
