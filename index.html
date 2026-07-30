@@ -3178,21 +3178,45 @@ const $browserPaneTitle = document.getElementById("browserPaneTitle");
    "mastered" means across people, the same trap as a preferences toggle. */
 const MASTERY_RS = 10;
 
-/* Coverage for one domain: how many of its words are mastered, out of how many
-   exist. The denominator is the domain's true size (from the catalog), NOT the
-   pool — the pool only holds words you've touched, so it could never tell you
-   what fraction of the whole you've covered. Returns null for total when the
-   size is unknown (an imported list the catalog can't size), so the caller can
-   show a bare count instead of a meaningless percentage. */
+/* Coverage for one domain: how far toward full mastery, measured in POINTS,
+   not whole words. A word at RS 5 is halfway to mastery and counts as 5 — so
+   every clean answer moves the number immediately, instead of contributing
+   nothing until it crosses the line. Without this a beginner sees 0% for days
+   while genuinely progressing: the worst possible signal.
+
+   Each word's contribution is capped at the threshold (min(RS, MASTERY_RS)):
+   RS has no ceiling, so an over-drilled word would otherwise push a domain past
+   100%. With the cap, the sum can never exceed the total and 100% means every
+   word is at mastery or beyond.
+
+   The denominator is the domain's true size (from the catalog), NOT the pool —
+   the pool holds only touched words, so it could never say what fraction of the
+   whole you've covered. Returns pct=null when the size is unknown (an imported
+   list the catalog can't size), so the caller shows a bare count instead. */
 function domainCoverage(domain){
   let pool;
   try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
   catch { pool = {}; }
   const mastered = Object.values(pool).filter(v => v >= MASTERY_RS).length;
+  let points = 0;
+  for (const v of Object.values(pool)){
+    if (v > 0) points += Math.min(v, MASTERY_RS);   // slips (<0) don't subtract coverage
+  }
   const entry = catalog.manifest().find(m => m.domain === domain);
   const total = entry ? entry.rowCount : null;
-  const pct   = (total && total > 0) ? Math.round((mastered / total) * 100) : null;
+  const pct   = (total && total > 0) ? (points / (total * MASTERY_RS)) * 100 : null;
   return { mastered, total, pct };
+}
+
+/* Percentage as shown on the Progress page. A decimal appears ONLY below 1%,
+   where a whole number would round to 0% and tell a hard-working beginner that
+   nothing has happened — a lie. Above 1% the whole number is honest and clean,
+   and the decimal (which would invite watching the number tick) stays away. */
+function formatCoverage(pct){
+  if (pct === null) return null;
+  if (pct <= 0)     return "0%";
+  if (pct < 1)      return pct.toFixed(1) + "%";
+  return Math.round(pct) + "%";
 }
 
 function renderProgressPane(){
@@ -3249,7 +3273,7 @@ function renderProgressPane(){
       // so pools of very different sizes stay comparable. What the percentage
       // means (mastery at RS 10) is explained once in Basics, not repeated on
       // every row. The raw RS sum is machinery and is not shown.
-      const face = (r.pct !== null) ? r.pct + "%" : r.mastered + " mastered";
+      const face = (r.pct !== null) ? formatCoverage(r.pct) : r.mastered + " mastered";
       const line = document.createElement("div");
       line.className = "scores-line";
       line.innerHTML =
