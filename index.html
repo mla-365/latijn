@@ -921,15 +921,15 @@ body{
   min-height:0;
 }
 /* Bottom meta zone: pinned to the rail bottom, never scrolls with domains */
-/* Site footer — one quiet, centered link to the standalone guide. */
+/* Site footer — echoes the study counter (same 13px, white) for spatial
+   stability across modes. No top border: the line was clutter, not structure. */
 .browser-footer{
-  text-align:center;padding:20px 0 8px;margin-top:6px;
-  border-top:1px solid var(--menu-border);
+  text-align:center;padding:16px 0 8px;
 }
 .browser-footer a{
-  color:var(--tag);text-decoration:none;font-size:14px;
+  color:var(--counter);text-decoration:none;font-size:13px;
 }
-.browser-footer a:hover{color:var(--ink);}
+.browser-footer a:hover{color:var(--tag);}
 
 /* About topics — a static table of contents, styled like the domain rows but
    without their dynamic zones. Always all shown, in order. */
@@ -1422,10 +1422,9 @@ body{
      change. Reached from the footer; the logo returns to study. ─── -->
 <div class="infopage browser" id="aboutbrowser">
   <div class="browser-head">
-    <div class="browser-head-rail">About</div>
+    <div class="browser-head-rail clickable">About</div>
     <div class="browser-head-detail">
       <span class="surface-title" id="aboutPaneTitle">WordDock</span>
-      <button class="browser-back-link" id="aboutTopicBack" aria-label="Back to topics" hidden>← Topics</button>
     </div>
   </div>
   <div class="browser-panes">
@@ -3363,7 +3362,6 @@ function renderAbout(){
       const ab = document.getElementById("aboutbrowser");
       ab.classList.add("show-detail");
       ab.classList.remove("show-rail");
-      document.getElementById("aboutTopicBack").hidden = false;
     });
     rail.appendChild(row);
   }
@@ -3796,12 +3794,9 @@ document.getElementById("aboutFooterLink").addEventListener("click", (e) => {
   e.preventDefault();
   openSurface("about");
 });
-// Mobile: the "← Topics" back button and the "About" header both return to the
-// topic list — the same one-pane return as the browser's "Domains" header.
-document.getElementById("aboutTopicBack").addEventListener("click", () => {
-  $aboutbrowser.classList.remove("show-detail");
-  $aboutbrowser.classList.add("show-rail");
-});
+// Mobile: the "About" header returns to the topic list — the same one-pane
+// return as the browser's "Domains" header. (No separate back button: the
+// header does the job, exactly as in the browser.)
 document.querySelector("#aboutbrowser .browser-head-rail").addEventListener("click", () => {
   $aboutbrowser.classList.remove("show-detail");
   $aboutbrowser.classList.add("show-rail");
