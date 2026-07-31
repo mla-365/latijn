@@ -1363,7 +1363,6 @@ body{
       <div id="browserRail"></div>
       <div class="rail-meta">
         <div class="rail-meta-item" data-pane="basics"><span>Basics</span></div>
-        <div class="rail-meta-item" data-pane="progress"><span>Progress</span></div>
       </div>
     </div>
     <!-- RIGHT: swappable detail — lists (default) / info / scores -->
@@ -1380,8 +1379,6 @@ body{
       </div>
       <!-- BASICS view (content injected from the basics page source) -->
       <div class="detail-view" id="viewBasics" hidden></div>
-      <!-- PROGRESS view (rendered fresh each time it opens) -->
-      <div class="detail-view" id="viewProgress" hidden></div>
     </div>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
@@ -2094,7 +2091,9 @@ function renderSyncSection(root){
       // other device's progress here, now, rather than at some later moment.
       await syncPull();
       renderSyncSection(root);
-      if (browserPane === "progress") renderProgressPane();
+      // Progress now shows inline (domain rail + list rows), so refresh the
+      // browser, not a separate pane.
+      if (browserPane === "lists") renderBrowser();
       renderBrowserRail();
     });
 
@@ -2232,7 +2231,7 @@ async function syncPull(){
     // A running deck is untouched: deck completion re-reads the live pool and
     // applies only its own deltas, so a mid-session pull can no more clobber a
     // deck than a scores restore can.
-    if (browserPane === "progress") renderProgressPane();
+    if (browserPane === "lists") renderBrowser();
   } catch {
     /* offline or server down — local stays authoritative */
   } finally {
@@ -3259,7 +3258,7 @@ function renderListPanel(){ renderBrowser(); }
 /* ─── Browser pane switching: lists / info / settings ─── */
 const $viewLists    = document.getElementById("viewLists");
 const $viewBasics     = document.getElementById("viewBasics");
-let browserPane = "lists";   // "lists" | "basics" | "progress"
+let browserPane = "lists";   // "lists" | "basics"
 const $browserPaneTitle = document.getElementById("browserPaneTitle");
 
 /* The Scores view.
@@ -3325,146 +3324,6 @@ function formatCoverage(pct){
   return Math.round(pct) + "%";
 }
 
-function renderProgressPane(){
-  const host = document.getElementById("viewProgress");
-  host.innerHTML = "";
-
-  const inner = document.createElement("div");
-  inner.className = "infopage-inner";
-
-  // No <h2> here — the pane header already says "Progress".
-
-  // Gather every domain that holds real work, with its mastery coverage.
-  const rows = [];
-  for (const domain of domainUniverse()){
-    let pool;
-    try { pool = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
-    catch { pool = {}; }
-    const touched = Object.values(pool).filter(v => v !== 0).length;
-    if (!touched) continue;                       // nothing studied here yet
-    const cov = domainCoverage(domain);
-    rows.push({ domain, ...cov });
-  }
-
-  // Orphan pools: scores for a domain with no list loaded. NOT automatically
-  // deleted, because they aren't always junk — restoring a backup on a fresh
-  // machine BEFORE importing the list leaves exactly this state, and those
-  // scores are waiting to rejoin. But they must not stay invisible either:
-  // they ride along in every backup. So: show them, and let the user decide.
-  const known = new Set(domainUniverse());
-  const orphans = [];
-  for (let i = 0; i < localStorage.length; i++){
-    const k = localStorage.key(i);
-    if (!k || !k.startsWith("wd_rs_")) continue;
-    const domain = k.slice("wd_rs_".length);
-    if (known.has(domain)) continue;
-    let pool;
-    try { pool = JSON.parse(localStorage.getItem(k)) || {}; } catch { continue; }
-    const vals = Object.values(pool).filter(v => v !== 0);
-    if (vals.length) orphans.push({ domain, words: vals.length,
-                                    sum: vals.reduce((a,b)=>a+b,0) });
-  }
-  orphans.sort((a,b) => a.domain < b.domain ? -1 : 1);
-
-  if (!rows.length){
-    const p = document.createElement("p");
-    p.className = "setting-desc";
-    p.textContent = "No progress yet — it builds as you study and master words.";
-    inner.appendChild(p);
-  } else {
-    const table = document.createElement("div");
-    table.className = "scores-table";
-    for (const r of rows){
-      // "NL-RU · 50%" — the domain code and the bare percentage. Scale-free,
-      // so pools of very different sizes stay comparable. What the percentage
-      // means (mastery at RS 10) is explained once in Basics, not repeated on
-      // every row. The raw RS sum is machinery and is not shown.
-      const face = (r.pct !== null) ? formatCoverage(r.pct) : r.mastered + " mastered";
-      const line = document.createElement("div");
-      line.className = "scores-line";
-      line.innerHTML =
-        '<span class="scores-domain">' + r.domain + "</span>" +
-        '<span class="scores-cov">' + face + "</span>";
-      table.appendChild(line);
-    }
-    inner.appendChild(table);
-  }
-
-  const desc = document.createElement("p");
-  desc.className = "setting-desc";
-  desc.textContent = "A backup file is the only true snapshot of your progress. " +
-                     "Connecting devices keeps them in step, but if you ever " +
-                     "clear all of them, a file is what brings your progress back.";
-  inner.appendChild(desc);
-
-  // Two different acts, two different words: content is EXPORTED (it travels
-  // to other people); progress is BACKED UP (it's yours alone).
-  const actions = document.createElement("div");
-  actions.className = "setting-actions";
-  actions.innerHTML =
-    '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
-    '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>';
-  inner.appendChild(actions);
-
-  const msg = document.createElement("div");
-  msg.className = "scores-msg";
-  inner.appendChild(msg);
-
-  if (orphans.length){
-    const h = document.createElement("div");
-    h.className = "scores-orphan-head";
-    h.textContent = "Scores with no list";
-    inner.appendChild(h);
-
-    const note = document.createElement("p");
-    note.className = "setting-desc";
-    note.textContent = "Progress kept for lists that aren't loaded here. If you " +
-      "import the list again, it picks these scores back up. If you don't want " +
-      "them any more, forget them — they're in every backup until you do.";
-    inner.appendChild(note);
-
-    const table = document.createElement("div");
-    table.className = "scores-table";
-    for (const o of orphans){
-      const line = document.createElement("div");
-      line.className = "scores-line scores-orphan";
-      line.innerHTML =
-        '<span class="scores-domain">' + o.domain + "</span>" +
-        '<span class="scores-words">' + o.words + " words</span>" +
-        '<span class="scores-sum">' + (o.sum > 0 ? "+" : "") + o.sum + "</span>";
-      const forget = document.createElement("button");
-      forget.className = "list-row-del scores-forget";
-      forget.textContent = "\u00D7";
-      forget.addEventListener("click", async () => {
-        const ok = await wdConfirm(
-          "Forget " + o.domain + "?",
-          "These " + o.words + " scores are deleted from this browser and from " +
-          "every future backup. Backup files you've already saved still contain " +
-          "them.",
-          "Forget", "Keep"
-        );
-        if (!ok) return;
-        try { localStorage.removeItem("wd_rs_" + o.domain); } catch {}
-        renderProgressPane();
-      });
-      line.appendChild(forget);
-      table.appendChild(line);
-    }
-    inner.appendChild(table);
-  }
-
-  // Sync lives here, on the Progress page, because it is about your progress
-  // and where it lives — the same reason backup/restore is here. There is no
-  // separate Settings page any more. Rendered fresh each time so its state
-  // (connected or not, which key) is never stale.
-  const syncHost = document.createElement("div");
-  syncHost.className = "sync-section";
-  inner.appendChild(syncHost);
-  renderSyncSection(syncHost);
-
-  host.appendChild(inner);
-}
-
 function showBrowserPane(pane){
   browserPane = pane;
   saveView(pane);            // a refresh comes back here (tab-lifetime only)
@@ -3478,17 +3337,10 @@ function showBrowserPane(pane){
   // the user moved on to something else entirely. A message is about the thing
   // you just did, not a permanent fixture.
   setListMessage("");
-  const $viewProgress    = document.getElementById("viewProgress");
   $viewLists.hidden    = (pane !== "lists");
-  $viewBasics.hidden     = (pane !== "basics");
-  $viewProgress.hidden   = (pane !== "progress");
+  $viewBasics.hidden   = (pane !== "basics");
 
-  // Scores is a live view — always re-render, never cached. It now also hosts
-  // the sync section (rendered inside renderProgressPane), since sync is about
-  // your progress and where it lives.
-  if (pane === "progress") renderProgressPane();
-
-  // Lazy-clone the info content from its source surface (once).
+  // Lazy-clone the Basics content from its source surface (once).
   if (pane === "basics" && !$viewBasics.dataset.loaded){
     const src = document.querySelector("#basicspage .infopage-inner");
     if (src){ $viewBasics.appendChild(src.cloneNode(true)); $viewBasics.dataset.loaded = "1"; }
@@ -3500,7 +3352,7 @@ function showBrowserPane(pane){
   // Back-to-lists link shows only in a sub-pane (info/scores)
   document.getElementById("browserBack").hidden = (pane === "lists");
   // The header title must follow the pane.
-  const titles = { lists: "Lists", basics: "Basics", progress: "Progress" };
+  const titles = { lists: "Lists", basics: "Basics" };
   const $t = document.getElementById("browserPaneTitle");
   if ($t) $t.textContent = titles[pane] || "Lists";
   // When showing a meta pane, no domain folder is the "browse" target
@@ -3998,13 +3850,14 @@ async function importScoresFromFile(file){
     setScoresMsg("Nothing changed — kept this browser's scores.");
   }
 
-  // Redraw what the user is looking at. The restore wrote the new values, but
-  // the Progress pane was rendered BEFORE it — so the screen kept showing the old
-  // numbers and the replace looked like it had silently failed. The rail too:
-  // a domain can gain or lose progress here, which moves it between zones.
-  const msg = document.querySelector("#viewProgress .scores-msg");
+  // Redraw what the user is looking at. The restore wrote new values, but the
+  // view was rendered BEFORE it — so without this the screen keeps showing the
+  // old numbers and the change looks like it silently failed. Refresh the
+  // browser (inline domain/list %s and the global zone), preserving the
+  // outcome message the restore just set.
+  const msg = document.querySelector(".scores-msg");
   const keep = msg ? msg.textContent : "";
-  if (browserPane === "progress") renderProgressPane();
+  if (browserPane === "lists") renderBrowser();
   if (keep) setScoresMsg(keep);          // re-render wipes the message; put it back
   renderBrowserRail();
 }
@@ -4015,16 +3868,8 @@ document.addEventListener("click", (e) => {
   const imp = e.target.closest && e.target.closest(".js-import-scores");
   if (exp){
     e.preventDefault();
-    exportScores();
-    // Backing up resets the gains counter to 0, so the "Since your last backup"
-    // line on this very pane is now wrong. Redraw it — keeping the message that
-    // exportScores just set.
-    if (browserPane === "progress"){
-      const m = document.querySelector("#viewProgress .scores-msg");
-      const keep = m ? m.textContent : "";
-      renderProgressPane();
-      if (keep) setScoresMsg(keep);
-    }
+    exportScores();   // sets the "backup file ready" message via setScoresMsg,
+                      // which writes to the global zone's .scores-msg directly
   }
   else if (imp){ e.preventDefault(); document.getElementById("scoresFileInput").click(); }
 });
