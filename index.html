@@ -1043,7 +1043,12 @@ body{
   margin-top:26px;padding-top:22px;
   border-top:1px solid var(--menu-border);
 }
-.gz-backup{margin-top:22px}
+/* The zone already draws a top border, so its FIRST section heading must not
+   draw its own — that stacked two lines and doubled the gap above "Sync". */
+.gz-first .section-title:first-child{
+  border-top:none;padding-top:0;margin-top:0;
+}
+.gz-backup{margin-top:8px}
 .gz-backup-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .gz-info-toggle{
   width:26px;height:26px;flex-shrink:0;
@@ -1057,15 +1062,6 @@ body{
 }
 
 .list-row-meta{font-size:12px;color:var(--tag)}
-/* Mastery figure — the persistent right-side number, its own slot before the
-   hover cue and the action buttons. Tabular so percentages line up. It stays
-   put; the cue and buttons sit to its right. */
-.list-row-cov{
-  flex-shrink:0;margin-left:10px;
-  font-size:14px;font-weight:700;color:var(--ink);
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
 /* The row's click starts studying — a bigger consequence than the row looks.
    Say so on hover, so the user sees it before committing. (When it's already
    the active list the cue reads "Resume", because clicking returns you to your
@@ -3087,16 +3083,15 @@ function renderGlobalZone(){
 
   // ── Sync (primary) ──
   const syncHost = document.createElement("div");
-  syncHost.className = "sync-section";
-  host.appendChild(syncHost);
-  renderSyncSection(syncHost);
+  syncHost.className = "sync-section gz-first";   // gz-first suppresses the
+  host.appendChild(syncHost);                     // section-title's own border,
+  renderSyncSection(syncHost);                    // since the zone already has one
 
   // ── Backup (secondary, always available) ──
-  // Button first; the reasoning appears only when the user engages the info
-  // toggle, so the zone stays uncluttered for the common case.
   const backup = document.createElement("div");
   backup.className = "gz-backup";
   backup.innerHTML =
+    '<h2 class="section-title">Backup</h2>' +
     '<div class="gz-backup-actions">' +
       '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
       '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>' +
@@ -3143,23 +3138,15 @@ function renderBrowserLists(){
     name.textContent = list.domain + "_" + list.name;
     const meta = document.createElement("div");
     meta.className = "list-row-meta";
-    // Provenance ("from WordDock" vs a user import) is carried by BEHAVIOUR, not
-    // a label: curated lists sort to the top and have no delete button; imports
-    // carry an ×. A prose tag would just add noise, worst of all on mobile.
-    meta.textContent = list.rows.length + " lemmas" +
+    // Mastery of THIS list, folded into the meta line rather than floated as a
+    // separate figure — a floating figure collided with the hover cue and
+    // wouldn't align down the column. As text here it's stable and quiet.
+    const cov = listCoverage(list);
+    const covStr = (cov !== null) ? " · " + formatCoverage(cov) : "";
+    meta.textContent = list.rows.length + " lemmas" + covStr +
       (list.listId === activeListId ? " · studying now" : "");
     main.appendChild(name);
     main.appendChild(meta);
-
-    // Mastery of THIS list, as a right-aligned figure — the fast, motivating
-    // number (a small slice climbs daily, where the pool % would crawl). It's a
-    // figure, not another word in the meta line: it reads as THE number, and it
-    // survives a narrow screen where a long middot-separated line would wrap.
-    const cov = listCoverage(list);
-    const covEl = document.createElement("div");
-    covEl.className = "list-row-cov";
-    covEl.textContent = (cov !== null) ? formatCoverage(cov) : "";
-    // continues below
 
     // ONE message zone, whose text follows whatever the pointer is over. The
     // buttons sit inside the row, so hovering the arrow used to fire the row's
@@ -3193,7 +3180,6 @@ function renderBrowserLists(){
     }
 
     row.appendChild(main);
-    row.appendChild(covEl);
     row.appendChild(cue);
     row.appendChild(actions);
     row.addEventListener("click", async () => {
