@@ -764,7 +764,7 @@ body{
 }
 .infopage .warn strong{color:#e8d4a0}
 
-/* ─── Panel title (used by Basics, Progress, Domain) ─── */
+/* ─── Panel title (used by About WordDock, Domain) ─── */
 .settings-title{
   font-size:20px;
   font-weight:600;
@@ -921,6 +921,16 @@ body{
   min-height:0;
 }
 /* Bottom meta zone: pinned to the rail bottom, never scrolls with domains */
+/* Site footer — one quiet, centered link to the standalone guide. */
+.browser-footer{
+  text-align:center;padding:20px 0 8px;margin-top:6px;
+  border-top:1px solid var(--menu-border);
+}
+.browser-footer a{
+  color:var(--tag);text-decoration:none;font-size:14px;
+}
+.browser-footer a:hover{color:var(--ink);}
+
 .rail-meta{
   flex-shrink:0;
   margin-top:14px;
@@ -1241,7 +1251,7 @@ body{
 
 /* Swappable detail views */
 .detail-view[hidden]{display:none}
-/* Basics content rendered inside the right pane */
+/* About WordDock content rendered inside the right pane */
 .detail-view .infopage-inner{max-width:none;margin:0;padding:0}
 .detail-view .info-close{display:none}   /* close handled by logo toggle / back */
 .detail-view .settings-title{display:none}  /* pane header already shows the title */
@@ -1361,9 +1371,6 @@ body{
     <!-- LEFT: domain folder-rail (the map) + meta items at the bottom -->
     <div class="browser-rail">
       <div id="browserRail"></div>
-      <div class="rail-meta">
-        <div class="rail-meta-item" data-pane="basics"><span>Basics</span></div>
-      </div>
     </div>
     <!-- RIGHT: swappable detail — lists (default) / info / scores -->
     <div class="browser-detail">
@@ -1377,9 +1384,13 @@ body{
              pinned) — page-level, since these act on ALL progress, not a list. -->
         <div id="browserGlobalZone" class="browser-global-zone"></div>
       </div>
-      <!-- BASICS view (content injected from the basics page source) -->
-      <div class="detail-view" id="viewBasics" hidden></div>
+      <!-- ABOUT WORDDOCK view (content injected from the about page source) -->
     </div>
+  </div>
+  <!-- Site footer: the single link to the standalone guide, which opens in its
+       own tab so it can sit beside the app while you find your way around. -->
+  <div class="browser-footer">
+    <a href="about.html" target="_blank" rel="noopener">About WordDock</a>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
   <input type="file" id="scoresFileInput" accept=".json,application/json" hidden>
@@ -1390,45 +1401,6 @@ body{
 <!-- (old overlayList retired; browser above is its replacement) -->
 
 <!-- ─── Info page (full screen, behind WordDock tab) ─── -->
-<div class="infopage" id="basicspage">
-  <div class="infopage-inner">
-    <button class="info-close" id="basicsBack" aria-label="Close">×</button>
-
-    <p class="info-intro">WordDock is a browser-based spaced-repetition tool for learning vocabulary and facts. No accounts, no server, no cloud sync — everything lives in your browser, on your device.</p>
-
-    <h3>How to learn</h3>
-    <p>Tap (or click) the card to reveal the answer. Tap again while the answer shows to peek back at the question without grading. Use <strong>Good</strong> if you got it right, <strong>Again</strong> if you slipped. A deck completes when 12 clean passes have accumulated; a new deck is then assembled from the items you know least well.</p>
-    <details class="info-more">
-      <summary>More on the deck logic</summary>
-      <p>Each deck draws the 10 items with the lowest running score (RS) — the ones you know least well. Within a deck you keep cycling an item until you pass it cleanly. At deck completion each item's RS updates: +1 if you never slipped on it, −1 for one slip, −2 for two or more. RS is purely a sorting key that decides which items surface next — there are no streaks, no penalties beyond ordering.</p>
-    </details>
-
-    <h3>How to change domain or list</h3>
-    <p>Click the WordDock logo to switch between studying and the browser. <strong>Domain</strong> is your broad subject (a language pair like NL-RU, or a field like BIO). Inside a domain, the <strong>Source</strong> is the whole set; a <strong>slice</strong> is a narrower lens onto it, or your own file. Pick a list to study it; your progress is shared across the domain.</p>
-
-    <h3>How to import and export lists</h3>
-    <p>In the browser you can import an <code>.xlsx</code> file to add a list, or export any list to save it to disk and hand it to someone else. The file holds the list's content — its words and cards — <strong>not</strong> your scores. Your running scores live only in this browser.</p>
-
-    <h4 class="info-rules-title">What a WordDock file needs</h4>
-    <p>All five, or the import is refused:</p>
-    <ol class="info-rules">
-      <li>A sheet whose <strong>cell A1 is literally <code>ID</code></strong>.</li>
-      <li>The <strong>25 columns</strong>, in this exact order:<br>
-        <code>ID · ENTRY · CAT · CTAG · L · Q1 · A1 · Q2 · A2 · … · Q10 · A10</code></li>
-      <li>At least <strong>10 rows</strong> where <code>ID</code>, <code>Q1</code> and <code>A1</code> are all filled.</li>
-      <li>A filename shaped <strong><code>DOMAIN_name.xlsx</code></strong> — the domain first, then an underscore, then your own name. For example <code>NL-RU_holiday.xlsx</code> or <code>BIOLOGY_plants.xlsx</code>. The filename is the list's identity; nothing hidden inside the file decides it.</li>
-      <li>Within one domain, <strong>every entry needs its own ID</strong> — never restart numbering in a new file. Progress is tracked per ID, so two files that both start at <code>0001</code> would make different words share scores. WordDock checks this when you import and warns you.</li>
-    </ol>
-    <p class="info-rules-note">The <code>Metadata</code> sheet WordDock writes on export is only a description of the file. The app never reads it back — a copied file's stale cells would lie with confidence.</p>
-
-    <p><strong>Progress and mastery.</strong> Every word carries a score that rises each time you recall it cleanly and dips when you slip. The Progress page shows, per domain, the share of its words you've mastered — a word counts as mastered once its score reaches <strong>10</strong> (about ten clean recalls). The same score also decides study order: your weakest words always come up first.</p>
-
-    <div class="warn">
-      <strong>Your progress lives only in this browser.</strong> It survives refreshes and restarts, but not browser cleanups (cookies/site data), and it doesn't follow you to another browser or device. A scores file (Progress → Back up scores) is the only backup of your progress.
-    </div>
-  </div>
-</div>
-
 <!-- ─── Domain page (full screen, like Info) ─── -->
 <div class="infopage" id="domainpage">
   <div class="infopage-inner">
@@ -2596,8 +2568,7 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeAllSurfaces();
     return;
   }
-  if (document.getElementById("basicspage").classList.contains("open") ||
-      document.getElementById("domainpage").classList.contains("open") ||
+  if (document.getElementById("domainpage").classList.contains("open") ||
       document.getElementById("listbrowser").classList.contains("open")) {
     if (e.key === "Escape") closeAllSurfaces();
     return;
@@ -2627,7 +2598,6 @@ const tabs = {
   filter: document.getElementById("tabFilter")
 };
 const overlays = {};   // (all overlays retired; kept empty so loops are no-ops)
-const $basicspage = document.getElementById("basicspage");
 const $domainpage = document.getElementById("domainpage");
 const $domainCurrent = document.getElementById("domainCurrent");
 const $domainUniverse = document.getElementById("domainUniverse");
@@ -2777,7 +2747,6 @@ function readView(){
 
 function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
-  $basicspage.classList.remove("open");
   $domainpage.classList.remove("open");
   $listbrowser.classList.remove("open");
   for (const k in tabs) tabs[k].classList.remove("active");
@@ -2787,9 +2756,7 @@ function closeAllSurfaces(){
 function openSurface(which){
   // surfaces are mutually exclusive
   closeAllSurfaces();
-  if (which === "wd" || which === "basics"){
-    $basicspage.classList.add("open");
-  } else if (which === "domain"){
+  if (which === "domain"){
     renderDomainPage();
     $domainpage.classList.add("open");
   } else if (which === "list"){
@@ -2815,11 +2782,6 @@ function closeLogoMenu(){
   $menuBackdrop.classList.remove("open");
 }
 
-// Info page "back to studying" button
-document.getElementById("basicsBack").addEventListener("click", () => {
-  closeAllSurfaces();
-});
-
 // Domain page close button
 document.getElementById("domainBack").addEventListener("click", () => {
   closeAllSurfaces();
@@ -2830,7 +2792,6 @@ tabs.wd.addEventListener("click", (e) => {
   // Two-state toggle: any surface open -> back to studying;
   // nothing open -> open the browser.
   const surfaceOpen =
-    $basicspage.classList.contains("open") ||
     $domainpage.classList.contains("open") ||
     $listbrowser.classList.contains("open") ||
     document.querySelector(".overlay.open");
@@ -2851,9 +2812,7 @@ $logoMenu.querySelectorAll(".logo-menu-item").forEach(item => {
     e.stopPropagation();
     const which = item.dataset.menu;
     closeLogoMenu();
-    if (which === "basics"){
-      openSurface("basics");
-    } else if (which === "domain"){
+    if (which === "domain"){
       openSurface("domain");
     } else if (which === "list"){
       openSurface("list");
@@ -3257,8 +3216,7 @@ function renderListPanel(){ renderBrowser(); }
 
 /* ─── Browser pane switching: lists / info / settings ─── */
 const $viewLists    = document.getElementById("viewLists");
-const $viewBasics     = document.getElementById("viewBasics");
-let browserPane = "lists";   // "lists" | "basics"
+let browserPane = "lists";   // "lists" (the only browser pane now; About is a separate page)
 const $browserPaneTitle = document.getElementById("browserPaneTitle");
 
 /* The Scores view.
@@ -3278,7 +3236,7 @@ const $browserPaneTitle = document.getElementById("browserPaneTitle");
    number doing three jobs at once: a score (higher = more), a sort key (lower
    surfaces first in your next deck), and — past this line — a mastery signal.
    Those don't conflict; mastery is just "far enough along the same honest
-   quantity." The value is fixed and the same for everyone (stated in Basics),
+   quantity." The value is fixed and the same for everyone (stated in About WordDock),
    never a per-user setting — a configurable threshold would fracture what
    "mastered" means across people, the same trap as a preferences toggle. */
 const MASTERY_RS = 10;
@@ -3338,21 +3296,11 @@ function showBrowserPane(pane){
   // you just did, not a permanent fixture.
   setListMessage("");
   $viewLists.hidden    = (pane !== "lists");
-  $viewBasics.hidden   = (pane !== "basics");
 
-  // Lazy-clone the Basics content from its source surface (once).
-  if (pane === "basics" && !$viewBasics.dataset.loaded){
-    const src = document.querySelector("#basicspage .infopage-inner");
-    if (src){ $viewBasics.appendChild(src.cloneNode(true)); $viewBasics.dataset.loaded = "1"; }
-  }
-
-  // Header title + rail highlight
-  document.querySelectorAll(".rail-meta-item").forEach(it =>
-    it.classList.toggle("active", it.dataset.pane === pane));
   // Back-to-lists link shows only in a sub-pane (info/scores)
   document.getElementById("browserBack").hidden = (pane === "lists");
   // The header title must follow the pane.
-  const titles = { lists: "Lists", basics: "Basics" };
+  const titles = { lists: "Lists" };
   const $t = document.getElementById("browserPaneTitle");
   if ($t) $t.textContent = titles[pane] || "Lists";
   // When showing a meta pane, no domain folder is the "browse" target
@@ -3362,11 +3310,6 @@ function showBrowserPane(pane){
     renderBrowserRail();
   }
 }
-
-// Rail meta items (Basics / Progress) switch the right pane
-document.querySelectorAll(".rail-meta-item").forEach(item => {
-  item.addEventListener("click", () => showBrowserPane(item.dataset.pane));
-});
 
 /* Find IDs the incoming list reuses for a DIFFERENT word than the domain
    already knows. Compares against every list already in that domain — the
@@ -3663,15 +3606,15 @@ async function deleteList(listId){
 }
 
 // List browser: back button closes; dashed upload row triggers file picker
-// Back link (in Basics/Progress) returns to the lists view, staying in the browser
+// Back link (in About WordDock) returns to the lists view, staying in the browser
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 /* The "Domains" header is the way back to the rail.
 
    On desktop both panes are visible, so it just returns the detail pane to the
-   lists view (leaving Basics/Progress). On mobile only one pane shows at a
+   lists view (leaving About WordDock). On mobile only one pane shows at a
    time, and this is the ONLY route back to the domain list — the rail, with
-   MY LISTS, MORE and the Basics · Progress footer, is hidden inside it.
+   MY LISTS, MORE and the About WordDock footer, is hidden inside it.
    Without this the header looked tappable, highlighted on touch, and did
    nothing. */
 document.getElementById("browserDomainsHeader").addEventListener("click", () => {
