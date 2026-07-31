@@ -1033,10 +1033,39 @@ body{
   background:var(--studying-bg);
   border:2px solid rgba(173,196,224,0.85);   /* thicker, brighter border = selected */
 }
-.list-row-main{min-width:0}
+.list-row-main{min-width:0;flex:1}
 .list-row-name{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:3px}
 .list-row-name .dim{color:var(--tag);font-weight:400}
+/* Global-actions zone beneath the lists: sync (primary) then backup. Set off
+   from the list rows by a top border and spacing, so it reads as a distinct
+   page-level zone rather than another list item. */
+.browser-global-zone{
+  margin-top:26px;padding-top:22px;
+  border-top:1px solid var(--menu-border);
+}
+.gz-backup{margin-top:22px}
+.gz-backup-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gz-info-toggle{
+  width:26px;height:26px;flex-shrink:0;
+  border:1px solid var(--menu-border);border-radius:50%;
+  background:transparent;color:var(--tag);cursor:pointer;
+  font-size:13px;line-height:1;
+}
+.gz-info-toggle:hover{color:var(--ink);border-color:var(--ink)}
+.gz-backup-info{
+  font-size:13px;line-height:1.55;color:#9aa3b0;margin:12px 2px 0;
+}
+
 .list-row-meta{font-size:12px;color:var(--tag)}
+/* Mastery figure — the persistent right-side number, its own slot before the
+   hover cue and the action buttons. Tabular so percentages line up. It stays
+   put; the cue and buttons sit to its right. */
+.list-row-cov{
+  flex-shrink:0;margin-left:10px;
+  font-size:14px;font-weight:700;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
 /* The row's click starts studying — a bigger consequence than the row looks.
    Say so on hover, so the user sees it before committing. (When it's already
    the active list the cue reads "Resume", because clicking returns you to your
@@ -1342,6 +1371,9 @@ body{
         <div id="browserLists" class="browser-lists"></div>
         <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs"><span>?</span><span class="rules-word">What a file needs</span></button></div>
         <div id="listMessage" class="list-message"></div>
+        <!-- Global-actions zone: sync + backup. Flows beneath the lists (not
+             pinned) — page-level, since these act on ALL progress, not a list. -->
+        <div id="browserGlobalZone" class="browser-global-zone"></div>
       </div>
       <!-- BASICS view (content injected from the basics page source) -->
       <div class="detail-view" id="viewBasics" hidden></div>
@@ -2927,9 +2959,14 @@ function makeFolderEl(domain){
 
   const name = document.createElement("span");
   name.textContent = domainDisplayName(domain);
+  // The domain's pool-wide mastery — the true, slow-moving standing across the
+  // whole corpus (distinct from the fast per-list % on the right). Shown only
+  // when there's progress; an untouched catalog domain stays bare rather than
+  // reading "0%", which would look like failure before you've begun.
+  const cov = domainCoverage(domain);
   const count = document.createElement("span");
   count.className = "count";
-  count.textContent = listsInDomain(domain).length || "";
+  count.textContent = (cov.pct !== null && cov.pct > 0) ? formatCoverage(cov.pct) : "";
   f.appendChild(name);
   f.appendChild(count);
   f.addEventListener("click", async () => {
@@ -3014,6 +3051,68 @@ function renderBrowserRail(){
   }
 }
 
+/* Coverage for a single LIST (a lens over the pool), as opposed to a whole
+   domain. Same formula — Σ max(0, min(RS, MASTERY_RS)) ÷ (lemmas × MASTERY_RS)
+   — but the denominator is just this list's lemmas, and each lemma's RS is read
+   from the domain pool it belongs to. This is the fast, motivating number: a
+   beginner studying a 20-word slice sees it climb daily, where the pool number
+   would crawl. Returns null if the list has no rows. */
+function listCoverage(list){
+  if (!list || !list.rows || !list.rows.length) return null;
+  let pool;
+  try { pool = JSON.parse(localStorage.getItem("wd_rs_" + list.domain)) || {}; }
+  catch { pool = {}; }
+  let points = 0;
+  for (const row of list.rows){
+    const v = pool[row.ID];
+    if (v > 0) points += Math.min(v, MASTERY_RS);
+  }
+  return (points / (list.rows.length * MASTERY_RS)) * 100;
+}
+
+/* The global-actions zone — sync and backup — flowing beneath the lists.
+
+   It is GLOBAL, not per-list: sync connects all your progress, backup writes
+   every pool to one file. So it sits below the lists as a page-level zone, not
+   on any list row. Sync comes first because it's the median user's real want
+   (progress on their phone and laptop); backup sits below, always available —
+   never nested behind sync, because the UN-synced user is the one whose only
+   safety net is a file, so they must never have to find it inside sync's
+   controls. Rendered fresh each open so sync's connected/disconnected state is
+   never stale. */
+function renderGlobalZone(){
+  const host = document.getElementById("browserGlobalZone");
+  if (!host) return;
+  host.innerHTML = "";
+
+  // ── Sync (primary) ──
+  const syncHost = document.createElement("div");
+  syncHost.className = "sync-section";
+  host.appendChild(syncHost);
+  renderSyncSection(syncHost);
+
+  // ── Backup (secondary, always available) ──
+  // Button first; the reasoning appears only when the user engages the info
+  // toggle, so the zone stays uncluttered for the common case.
+  const backup = document.createElement("div");
+  backup.className = "gz-backup";
+  backup.innerHTML =
+    '<div class="gz-backup-actions">' +
+      '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
+      '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>' +
+      '<button class="gz-info-toggle" type="button" aria-label="About backups">?</button>' +
+    '</div>' +
+    '<p class="gz-backup-info" hidden>A backup file is the only true snapshot of ' +
+      'your progress. Connecting devices keeps them in step, but if you ever ' +
+      'clear all of them, a file is what brings your progress back.</p>' +
+    '<div class="scores-msg"></div>';
+  host.appendChild(backup);
+
+  const toggle = backup.querySelector(".gz-info-toggle");
+  const info   = backup.querySelector(".gz-backup-info");
+  toggle.addEventListener("click", () => { info.hidden = !info.hidden; });
+}
+
 function renderBrowserLists(){
   $browserDetailHead.textContent = "Lists in " + domainDisplayName(browserDomain);
   $browserLists.innerHTML = "";
@@ -3044,11 +3143,23 @@ function renderBrowserLists(){
     name.textContent = list.domain + "_" + list.name;
     const meta = document.createElement("div");
     meta.className = "list-row-meta";
+    // Provenance ("from WordDock" vs a user import) is carried by BEHAVIOUR, not
+    // a label: curated lists sort to the top and have no delete button; imports
+    // carry an ×. A prose tag would just add noise, worst of all on mobile.
     meta.textContent = list.rows.length + " lemmas" +
-      (list.listId === activeListId ? " · studying now" : "") +
-      (list.source === "embedded" ? " · from WordDock" : "");
+      (list.listId === activeListId ? " · studying now" : "");
     main.appendChild(name);
     main.appendChild(meta);
+
+    // Mastery of THIS list, as a right-aligned figure — the fast, motivating
+    // number (a small slice climbs daily, where the pool % would crawl). It's a
+    // figure, not another word in the meta line: it reads as THE number, and it
+    // survives a narrow screen where a long middot-separated line would wrap.
+    const cov = listCoverage(list);
+    const covEl = document.createElement("div");
+    covEl.className = "list-row-cov";
+    covEl.textContent = (cov !== null) ? formatCoverage(cov) : "";
+    // continues below
 
     // ONE message zone, whose text follows whatever the pointer is over. The
     // buttons sit inside the row, so hovering the arrow used to fire the row's
@@ -3082,6 +3193,7 @@ function renderBrowserLists(){
     }
 
     row.appendChild(main);
+    row.appendChild(covEl);
     row.appendChild(cue);
     row.appendChild(actions);
     row.addEventListener("click", async () => {
@@ -3136,6 +3248,7 @@ function renderBrowserLists(){
     });
     $browserLists.appendChild(row);
   }
+  renderGlobalZone();   // sync + backup, flowing beneath the lists
 }
 
 // Full browser render: rail + detail. Keeps browserDomain sensible.
