@@ -931,6 +931,23 @@ body{
 }
 .browser-footer a:hover{color:var(--ink);}
 
+/* About topics — a static table of contents, styled like the domain rows but
+   without their dynamic zones. Always all shown, in order. */
+.about-topic{
+  display:flex;align-items:center;
+  padding:11px 13px;border-radius:9px;cursor:pointer;
+  color:var(--ink);font-size:15px;
+  transition:background-color .12s;
+}
+.about-topic:hover{background:var(--menu-hover);}
+.about-topic.active{background:var(--menu-hover);font-weight:600;}
+/* Content: headed prose, reusing the app's own text styles. */
+.about-content{max-width:640px;}
+.about-content .section-title:first-child{margin-top:0;}
+.about-rules{padding-left:20px;margin:4px 0 0;color:var(--tag);font-size:14px;line-height:1.6;}
+.about-rules li{margin-bottom:8px;}
+.about-rules code{font-size:12.5px;}
+
 .rail-meta{
   flex-shrink:0;
   margin-top:14px;
@@ -1387,17 +1404,42 @@ body{
       <!-- ABOUT WORDDOCK view (content injected from the about page source) -->
     </div>
   </div>
-  <!-- Site footer: the single link to the standalone guide. Same-tab — About is
-       read-once orientation, not reference you juxtapose; leaving the app (a new
-       tab) contradicted the focus-study feel. The guide's logo links back here. -->
+  <!-- Site footer: opens the About surface — a twin of this browser, staying
+       inside WordDock. The About logo returns to study, the same gate as here. -->
   <div class="browser-footer">
-    <a href="about.html">About WordDock</a>
+    <a href="#" id="aboutFooterLink">About WordDock</a>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
   <input type="file" id="scoresFileInput" accept=".json,application/json" hidden>
 </div>
 
-<!-- mobile tab state: which pane shows. Driven by JS (.show-rail / .show-detail) -->
+<!-- ─── About WordDock (twin of the browser: same layout, same logo, same
+     counter-positioned title — consistency by REUSING the browser's classes,
+     never copying them. Left = a static, always-visible topic list (NOT the
+     domain rail's dynamic zones — a guide's table of contents shows every entry
+     always). Right = the selected topic as headed prose. Topics are data
+     (aboutTopics), so growing to ~10 sections is an array edit, not a layout
+     change. Reached from the footer; the logo returns to study. ─── -->
+<div class="infopage browser" id="aboutbrowser">
+  <div class="browser-head">
+    <div class="browser-head-rail">About</div>
+    <div class="browser-head-detail">
+      <span class="surface-title" id="aboutPaneTitle">WordDock</span>
+      <button class="browser-back-link" id="aboutTopicBack" aria-label="Back to topics" hidden>← Topics</button>
+    </div>
+  </div>
+  <div class="browser-panes">
+    <div class="browser-rail">
+      <div id="aboutRail" class="about-rail"></div>
+    </div>
+    <div class="browser-detail">
+      <div class="detail-view">
+        <div id="aboutContent" class="about-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- (old overlayList retired; browser above is its replacement) -->
 
@@ -2570,7 +2612,8 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (document.getElementById("domainpage").classList.contains("open") ||
-      document.getElementById("listbrowser").classList.contains("open")) {
+      document.getElementById("listbrowser").classList.contains("open") ||
+      document.getElementById("aboutbrowser").classList.contains("open")) {
     if (e.key === "Escape") closeAllSurfaces();
     return;
   }
@@ -2600,6 +2643,7 @@ const tabs = {
 };
 const overlays = {};   // (all overlays retired; kept empty so loops are no-ops)
 const $domainpage = document.getElementById("domainpage");
+const $aboutbrowser = document.getElementById("aboutbrowser");
 const $domainCurrent = document.getElementById("domainCurrent");
 const $domainUniverse = document.getElementById("domainUniverse");
 const $listbrowser = document.getElementById("listbrowser");
@@ -2750,6 +2794,7 @@ function closeAllSurfaces(){
   for (const k in overlays) overlays[k].classList.remove("open");
   $domainpage.classList.remove("open");
   $listbrowser.classList.remove("open");
+  $aboutbrowser.classList.remove("open");
   for (const k in tabs) tabs[k].classList.remove("active");
   saveView(null);                 // back to study
 }
@@ -2767,6 +2812,11 @@ function openSurface(which){
     showBrowserPane("lists");
     renderBrowser();
     $listbrowser.classList.add("open");
+  } else if (which === "about"){
+    $aboutbrowser.classList.add("show-rail");    // mobile starts on the topic list
+    $aboutbrowser.classList.remove("show-detail");
+    renderAbout();
+    $aboutbrowser.classList.add("open");
   } else if (overlays[which]){
     overlays[which].classList.add("open");
   }
@@ -2795,6 +2845,7 @@ tabs.wd.addEventListener("click", (e) => {
   const surfaceOpen =
     $domainpage.classList.contains("open") ||
     $listbrowser.classList.contains("open") ||
+    $aboutbrowser.classList.contains("open") ||
     document.querySelector(".overlay.open");
   closeLogoMenu();
   if (surfaceOpen){
@@ -3204,6 +3255,122 @@ function renderBrowserLists(){
 }
 
 // Full browser render: rail + detail. Keeps browserDomain sensible.
+/* ── About WordDock: topics as DATA ───────────────────────────────────────
+   Each entry is {id, title, html}. The rail lists every title (always, in
+   order); selecting one shows its html on the right as headed prose. To add a
+   section (Contact, Collaboration, References…) append an entry here — no
+   layout code changes. Kept flat for now; grouping under super-headers could be
+   added later without disturbing this shape. Content reuses the app's own text
+   styles (.section-title, .setting-desc), so the guide reads exactly like the
+   sync/backup prose already in the browser. */
+const aboutTopics = [
+  { id:"idea", title:"The idea", html:
+    '<h2 class="section-title gz-first">The idea</h2>' +
+    '<p class="setting-desc">Learning sticks when you meet the right item at the ' +
+    'right moment — your weakest word, not a random one. WordDock keeps a running ' +
+    'score for every word and always builds your next deck from the ones you know ' +
+    'least well. No streaks, no penalties, no pressure: just your weakest words, ' +
+    'surfaced first, until they aren\u2019t weak any more.</p>' },
+
+  { id:"studying", title:"Studying", html:
+    '<h2 class="section-title gz-first">Studying</h2>' +
+    '<p class="setting-desc">Tap a card to reveal the answer; tap again while the ' +
+    'answer shows to peek back at the question without grading. Mark ' +
+    '<b>Good</b> if you recalled it, <b>Again</b> if you slipped. A deck ' +
+    'completes after twelve clean passes, and the next deck is drawn from your ' +
+    'lowest-scoring words.</p>' +
+    '<p class="setting-desc">Behind each word is a running score. At deck ' +
+    'completion it rises by one if you never slipped, and falls by one or two if ' +
+    'you did. That one score does three jobs at once: it tallies how well you know ' +
+    'the word, it decides which words come up next (lowest first), and \u2014 past ' +
+    'a mark of <b>10</b> \u2014 it counts the word as mastered. Nothing about time ' +
+    'enters into it: no decay, no \u201Cdays since review.\u201D</p>' },
+
+  { id:"progress", title:"Progress &amp; mastery", html:
+    '<h2 class="section-title gz-first">Progress &amp; mastery</h2>' +
+    '<p class="setting-desc">Each domain and each list shows a <b>mastery ' +
+    'percentage</b> \u2014 how far you are toward knowing every word in it. A ' +
+    'list\u2019s number climbs quickly (a small set, studied daily); a whole ' +
+    'domain\u2019s number is the slower, truer measure of how far through the ' +
+    'subject you\u2019ve come. A word counts as mastered once its score reaches ' +
+    '<b>10</b>, about ten clean recalls; 100% means every word is at mastery or ' +
+    'beyond.</p>' },
+
+  { id:"domains", title:"Domains &amp; lists", html:
+    '<h2 class="section-title gz-first">Domains &amp; lists</h2>' +
+    '<p class="setting-desc">A <b>domain</b> is a subject \u2014 a language pair ' +
+    'like <code>NL-RU</code>, or a field. Within it, the <b>Full-List</b> is the ' +
+    'complete set WordDock provides; your own imported files sit alongside it. ' +
+    'Progress is shared across a whole domain, so studying any list in it builds ' +
+    'the same scores.</p>' },
+
+  { id:"ownlists", title:"Your own lists", html:
+    '<h2 class="section-title gz-first">Your own lists</h2>' +
+    '<p class="setting-desc">You can import an <code>.xlsx</code> file to add a ' +
+    'list, or export any list to hand it to someone else. A file holds a ' +
+    'list\u2019s <b>content</b> \u2014 its words and cards \u2014 never your ' +
+    'scores. For an import to be accepted it needs all of the following:</p>' +
+    '<ol class="about-rules">' +
+    '<li>A sheet whose <b>cell A1 is literally <code>ID</code></b>.</li>' +
+    '<li>The <b>25 columns</b>, in order: <code>ID \u00B7 ENTRY \u00B7 CAT \u00B7 ' +
+    'CTAG \u00B7 L \u00B7 Q1 \u00B7 A1 \u00B7 \u2026 \u00B7 Q10 \u00B7 A10</code>.</li>' +
+    '<li>At least <b>10 rows</b> with <code>ID</code>, <code>Q1</code> and ' +
+    '<code>A1</code> filled.</li>' +
+    '<li>A filename shaped <b><code>DOMAIN_name.xlsx</code></b> \u2014 the domain, ' +
+    'an underscore, then your name (e.g. <code>NL-RU_holiday.xlsx</code>). The ' +
+    'filename is the list\u2019s identity.</li>' +
+    '<li>Within a domain, <b>every entry needs its own ID</b> \u2014 never restart ' +
+    'numbering. Progress is tracked per ID, so two files both starting at ' +
+    '<code>0001</code> would make different words share scores. WordDock warns you ' +
+    'if it spots this.</li>' +
+    '</ol>' },
+
+  { id:"devices", title:"Devices &amp; backup", html:
+    '<h2 class="section-title gz-first">Devices &amp; backup</h2>' +
+    '<p class="setting-desc">Your scores stay on your device, in your browser. ' +
+    'Nothing leaves it unless you choose to connect another device.</p>' +
+    '<p class="setting-desc">If you study on more than one device, open <b>Sync</b> ' +
+    'and enter the same key on each. Your progress then travels between them. No ' +
+    'account, no email, no password \u2014 WordDock only ever sees the key, never ' +
+    'who you are. Connecting always raises a device to the highest progress across ' +
+    'your devices; it never lowers a score another has already earned.</p>' +
+    '<p class="setting-desc">A <b>backup file</b> is the only true snapshot of your ' +
+    'progress. Connecting devices keeps them in step, but if you ever clear the ' +
+    'data on all of them, a file is what brings your progress back.</p>' +
+    '<p class="setting-desc">Sharing a computer? Progress belongs to the browser, ' +
+    'so everyone studying in the same one shares one set of scores. A separate ' +
+    'browser profile keeps progress apart.</p>' },
+];
+
+let aboutTopicId = aboutTopics[0].id;   // first topic auto-selected
+
+function renderAbout(){
+  const rail = document.getElementById("aboutRail");
+  const content = document.getElementById("aboutContent");
+  if (!rail || !content) return;
+  rail.innerHTML = "";
+  // Every topic, always shown, in order — a table of contents, not a working
+  // set. (Deliberately NOT the domain rail's ACTIVE/MORE/cap logic.)
+  for (const t of aboutTopics){
+    const row = document.createElement("div");
+    row.className = "about-topic" + (t.id === aboutTopicId ? " active" : "");
+    row.innerHTML = "<span>" + t.title + "</span>";
+    row.addEventListener("click", () => {
+      aboutTopicId = t.id;
+      renderAbout();
+      // Mobile: selecting a topic reveals the content pane (same one-pane
+      // behaviour as picking a domain reveals its lists).
+      const ab = document.getElementById("aboutbrowser");
+      ab.classList.add("show-detail");
+      ab.classList.remove("show-rail");
+      document.getElementById("aboutTopicBack").hidden = false;
+    });
+    rail.appendChild(row);
+  }
+  const topic = aboutTopics.find(t => t.id === aboutTopicId) || aboutTopics[0];
+  content.innerHTML = topic.html;
+}
+
 function renderBrowser(){
   if (!browserDomain || !domainUniverse().includes(browserDomain)){
     browserDomain = DOMAIN_RUNTIME;
@@ -3622,6 +3789,22 @@ document.getElementById("browserDomainsHeader").addEventListener("click", () => 
   showBrowserPane("lists");                       // detail returns to the lists view
   $listbrowser.classList.remove("show-detail");   // …then, on mobile, show the rail
   $listbrowser.classList.add("show-rail");
+});
+
+// About WordDock: footer opens it; its own nav mirrors the browser's.
+document.getElementById("aboutFooterLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  openSurface("about");
+});
+// Mobile: the "← Topics" back button and the "About" header both return to the
+// topic list — the same one-pane return as the browser's "Domains" header.
+document.getElementById("aboutTopicBack").addEventListener("click", () => {
+  $aboutbrowser.classList.remove("show-detail");
+  $aboutbrowser.classList.add("show-rail");
+});
+document.querySelector("#aboutbrowser .browser-head-rail").addEventListener("click", () => {
+  $aboutbrowser.classList.remove("show-detail");
+  $aboutbrowser.classList.add("show-rail");
 });
 /* The five requirements, shown on the spot. Clicking through to the whole Info
    page answered a question the user didn't ask ("what is WordDock? how do I
