@@ -1030,10 +1030,11 @@ body{
 }
 .list-row:hover{background:var(--menu-hover)}
 .list-row.active{
-  background:var(--studying-bg);
-  border:2px solid rgba(173,196,224,0.85);   /* thicker, brighter border = selected */
+  background:rgba(0,102,0,0.32);              /* clearer green than the old .18 */
+  border:2px solid var(--studying);           /* green border, not blue — this
+                                                 is the row you're studying now */
 }
-.list-row-main{min-width:0;flex:1}
+.list-row-main{min-width:0}
 .list-row-name{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:3px}
 .list-row-name .dim{color:var(--tag);font-weight:400}
 /* Global-actions zone beneath the lists: sync (primary) then backup. Set off
