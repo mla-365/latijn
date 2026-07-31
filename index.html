@@ -1030,10 +1030,16 @@ body{
 }
 .list-row:hover{background:var(--menu-hover)}
 .list-row.active{
-  background:rgba(0,102,0,0.32);              /* clearer green than the old .18 */
-  border:2px solid var(--studying);           /* green border, not blue — this
-                                                 is the row you're studying now */
+  background:var(--domain-bg);                 /* solid #006600 — the exact
+                                                 logo-badge green; the badge is
+                                                 the gate back to this list, so
+                                                 they share one colour */
+  border:2px solid transparent;                /* fill alone marks it; a border
+                                                 would only compete */
 }
+.list-row.active .list-row-name{color:#fff}
+.list-row.active .list-row-meta{color:rgba(255,255,255,0.8)}
+.list-row.active .list-row-cue{color:#fff}
 .list-row-main{min-width:0}
 .list-row-name{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:3px}
 .list-row-name .dim{color:var(--tag);font-weight:400}
@@ -2101,8 +2107,8 @@ function renderSyncSection(root){
   // ── Sync is on ──────────────────────────────────────────────────────────
   const p = document.createElement("p");
   p.className = "setting-desc";
-  p.textContent = "This browser's progress is linked to the key below. Enter " +
-    "the same key on another device to join it to this progress.";
+  p.textContent = "Enter the key below on another device \u2014 your progress " +
+    "will then sync to both.";
   root.appendChild(p);
 
   const keyBox = document.createElement("div");
