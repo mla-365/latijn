@@ -27,20 +27,23 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
 body{padding:34px 22px 80px;}
 .wrap{max-width:680px;margin:0 auto;}
 
-/* Logo lockup — the badge W as the word's first letter, matching the app. */
-.logo{display:flex;align-items:center;gap:3px;margin-bottom:8px;}
+/* Logo lockup — identical to the app's, and a link: clicking it returns you
+   to WordDock (which boots into study), the same gate the logo is everywhere. */
+.logo{display:inline-flex;align-items:center;gap:3px;margin-bottom:8px;
+  text-decoration:none;color:var(--ink);}
 .logo-badge{
-  width:34px;height:34px;border-radius:8px;background:var(--green);
+  width:40px;height:40px;border-radius:11px;background:var(--green);
   display:flex;align-items:center;justify-content:center;
-  font-family:Georgia,serif;font-weight:700;font-size:24px;color:#fff;
+  font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:25px;
+  line-height:1;color:#fff;flex-shrink:0;
 }
-.logo-word{font-size:22px;font-weight:600;}
-.tagline{color:var(--tag);margin:0 0 34px;font-size:15px;}
+.logo-word{font-size:20px;font-weight:400;letter-spacing:.2px;}
+.tagline{color:var(--tag);margin:14px 0 34px;font-size:15px;}
 
-h2{font-size:19px;font-weight:600;margin:36px 0 8px;
+h2{font-size:17px;font-weight:600;margin:34px 0 8px;
   padding-top:26px;border-top:1px solid var(--menu-border);}
 h2:first-of-type{border-top:none;padding-top:0;margin-top:0;}
-h3{font-size:15px;font-weight:600;margin:22px 0 6px;color:var(--tag);}
+h3{font-size:14px;font-weight:600;margin:20px 0 6px;color:var(--tag);}
 p{margin:0 0 14px;}
 code{background:var(--panel);padding:1px 6px;border-radius:5px;
   font-size:13px;border:1px solid var(--menu-border);
@@ -48,9 +51,6 @@ code{background:var(--panel);padding:1px 6px;border-radius:5px;
 strong{font-weight:600;}
 ol{padding-left:22px;} ol li{margin-bottom:8px;}
 .note{color:var(--tag);font-size:14px;}
-.back{display:inline-block;margin-bottom:26px;color:var(--tag);
-  text-decoration:none;font-size:14px;}
-.back:hover{color:var(--ink);}
 .callout{background:var(--panel);border:1px solid var(--menu-border);
   border-radius:11px;padding:16px 18px;margin:18px 0;}
 </style>
@@ -58,13 +58,11 @@ ol{padding-left:22px;} ol li{margin-bottom:8px;}
 <body>
 <div class="wrap">
 
-  <a class="back" href="index.html">← Back to WordDock</a>
-
-  <div class="logo">
+  <a class="logo" href="index.html" title="Back to WordDock">
     <span class="logo-badge">W</span><span class="logo-word">ordDock</span>
-  </div>
+  </a>
   <p class="tagline">A quiet tool for learning vocabulary and facts, built around
-    focused repetition. Keep this page open beside the app as you find your way around.</p>
+    focused repetition. Here's how it works.</p>
 
   <h2>The idea</h2>
   <p>Learning sticks when you meet the right item at the right moment — your
@@ -142,8 +140,6 @@ ol{padding-left:22px;} ol li{margin-bottom:8px;}
     everyone studying in the same one shares a single set of scores. Give each
     person their own browser profile — or a different browser — to keep progress
     apart.</p>
-
-  <a class="back" href="index.html" style="margin-top:20px;">← Back to WordDock</a>
 
 </div>
 </body>
