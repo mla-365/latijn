@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WordDock v26.1 -->
+<!-- WordDock v26.2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -3266,7 +3266,7 @@ function renderBrowserLists(){
 /* The running version, shown quietly in About so the DEPLOYED build can be
    checked from the app itself (phone included), not just by viewing source.
    Keep this in step with the <!-- WordDock vNN.NN --> marker at the top. */
-const WORDDOCK_VERSION = "v26.1";
+const WORDDOCK_VERSION = "v26.2";
 
 const aboutTopics = [
   { id:"idea", title:"The idea", html:
@@ -4001,6 +4001,12 @@ document.addEventListener("click", (e) => {
   const imp = e.target.closest && e.target.closest(".js-import-scores");
   if (exp){
     e.preventDefault();
+    // Collapse the "?" explanation (if open) before showing the result. You've
+    // acted, so you no longer need "what is a backup?"; you need the outcome —
+    // and hiding the info frees the space so the confirmation isn't pushed below
+    // the fold on a small screen.
+    const info = document.querySelector(".gz-backup-info");
+    if (info) info.hidden = true;
     exportScores();   // sets the "backup file ready" message via setScoresMsg,
                       // which writes to the global zone's .scores-msg directly
   }
