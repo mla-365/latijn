@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- WordDock v26.12 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -947,6 +948,13 @@ body{
 .about-rules{padding-left:20px;margin:4px 0 0;color:var(--tag);font-size:14px;line-height:1.6;}
 .about-rules li{margin-bottom:8px;}
 .about-rules code{font-size:12.5px;}
+/* Version marker at the foot of the About topic list — quiet, for checking the
+   deployed build from the app itself. */
+.about-version{
+  margin-top:18px;padding:10px 13px;
+  font-size:12px;color:var(--tag);opacity:.7;
+  user-select:text;
+}
 
 .rail-meta{
   flex-shrink:0;
@@ -3262,6 +3270,11 @@ function renderBrowserLists(){
    added later without disturbing this shape. Content reuses the app's own text
    styles (.section-title, .setting-desc), so the guide reads exactly like the
    sync/backup prose already in the browser. */
+/* The running version, shown quietly in About so the DEPLOYED build can be
+   checked from the app itself (phone included), not just by viewing source.
+   Keep this in step with the <!-- WordDock vNN.NN --> marker at the top. */
+const WORDDOCK_VERSION = "v26.12";
+
 const aboutTopics = [
   { id:"idea", title:"The idea", html:
     '<h2 class="section-title gz-first">The idea</h2>' +
@@ -3365,6 +3378,11 @@ function renderAbout(){
     });
     rail.appendChild(row);
   }
+  // The running version, quietly at the foot of the topic list.
+  const ver = document.createElement("div");
+  ver.className = "about-version";
+  ver.textContent = "WordDock " + WORDDOCK_VERSION;
+  rail.appendChild(ver);
   const topic = aboutTopics.find(t => t.id === aboutTopicId) || aboutTopics[0];
   content.innerHTML = topic.html;
 }
