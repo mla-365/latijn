@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WordDock v26.3 -->
+<!-- WordDock v26.4 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1188,7 +1188,7 @@ body{
 }
 .study-toast.on{opacity:1}
 
-/* A heading for a section WITHIN a pane (e.g. Sync on Progress). Distinct from .settings-title,
+/* A heading for a section WITHIN a pane (e.g. Sync in the global zone). Distinct from .settings-title,
    which names the whole page and is hidden in the detail pane because the pane
    header already shows it. */
 .section-title{
@@ -1915,7 +1915,7 @@ function showStudyToast(text){
 const SYNC_KEY_STORE = "wd_sync_key";
 const KEY_ALPHABET   = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
-const SYNC_KEY_LEN = 8;           // WD-XXXX-XXXX
+const SYNC_KEY_LEN = 8;           // XXXX-XXXX
 
 function generateSyncKey(){
   const bytes = new Uint32Array(SYNC_KEY_LEN);
@@ -1928,16 +1928,15 @@ function generateSyncKey(){
 /* Display form: grouped so the eye can track it while typing on another
    device. The stored form stays bare — display is never the identity. */
 function formatSyncKey(raw){
-  return "WD-" + raw.slice(0,4) + "-" + raw.slice(4,8);
+  return raw.slice(0,4) + "-" + raw.slice(4,8);
 }
 
-/* Accept whatever the user types: lowercase, spaces, missing or extra dashes,
-   with or without the WD prefix. Being strict here would only punish someone
-   for copying a key correctly but formatting it differently. */
+/* Accept whatever the user types: lowercase, spaces, missing or extra dashes.
+   Being strict here would only punish someone for copying a key correctly but
+   formatting it differently. Everything that is not a letter or a digit is
+   thrown away, so the displayed dash costs the typist nothing. */
 function normalizeSyncKey(input){
-  let s = (input || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (s.startsWith("WD")) s = s.slice(2);
-  return s;
+  return (input || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 function isValidSyncKey(raw){
@@ -2071,7 +2070,7 @@ function renderSyncSection(root){
       await wdConfirm(
         "Sync is on",
         "Your key is " + formatSyncKey(fresh) + ". On your other device open " +
-        "Progress \u2192 Sync \u2192 \u201CI have a key\u201D and type it in. " +
+        "Sync \u2192 \u201CI have a key\u201D and type it in. " +
         "The key stays visible here, so you can come back for it.",
         "OK", null
       );
@@ -2084,17 +2083,17 @@ function renderSyncSection(root){
     have.addEventListener("click", async () => {
       const typed = await wdPrompt(
         "Enter your key",
-        "Type the key shown under Progress \u2192 Sync on your other device. " +
-        "The WD and the dashes are optional, and capitals don't matter \u2014 " +
-        "just the 8 characters is enough.",
-        "e.g. 7K2M9XQF", "Connect"
+        "Type the key shown under Sync on your other device. The dash is " +
+        "optional and capitals don't matter \u2014 just the 8 characters is " +
+        "enough.",
+        "e.g. 7K2M-9XQF", "Connect"
       );
       if (typed === null) return;
       const raw = normalizeSyncKey(typed);
       if (!isValidSyncKey(raw)){
         await wdConfirm(
           "That key doesn't look right",
-          "A WordDock key is 8 characters, like WD-7K2M-9XQF. Check it " +
+          "A WordDock key is 8 characters, like 7K2M-9XQF. Check it " +
           "against the other device and try again.",
           "OK", null
         );
@@ -3266,7 +3265,7 @@ function renderBrowserLists(){
 /* The running version, shown quietly in About so the DEPLOYED build can be
    checked from the app itself (phone included), not just by viewing source.
    Keep this in step with the <!-- WordDock vNN.NN --> marker at the top. */
-const WORDDOCK_VERSION = "v26.3";
+const WORDDOCK_VERSION = "v26.4";
 
 const aboutTopics = [
   { id:"idea", title:"The idea", html:
