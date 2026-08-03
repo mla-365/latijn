@@ -948,13 +948,6 @@ body{
 .about-rules{padding-left:20px;margin:4px 0 0;color:var(--tag);font-size:14px;line-height:1.6;}
 .about-rules li{margin-bottom:8px;}
 .about-rules code{font-size:12.5px;}
-/* Version marker at the foot of the About topic list — quiet, for checking the
-   deployed build from the app itself. */
-.about-version{
-  margin-top:18px;padding:10px 13px;
-  font-size:12px;color:var(--tag);opacity:.7;
-  user-select:text;
-}
 
 .rail-meta{
   flex-shrink:0;
@@ -3378,15 +3371,6 @@ function renderAbout(){
     });
     rail.appendChild(row);
   }
-  // The running version, quietly at the foot of the topic list.
-  const ver = document.createElement("div");
-  ver.className = "about-version";
-  ver.textContent = "WordDock " + WORDDOCK_VERSION;
-  rail.appendChild(ver);
-  // The version rides in the title (visible the instant About opens), sourced
-  // from the one constant so it can never drift from the top-of-file marker.
-  const title = document.getElementById("aboutPaneTitle");
-  if (title) title.textContent = "WordDock " + WORDDOCK_VERSION;
   const topic = aboutTopics.find(t => t.id === aboutTopicId) || aboutTopics[0];
   content.innerHTML = topic.html;
 }
@@ -3812,7 +3796,12 @@ document.getElementById("browserDomainsHeader").addEventListener("click", () => 
 });
 
 // About WordDock: footer opens it; its own nav mirrors the browser's.
-document.getElementById("aboutFooterLink").addEventListener("click", (e) => {
+const $aboutFooterLink = document.getElementById("aboutFooterLink");
+// The version rides on the browse-page footer, so the DEPLOYED build shows the
+// moment the browser opens (one click on the logo) — no need to enter About.
+// Sourced from the one constant, so it never drifts from the top-of-file marker.
+$aboutFooterLink.textContent = "About WordDock " + WORDDOCK_VERSION;
+$aboutFooterLink.addEventListener("click", (e) => {
   e.preventDefault();
   openSurface("about");
 });
