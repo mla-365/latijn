@@ -8,7 +8,7 @@
   {"ID": "0007", "ENTRY": "la montagna", "CAT": "zn", "CTAG": "v", "L": "A7", "pairs": [{"q": "de berg", "a": "la montagna"}]},
   {"ID": "0008", "ENTRY": "la chiesa", "CAT": "zn", "CTAG": "v", "L": "A8", "pairs": [{"q": "de kerk", "a": "la chiesa"}]},
   {"ID": "0009", "ENTRY": "il museo", "CAT": "zn", "CTAG": "m", "L": "A9", "pairs": [{"q": "het museum", "a": "il museo"}]},
-  {"ID": "0010", "ENTRY": "l'impressione", "CAT": "zn", "CTAG": "m", "L": "A10", "pairs": [{"q": "de indruk", "a": "l'impressione"}]},
+  {"ID": "0010", "ENTRY": "l'impressione", "CAT": "zn", "CTAG": "v", "L": "A10", "pairs": [{"q": "de indruk", "a": "l'impressione"}]},
   {"ID": "0011", "ENTRY": "l'interlocutore", "CAT": "zn", "CTAG": "m", "L": "A11", "pairs": [{"q": "de gesprekspartner", "a": "l'interlocutore"}]},
   {"ID": "0012", "ENTRY": "il turista", "CAT": "zn", "CTAG": "m", "L": "A12", "pairs": [{"q": "de toerist", "a": "il turista"}]},
   {"ID": "0013", "ENTRY": "il consiglio", "CAT": "zn", "CTAG": "m", "L": "A13", "pairs": [{"q": "het advies / de tip", "a": "il consiglio"}]},
