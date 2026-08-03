@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WordDock v26.12 -->
+<!-- WordDock v26.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -3273,7 +3273,7 @@ function renderBrowserLists(){
 /* The running version, shown quietly in About so the DEPLOYED build can be
    checked from the app itself (phone included), not just by viewing source.
    Keep this in step with the <!-- WordDock vNN.NN --> marker at the top. */
-const WORDDOCK_VERSION = "v26.12";
+const WORDDOCK_VERSION = "v26.1";
 
 const aboutTopics = [
   { id:"idea", title:"The idea", html:
@@ -3383,6 +3383,10 @@ function renderAbout(){
   ver.className = "about-version";
   ver.textContent = "WordDock " + WORDDOCK_VERSION;
   rail.appendChild(ver);
+  // The version rides in the title (visible the instant About opens), sourced
+  // from the one constant so it can never drift from the top-of-file marker.
+  const title = document.getElementById("aboutPaneTitle");
+  if (title) title.textContent = "WordDock " + WORDDOCK_VERSION;
   const topic = aboutTopics.find(t => t.id === aboutTopicId) || aboutTopics[0];
   content.innerHTML = topic.html;
 }
