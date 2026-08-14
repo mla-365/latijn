@@ -1478,7 +1478,7 @@ body{
    ════════════════════════════════════════════ */
 
 const SCHEMA_VERSION = "26.05.25";
-const DOMAIN = "NL-RU";
+const DOMAIN = "NL-LA";
 
 // Runtime domain — initialized to DOMAIN, but tracks the active list's
 // domain after an import that targets a different one.
@@ -1515,9 +1515,6 @@ const catalog = {
   // The list of available masters. Adding a domain = adding an entry here
   // plus hosting its <domain>.json file next to index.html.
   _domains: [
-    { domain: "NL-RU", display: { EN: "Dutch → Russian", NL: "Nederlands → Russisch" }, rowCount: 675 },
-    { domain: "NL-IT", display: { EN: "Dutch → Italian", NL: "Nederlands → Italiaans" }, rowCount: 22 },
-    { domain: "NL-FR", display: { EN: "Dutch → French", NL: "Nederlands → Frans" }, rowCount: 6 },
     { domain: "NL-LA", display: { EN: "Dutch → Latin", NL: "Nederlands → Latijn" }, rowCount: 10 }
   ],
   manifest(){
@@ -3789,7 +3786,7 @@ async function deleteList(listId){
     if (fallback){
       switchActiveList(fallback.listId);
     } else {
-      await loadDomainMaster("NL-RU");     // nothing loaded — fetch the default
+      await loadDomainMaster("NL-LA");     // nothing loaded — fetch the default
     }
   }
   // The pane may now be showing a domain that no longer exists.
@@ -4083,7 +4080,7 @@ function readLastList(){
 
   // Which list were we studying? Load ITS domain, not always NL-RU.
   const wanted = readLastList();
-  let bootDomain = "NL-RU";
+  let bootDomain = "NL-LA";
   if (wanted){
     if (LISTS[wanted]) bootDomain = LISTS[wanted].domain;               // an own list
     else if (wanted.startsWith("embedded_")) bootDomain = wanted.slice(9);
@@ -4092,7 +4089,7 @@ function readLastList(){
       if (pend) bootDomain = pend.domain;
     }
   }
-  if (!catalog.isAvailable(bootDomain)) bootDomain = "NL-RU";           // uncurated own list:
+  if (!catalog.isAvailable(bootDomain)) bootDomain = "NL-LA";           // uncurated own list:
                                                                         // still fetch a Source
   const rawRows = await catalog.loadMaster(bootDomain);
   const fullRows = normalizeEmbeddedRows(rawRows);
