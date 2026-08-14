@@ -8,5 +8,6 @@
   {"ID": "0007", "ENTRY": "equus", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "paard", "a": "equus"}]},
   {"ID": "0008", "ENTRY": "ancilla", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "dienstmeid", "a": "ancilla"}]},
   {"ID": "0009", "ENTRY": "mater", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "moeder", "a": "mater"}]},
-  {"ID": "0010", "ENTRY": "deus", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "god", "a": "deus"}]}
+  {"ID": "0010", "ENTRY": "deus", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "god", "a": "deus"}]},
+ {"ID": "0011", "ENTRY": "pater", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "vader", "a": "pater"}]},
 ]
