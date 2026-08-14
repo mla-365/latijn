@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- WordDock v26.5 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -28,6 +27,15 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-400.woff2">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="poppins-600.woff2">
 <script>
+/* THE version. Declared once, here at the top of the file, where it is the
+   first thing you see on opening index.html — and where it is real code, so
+   it cannot drift out of step with a copy of itself. It used to be written
+   twice (an HTML comment up here, a constant 3000 lines down); the comment
+   was the one you read and the constant was the one the footer printed, so
+   the moment they disagreed the app confidently reported the wrong version.
+   Two things doing one job is one thing too many. */
+const WORDDOCK_VERSION = "v26.6";
+
 /* Runs before the body paints. If this boot is a refresh that happened while
    the user was in the browser, mark the document at once, so the study stage
    is never painted — otherwise the card and buttons flash for a few frames
@@ -1533,7 +1541,22 @@ const catalog = {
     const path = LISTS_DIR + domain + ".json";
     const resp = await fetch(path, { cache: "no-cache" });
     if (!resp.ok) throw new Error("Could not fetch " + path + " (HTTP " + resp.status + ")");
-    return await resp.json();
+    const rows = await resp.json();
+
+    // The file has arrived, so the typed rowCount above is now the second-best
+    // answer to a question we can answer exactly. Overwrite it.
+    //
+    // rowCount is the denominator of the mastery percentage, and it is typed by
+    // hand when a domain is added. Grow a list without editing that number and
+    // the percentage reports against a total that no longer exists — quietly,
+    // with nothing on screen looking wrong. Letting the corpus correct the
+    // catalog removes the chance to forget, rather than asking us to remember.
+    // The typed number survives only as a placeholder for a domain nobody has
+    // opened yet.
+    const entry = this._domains.find(d => d.domain === domain);
+    if (entry && Array.isArray(rows)) entry.rowCount = rows.length;
+
+    return rows;
   },
   isAvailable(domain){
     return this._domains.some(d => d.domain === domain);
@@ -3263,10 +3286,9 @@ function renderBrowserLists(){
    added later without disturbing this shape. Content reuses the app's own text
    styles (.section-title, .setting-desc), so the guide reads exactly like the
    sync/backup prose already in the browser. */
-/* The running version, shown quietly in About so the DEPLOYED build can be
-   checked from the app itself (phone included), not just by viewing source.
-   Keep this in step with the <!-- WordDock vNN.NN --> marker at the top. */
-const WORDDOCK_VERSION = "v26.4";
+/* WORDDOCK_VERSION is declared in the head script at the top of this file.
+   It is shown quietly in About so the DEPLOYED build can be checked from the
+   app itself (phone included), not just by viewing source. */
 
 const aboutTopics = [
   { id:"idea", title:"The idea", html:
