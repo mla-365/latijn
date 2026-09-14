@@ -2621,7 +2621,7 @@ function gradeGood(){
       RS = pool;   // keep the in-memory copy in sync with the store
       markStudied(DOMAIN_RUNTIME);   // for ACTIVE ordering
       markSyncDirty();               // the one moment a score can change
-      maybeAskToKeepSafe();          // consent cascade — fires at most twice, ever
+      // maybeAskToKeepSafe();       // Latijn-clone: cloud-sync nudge disabled, mechanism untouched
     }
     render();
     return;
@@ -3209,7 +3209,7 @@ function renderBrowserRail(){
 
   // Catalog — "What else exists?" One door, no count. Its drawer unfolds
   // upward from the pair. Defaults open when nothing is engaged yet.
-  {
+  if (false) { // Latijn-clone: Catalog (access to other WD domains) hidden on browse page; mechanism untouched
     let expanded = (moreExpanded === null) ? (active.length === 0) : moreExpanded;
     const myDefault = (myExpanded === null) ? (my.length > 0) : myExpanded;
     if (expanded && myDefault) expanded = false;   // accordion: one drawer at a time, yours first
