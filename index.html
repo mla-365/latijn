@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>WordDock</title>
+<title>Latijn</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23006600'/%3E%3Ctext x='16' y='25' font-family='Georgia,serif' font-weight='700' font-size='26' fill='%23ffffff' text-anchor='middle'%3EW%3C/text%3E%3C/svg%3E">
 <!-- Poppins is SELF-HOSTED (poppins-400.woff2, Latin subset, 8.7 KB).
 
@@ -34,7 +34,7 @@
    was the one you read and the constant was the one the footer printed, so
    the moment they disagreed the app confidently reported the wrong version.
    Two things doing one job is one thing too many. */
-const WORDDOCK_VERSION = "v26.6";
+const WORDDOCK_VERSION = "v26.94";
 
 /* Runs before the body paints. If this boot is a refresh that happened while
    the user was in the browser, mark the document at once, so the study stage
@@ -73,7 +73,7 @@ html.restoring-view .stage{animation:wd-stage-failsafe 0s linear 2s forwards}
 </style>
 <style>
 /* ════════════════════════════════════════════
-   WordDock — Layer 1 skeleton
+   Latijn — Layer 1 skeleton
    Aligned with Canonical Contract v26.05.25
    Visual revision (text-only on dark, per §9):
      - background: flat deep navy
@@ -81,7 +81,7 @@ html.restoring-view .stage{animation:wd-stage-failsafe 0s linear 2s forwards}
      - source language (Q): muted grey
      - target language (A): near-white (warm)
      - tabs: bare values, no "Domain:/List:/Filter:" prefixes
-     - WordDock tab: subtle elevated block (not a shouting accent)
+     - Latijn tab: subtle elevated block (not a shouting accent)
      - grade buttons: always visually present, silent no-op in Q-state
    ════════════════════════════════════════════ */
 :root{
@@ -91,10 +91,10 @@ html.restoring-view .stage{animation:wd-stage-failsafe 0s linear 2s forwards}
   --tag:#a8b4c4;              /* gramcat/gramtag — light grey, clearly readable */
 
   /* Tabs: green now anchors the Domain (what you're currently studying),
-     not WordDock. The other three step down in subtle navy shades. */
+     not Latijn. The other three step down in subtle navy shades. */
   --tab-ink:#ffffff;
   --domain-bg:#006600;         /* Domain — green: the current working context */
-  --wd-bg:#1a3556;             /* WordDock — quiet navy, just another tab */
+  --wd-bg:#1a3556;             /* Latijn — quiet navy, just another tab */
   --tab-bg-2:#193250;          /* List */
   --tab-bg-3:#172e49;          /* Filter — darkest */
   --tab-active-underline:#ffffff;
@@ -120,7 +120,7 @@ html.restoring-view .stage{animation:wd-stage-failsafe 0s linear 2s forwards}
   --card-frame-bg:#313c4a;     /* the cool blue-grey frame band */
   --context-bar-bg:#313f4c;    /* the cool blue strip (for the nav strip later) */
 
-  /* WordDock logo lockup — green badge with white serif W */
+  /* Latijn logo lockup — green badge with white serif W */
   --logo-badge-bg:#006600;     /* green — same as the domain accent */
   --logo-badge-ink:#ffffff;    /* white serif "W" inside the badge */
 
@@ -157,7 +157,7 @@ body{
   z-index:100;
 }
 
-/* WordDock logo lockup: centered brand mark. Opens the menu. */
+/* Latijn logo lockup: centered brand mark. Opens the menu. */
 .logo-wrap{
   position:relative;
 }
@@ -172,35 +172,6 @@ body{
   outline:none;
   border-radius:10px;
 }
-
-/* Dropdown menu from the logo: vertical stacked items. */
-.logo-menu{
-  display:none;
-  position:absolute;
-  top:calc(100% + 6px);
-  left:50%;
-  transform:translateX(-50%);
-  background:var(--menu-bg);
-  border:1px solid var(--menu-border);
-  border-radius:12px;
-  padding:6px;
-  min-width:180px;
-  box-shadow:0 12px 32px rgba(0,0,0,0.4);
-  z-index:120;
-}
-.logo-menu.open{display:block}
-
-/* Backdrop that dims the study area while the logo menu is open — the same
-   visual resolution the panels use, so the word no longer competes with
-   the menu. Covers the viewport; the top bar and menu sit above it. */
-.menu-backdrop{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:var(--overlay-bg);
-  z-index:90;
-}
-.menu-backdrop.open{display:block}
 
 /* ─── Reusable in-app dialog ─── */
 .wd-dialog-backdrop{
@@ -219,6 +190,45 @@ body{
   padding:24px;
   box-shadow:0 20px 60px rgba(0,0,0,0.5);
 }
+#syncPanelBackdrop .wd-dialog{
+  padding-top:16px; padding-bottom:16px;
+  position:relative;
+}
+#syncPanelBackdrop .wd-dialog-actions{
+  margin-top:16px;
+  flex-wrap:wrap;              /* v26.52: four buttons wrap onto two rows on a phone, never spill */
+  justify-content:flex-end;
+}
+#syncPanelBackdrop .wd-dialog-actions .wd-dialog-btn{
+  white-space:nowrap;          /* a label stays on one line; the ROW wraps instead */
+  padding:10px 14px;
+}
+#syncPanelBackdrop #syncPanelBody{
+  min-height:210px; display:flex; flex-direction:column;   /* v26.51: grow, never clip */
+}
+#syncPanelBackdrop .sync-pane{
+  flex:1; overflow:hidden; min-height:0;
+  display:flex; flex-direction:column;
+}
+#syncPanelBackdrop .sync-scroll{
+  flex:1; overflow-y:auto; min-height:0; padding-right:6px;
+}
+#syncPanelBackdrop .sync-center{
+  flex:1; display:flex; flex-direction:column; justify-content:center;
+}
+#syncPanelBackdrop .wd-dialog-actions{
+  flex:none;
+}
+#syncPanelBackdrop .section-title{
+  margin:0 0 8px; padding-top:0; border-top:none;
+}
+#syncPanelClose{
+  position:absolute; top:12px; right:14px;
+  background:none; border:none; cursor:pointer;
+  font-size:18px; line-height:1; color:rgba(255,255,255,0.45);
+  padding:4px 6px; border-radius:6px;
+}
+#syncPanelClose:hover{ color:var(--ink); background:var(--menu-hover); }
 .wd-dialog-title{
   font-family:'Poppins',sans-serif; font-size:17px; font-weight:600;
   color:var(--ink); margin-bottom:10px;
@@ -239,7 +249,7 @@ body{
   padding:1px 5px;border-radius:4px;
   font-size:12.5px;
 }
-/* Optional field area — the Save-as input and the domain picker live here. */
+/* Optional field area — the Save-as input lives here. */
 .wd-dialog-field{
   margin:-8px 0 22px;
 }
@@ -274,27 +284,6 @@ body{
   background:#0a7a0a; color:#ffffff; font-weight:500;
 }
 .wd-dialog-ok:hover{ background:#0a8f0a; }
-.logo-menu-item{
-  display:block;
-  width:100%;
-  text-align:left;
-  padding:11px 14px;
-  background:transparent;
-  border:none;
-  border-radius:8px;
-  color:var(--menu-ink);
-  font-size:14px;
-  font-weight:500;
-  cursor:pointer;
-  outline:none;
-  font-family:inherit;
-}
-.logo-menu-item:hover{background:var(--menu-hover)}
-.logo-menu-sep{
-  height:1px;
-  background:var(--menu-border);
-  margin:6px 8px;
-}
 .logo:hover{background:var(--tab-hover-overlay)}
 .logo-badge{
   width:40px;
@@ -353,10 +342,6 @@ body{
 /* Spacer not needed while pills are hidden */
 .topbar-spacer{ display:none; }
 
-/* Domain/List/Filter pills hidden for now — only WordDock shows in the top
-   zone. The selectors will return (in some form) when navigation is built. */
-#tabDomain, #tabList, #tabFilter{ display:none; }
-
 .tab{
   display:flex;align-items:center;justify-content:center;
   width:140px;
@@ -393,12 +378,6 @@ body{
   max-width:100%;
   line-height:1.4;
 }
-
-/* Per-tab backgrounds: green anchors the Domain (current working context),
-   the rest are graduated navy shades. */
-#tabDomain   { background:var(--domain-bg); }
-#tabList     { background:var(--tab-bg-2); }
-#tabFilter   { background:var(--tab-bg-3); }
 
 /* ─── Stage: a context bar (tag), a centered card (the word), and a
        bottom action zone (buttons + progress). The card is the Q/A zone;
@@ -533,7 +512,13 @@ body{
   color:var(--btn-ink);
   outline:none;
   transition:background-color .12s;
+  /* Samsung/Chrome paints its own focus box on tap; suppress it and the
+     tap flash so Good/Again keep their shape when pressed. */
+  -webkit-tap-highlight-color:transparent;
+  -webkit-appearance:none;appearance:none;
+  -webkit-user-select:none;user-select:none;
 }
+.btn:focus,.btn:focus-visible,.btn:active{outline:none;box-shadow:none}
 .btn-again{background:var(--btn-again-bg)}
 .btn-good {background:var(--btn-good-bg)}
 .btn:hover{filter:brightness(1.15)}
@@ -581,77 +566,6 @@ body{
   flex-direction:column;
   overflow:hidden;
   box-shadow:0 10px 40px rgba(0,0,0,0.45);
-}
-.panel-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:14px 18px;
-  border-bottom:1px solid var(--panel-border);
-}
-.panel-title{font-size:15px;font-weight:600;color:var(--panel-ink)}
-.panel-close{
-  background:none;border:none;cursor:pointer;
-  font-size:20px;color:var(--tab-inactive);padding:0 4px;
-}
-.panel-body{
-  padding:18px;
-  overflow-y:auto;
-  flex:1;
-}
-.placeholder-note{
-  font-size:13px;
-  color:var(--tab-inactive);
-  line-height:1.5;
-}
-.placeholder-note strong{color:var(--panel-ink)}
-
-/* ─── List panel internal styling (Layer 2) ─── */
-.list-section{
-  margin-bottom:20px;
-}
-.list-section-title{
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  color:var(--tab-inactive);
-  margin-bottom:8px;
-  font-weight:600;
-}
-.list-entries{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-.list-entry{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:10px 12px;
-  border-radius:8px;
-  font-size:14px;
-  color:var(--panel-ink);
-  cursor:pointer;
-  background:rgba(255,255,255,0.03);
-  transition:background-color .12s;
-}
-.list-entry:hover{background:rgba(255,255,255,0.07)}
-.list-entry.active{
-  background:rgba(0,102,0,0.25);
-  border:1px solid rgba(0,102,0,0.55);
-  padding:9px 11px;
-}
-.list-entry-tag{
-  font-size:11px;
-  color:var(--tab-inactive);
-  margin-left:8px;
-  letter-spacing:.05em;
-}
-.list-entry.active .list-entry-tag{color:var(--panel-ink);opacity:.75}
-.list-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
 }
 .list-btn{
   background:var(--btn-good-bg);
@@ -707,13 +621,6 @@ body{
   border-radius:8px;
 }
 .info-close:hover{color:var(--ink);background:var(--menu-hover)}
-.info-intro{
-  font-size:15px !important;
-  color:var(--ink) !important;
-  line-height:1.55;
-  margin-bottom:26px;
-  padding-top:20px;       /* clear the corner close button */
-}
 .infopage h3{
   font-size:15px;
   font-weight:600;
@@ -735,32 +642,6 @@ body{
   font-size:.92em;
   color:#c0c8d2;
 }
-.info-more{
-  margin:4px 0 10px;
-}
-.info-more summary{
-  font-size:13px;
-  color:var(--tag);
-  cursor:pointer;
-  outline:none;
-  list-style:none;
-  user-select:none;
-  padding:2px 0;
-}
-.info-more summary::-webkit-details-marker{display:none}
-.info-more summary::before{
-  content:"▸ ";
-  font-size:11px;
-}
-.info-more[open] summary::before{
-  content:"▾ ";
-}
-.info-more summary:hover{color:var(--ink)}
-.info-more p{
-  margin-top:8px;
-  padding-left:14px;
-  border-left:2px solid var(--menu-border);
-}
 .infopage .warn{
   background:rgba(212,164,74,0.12);
   border-left:3px solid #d4a44a;
@@ -773,7 +654,7 @@ body{
 }
 .infopage .warn strong{color:#e8d4a0}
 
-/* ─── Panel title (used by About WordDock, Domain) ─── */
+/* ─── Panel title (used by About Latijn, Domain) ─── */
 .settings-title{
   font-size:20px;
   font-weight:600;
@@ -786,19 +667,12 @@ body{
   color:#9aa3b0;
 }
 
-/* Scores backup: action row + message */
+/* Sync section: action row */
 .scores-actions{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
   margin-top:12px;
-}
-.scores-msg{
-  font-size:13px;
-  line-height:1.5;
-  color:var(--tag);
-  margin-top:10px;
-  min-height:1em;
 }
 
 /* ─── Domain page ─── */
@@ -871,8 +745,7 @@ body{
 }
 .browser.open{display:flex}
 .browser-head,
-.browser-panes,
-.browser-foot{
+.browser-panes{
   width:100%;
   max-width:860px;       /* centered column, not full-bleed */
   margin-left:auto;
@@ -887,7 +760,7 @@ body{
   height:64px;          /* fixed so the back-link's appearance never shifts layout */
 }
 .browser-head-rail{
-  width:200px;flex-shrink:0;
+  width:240px;flex-shrink:0;   /* 6b: match the body rail so the two dividers line up */
   border-right:1px solid var(--menu-border);
   display:flex;align-items:center;
   padding:24px 20px 14px;
@@ -919,37 +792,57 @@ body{
 }
 /* LEFT rail — the domain "folders" (the map) */
 .browser-rail{
-  width:200px;flex-shrink:0;
+  width:240px;flex-shrink:0;   /* 6b: wider — the My-domains hint fits on one line */
   border-right:1px solid var(--menu-border);
   padding:14px 10px;
   display:flex;flex-direction:column;
 }
 #browserRail{
   flex:1;
-  overflow-y:auto;
   min-height:0;
+  display:grid;grid-template-rows:1fr auto 1fr;  /* 6b: flexible / the fixed pair at 50% / flexible — the pair never moves */
+  overflow:hidden;
 }
 /* Bottom meta zone: pinned to the rail bottom, never scrolls with domains */
 /* Site footer — echoes the study counter (same 13px, white) for spatial
    stability across modes. No top border: the line was clutter, not structure. */
 .browser-footer{
-  text-align:center;padding:16px 0 26px;
+  width:100%;max-width:860px;margin:0 auto;
+  display:none;align-items:center;   /* Latijn-clone: sync + About are WordDock-only, hidden here */
+  padding:16px 0 26px;
 }
+.footer-rail-zone{
+  width:200px;flex-shrink:0;padding:0 10px;text-align:left;
+}
+.footer-detail-zone{
+  flex:1;text-align:center;
+}
+#aboutFooterLink{color:var(--tag)}          /* grey at rest */
+#aboutFooterLink:hover{color:var(--ink)}   /* white on hover, no bold, no shift */
 .browser-footer a{
   color:var(--counter);text-decoration:none;font-size:13px;
 }
 .browser-footer a:hover{color:var(--tag);}
+.sync-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  border:1px solid var(--counter);margin-right:6px;
+  vertical-align:middle;position:relative;top:-1px;
+}
+.sync-dot.on{background:#0a8f0a;border-color:#0a8f0a;}
+.sync-dot.on.pending{background:#d9a300;border-color:#d9a300;}  /* 2c: a push is owed */
 
 /* About topics — a static table of contents, styled like the domain rows but
    without their dynamic zones. Always all shown, in order. */
 .about-topic{
   display:flex;align-items:center;
   padding:11px 13px;border-radius:9px;cursor:pointer;
-  color:var(--ink);font-size:15px;
+  color:var(--counter);font-size:15px;
   transition:background-color .12s;
+  margin-bottom:4px;
 }
-.about-topic:hover{background:var(--menu-hover);}
-.about-topic.active{background:var(--menu-hover);font-weight:600;}
+.about-topic:hover{background:var(--menu-hover);color:var(--ink);}
+.about-topic.active{background:#006600;color:#fff;
+  border-left:3px solid #006600;padding-left:10px;}
 /* Content: headed prose, reusing the app's own text styles. */
 .about-content{max-width:640px;}
 .about-content .section-title:first-child{margin-top:0;}
@@ -957,62 +850,36 @@ body{
 .about-rules li{margin-bottom:8px;}
 .about-rules code{font-size:12.5px;}
 
-.rail-meta{
-  flex-shrink:0;
-  margin-top:14px;
-  padding-top:12px;
-  border-top:1px solid var(--menu-border);
-}
-/* Footer items are NAVIGATION, so they look like the domain folders above —
-   left-aligned, same size. The centered-hairline treatment is reserved for
-   zone LABELS, which aren't clickable. Shape follows behaviour. */
-.rail-meta-item{
-  display:flex;align-items:center;
-  padding:9px 11px;border-radius:9px;
-  font-family:'Poppins',sans-serif;
-  font-size:14px;color:#c0c8d2;
-  cursor:pointer;margin-bottom:2px;
-  transition:background-color .12s,color .12s;
-  border:2px solid transparent;
-  user-select:none;
-}
-.rail-meta-item:hover{background:var(--menu-hover);color:var(--ink)}
-.rail-meta-item.active{
-  background:var(--browsing-bg);
-  border:2px solid rgba(173,196,224,0.85);
-  color:var(--ink);
-}
-.rail-label{
-  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--tag);margin:6px 8px 10px;
-}
 /* Zone headers (ACTIVE / MY LISTS / MORE) — centered, with hairlines running
    out to each side. Centering is what makes them read as headers: the domains
    below them are larger and often bold, so a small left-aligned label got lost
    among its own contents. The line belongs to the ZONE, never to the rows. */
 .rail-zone-label{
   display:flex;align-items:center;gap:8px;
-  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--tag);margin:18px 4px 10px;
+  font-size:14px;font-weight:600;letter-spacing:.02em;   /* 6b: left-aligned group header, a rule above it */
+  color:var(--tag);margin:26px 4px 8px;padding:12px 7px 0;
+  border-top:1px solid var(--menu-border);
   user-select:none;
 }
-.rail-zone-label::before,
-.rail-zone-label::after{
-  content:"";flex:1;height:1px;background:var(--menu-border);
-}
-.rail-zone-label:first-child{margin-top:4px}
+.rail-zone-label:first-child{margin-top:4px;border-top:none;padding-top:0}
 /* Collapsible MORE header — same centered shape, plus caret and count. */
+.rail-band{
+  min-height:0;overflow-y:auto;               /* what a half cannot show, it scrolls — within itself */
+  display:flex;flex-direction:column;
+}
+.rail-band.rail-top .rail-drawer{margin-top:auto;padding-top:8px}   /* Catalog's drawer sits against the pair */
+.rail-band.rail-bottom{padding-top:4px}
+.rail-pair{padding:4px 0}
+.rail-pair .rail-more-toggle + .rail-more-toggle{border-top:1px solid var(--menu-border)}   /* the ONE line: between the pair */
 .rail-more-toggle{
-  display:flex;align-items:center;gap:8px;
-  margin:18px 4px 10px;border-radius:9px;cursor:pointer;
-  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  display:flex;align-items:center;justify-content:space-between;   /* carets share the right edge */
+  margin:0 4px;padding:9px 7px;cursor:pointer;
+  font-size:14px;font-weight:400;letter-spacing:.02em;   /* closed: the voice of "Lists in NL-RU" */
   color:var(--tag);transition:color .12s;
   user-select:none;
 }
-.rail-more-toggle::before,
-.rail-more-toggle::after{
-  content:"";flex:1;height:1px;background:var(--menu-border);
-}
+.rail-more-toggle.open{color:#fff}                       /* open: white, never bold (bold shifts the text) */
+.rail-more-toggle .more-caret{font-size:17px;font-weight:700;line-height:1}   /* up or down must be readable at a glance */
 .rail-more-toggle:hover{color:var(--ink)}
 .rail-more-toggle .more-caret{font-size:11px}
 .rail-more-toggle .more-count{font-size:11px;letter-spacing:0}
@@ -1031,13 +898,18 @@ body{
   border-color:rgba(255,255,255,0.28);
 }
 .rail-zone-empty{
-  font-size:12px;color:var(--tag);opacity:.75;
+  font-size:14px;color:var(--tag);opacity:.85;   /* 6b: same size as "Lists in NL-RU" */
   padding:2px 11px 6px;line-height:1.5;
 }
+.rail-zone-empty .rail-door{                  /* 6b: the sentence IS the door */
+  text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;
+}
+.rail-zone-empty .rail-door:hover{color:var(--ink)}
+.rail-zone-empty .rail-why{text-decoration:none;display:inline-block;padding:0 6px;border:1px solid var(--menu-border);border-radius:8px;font-size:12px;margin-left:5px;white-space:nowrap}
 .folder{
   display:flex;align-items:center;justify-content:space-between;
   padding:9px 11px;border-radius:9px;font-size:14px;color:#c0c8d2;
-  cursor:pointer;margin-bottom:2px;transition:background-color .12s;
+  cursor:pointer;margin-bottom:4px;transition:background-color .12s;
   border:2px solid transparent;
   position:relative;
 }
@@ -1054,10 +926,44 @@ body{
   flex:1;padding:16px 20px;overflow-y:auto;min-width:0;
 }
 .detail-head{
-  font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  font-size:14px;letter-spacing:.02em;        /* 6b: "Lists in NL-RU" — larger, normal case; the domain stays capital by itself */
   color:var(--tag);margin-bottom:12px;
 }
 .browser-lists{display:flex;flex-direction:column;gap:6px}
+/* ── Phase 2: the filter door and its panel (browse side only) ── */
+.detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+/* The door follows the panel's rule: white = open (all cards), green = a
+   constraint is on. Solid, so it reads as a button and not as a label. */
+.filter-door{
+  font-family:'Poppins',sans-serif;font-size:12px;padding:5px 12px;border-radius:9px;
+  background:#fff;color:#111;border:1px solid #fff;cursor:pointer;font-weight:500;
+}
+.filter-door:hover{filter:brightness(0.9)}
+.filter-door.on{background:var(--domain-bg);color:#fff;border-color:transparent;font-weight:500}
+.filter-panel{
+  border:1px solid var(--menu-border);border-radius:11px;padding:12px 14px 10px;margin-bottom:10px;
+  background:rgba(255,255,255,0.03);
+}
+.filter-axis{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;align-items:start;padding:5px 0}
+.filter-axis-name{font-size:12px;color:var(--tag);padding-top:5px}
+.filter-chips{display:flex;flex-wrap:wrap;gap:5px}
+.filter-chip{
+  font-family:'Poppins',sans-serif;font-size:12px;padding:3px 9px;border-radius:8px;
+  background:transparent;color:var(--tag);border:1px solid var(--menu-border);cursor:pointer;
+}
+.filter-chip:hover{background:var(--menu-hover);color:var(--ink)}
+.filter-chip.sel{background:var(--domain-bg);color:#fff;border-color:transparent}
+/* "all" selected = the row is open: white outline, no fill. Green is reserved
+   for a constraint that is on, so a fully open panel shows no green at all. */
+.filter-chip.sel.all{background:transparent;color:#fff;border-color:#fff;font-weight:500}
+.filter-chip .n{opacity:0.7;margin-left:4px}
+.filter-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid var(--menu-border)}
+.filter-count{font-size:13px;color:var(--ink)}
+.filter-count.zero{color:#e89090}
+.filter-foot .wd-dialog-btn{padding:7px 14px;font-size:13px}
+.list-row.filtered-out{opacity:0.45}
+.list-row-meta .in-filter{color:#90d090}
+@media (max-width:600px){ .filter-axis{grid-template-columns:1fr} .filter-axis-name{padding-top:0} }
 .list-row{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 14px;border-radius:11px;cursor:pointer;
@@ -1078,30 +984,12 @@ body{
 .list-row.active .list-row-cue{color:#fff}
 .list-row-main{min-width:0}
 .list-row-name{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:3px}
-.list-row-name .dim{color:var(--tag);font-weight:400}
-/* Global-actions zone beneath the lists: sync (primary) then backup. Set off
-   from the list rows by a top border and spacing, so it reads as a distinct
+/* Global-actions zone beneath the lists: the sync section. Set off from the
+   list rows by a top border and spacing, so it reads as a distinct
    page-level zone rather than another list item. */
-.browser-global-zone{
-  margin-top:26px;padding-top:22px;
-  border-top:1px solid var(--menu-border);
-}
-/* The zone already draws a top border, so its FIRST section heading must not
-   draw its own — that stacked two lines and doubled the gap above "Sync". */
+/* An overlay panel's FIRST section heading must not draw its own top border. */
 .gz-first .section-title:first-child{
   border-top:none;padding-top:0;margin-top:0;
-}
-.gz-backup{margin-top:8px}
-.gz-backup-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.gz-info-toggle{
-  width:26px;height:26px;flex-shrink:0;
-  border:1px solid var(--menu-border);border-radius:50%;
-  background:transparent;color:var(--tag);cursor:pointer;
-  font-size:13px;line-height:1;
-}
-.gz-info-toggle:hover{color:var(--ink);border-color:var(--ink)}
-.gz-backup-info{
-  font-size:13px;line-height:1.55;color:#9aa3b0;margin:12px 2px 0;
 }
 
 .list-row-meta{font-size:12px;color:var(--tag)}
@@ -1122,55 +1010,6 @@ body{
   .list-row-cue{opacity:.65}
 }
 .list-row-actions{display:flex;gap:3px;flex-shrink:0;margin-left:10px}
-/* Scores view — three columns: domain · breadth · depth. The sum is the number
-   people watch go up, so it gets the weight; the word count keeps it honest. */
-/* Action button rows (Progress). This had no rule at all, so the
-   buttons sat flush against each other. */
-.setting-actions{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:14px;
-}
-.scores-table{
-  margin:6px 0 22px;
-}
-.scores-line{
-  display:flex;align-items:baseline;gap:12px;
-  padding:11px 2px;
-  border-bottom:1px solid var(--menu-border);
-  font-size:14px;
-}
-.scores-domain{flex:1;color:var(--ink);font-weight:600}
-.scores-words{color:var(--tag);font-size:13px}
-.scores-sum{
-  min-width:64px;text-align:right;
-  color:var(--ink);font-weight:700;
-  font-variant-numeric:tabular-nums;
-}
-/* Coverage percentage — the headline number on the Progress page. */
-.scores-cov{
-  min-width:56px;text-align:right;
-  color:var(--ink);font-weight:700;
-  font-variant-numeric:tabular-nums;
-}
-/* Orphan pools — real progress, but for a list that isn't here. They come LAST
-   and they look quiet: bold is for live domains. A dead thing that shouts over
-   the backup warning has the hierarchy exactly backwards. */
-.scores-orphan-head{
-  margin:34px 0 8px;
-  padding-top:22px;
-  border-top:1px solid var(--menu-border);
-  font-size:10px;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--tag);
-}
-.scores-orphan .scores-domain{font-weight:400;color:var(--tag)}
-.scores-orphan .scores-sum{font-weight:400;color:var(--tag)}
-.scores-forget{
-  margin-left:12px;flex-shrink:0;
-  background:none;border:none;cursor:pointer;
-  color:var(--tag);padding:2px 6px;border-radius:7px;
-}
 .list-row-actions button{
   background:none;border:none;color:var(--tag);
   font-size:19px;line-height:1;cursor:pointer;
@@ -1201,8 +1040,6 @@ body{
    header already shows it. */
 .section-title{
   margin:34px 0 10px;
-  padding-top:26px;
-  border-top:1px solid var(--menu-border);
   font-size:17px;font-weight:600;color:var(--ink);
 }
 
@@ -1225,7 +1062,7 @@ body{
 }
 /* Quiet until wanted, but not timid: a curator reaching for the file rules
    shouldn't have to hunt for a 22px dot. It announces itself on hover with the
-   same "say what this does before you click it" logic as the list rows — but
+   same "say what this does before you click it" logic as the list rows - but
    with its own label, since the import row has no cue element and inventing a
    second message zone would be two mechanisms doing one job. */
 .import-rules-help{
@@ -1247,18 +1084,6 @@ body{
   background:var(--menu-hover);
 }
 .import-rules-help:hover .rules-word{max-width:170px;opacity:1}
-/* Info page: the file-requirements checklist. */
-.info-rules-title{
-  margin:22px 0 6px;font-size:15px;color:var(--ink);
-}
-.info-rules{
-  margin:0 0 12px;padding-left:20px;
-  line-height:1.75;
-}
-.info-rules li{margin-bottom:7px}
-.info-rules-note{
-  font-size:13px;color:var(--tag);font-style:italic;
-}
 .upload-row{
   position:relative;
   margin-top:6px;
@@ -1277,11 +1102,10 @@ body{
 
 /* Swappable detail views */
 .detail-view[hidden]{display:none}
-/* About WordDock content rendered inside the right pane */
+/* About Latijn content rendered inside the right pane */
 .detail-view .infopage-inner{max-width:none;margin:0;padding:0}
 .detail-view .info-close{display:none}   /* close handled by logo toggle / back */
 .detail-view .settings-title{display:none}  /* pane header already shows the title */
-.detail-view .info-intro{padding-top:0}     /* fix #2: no extra top push in panes */
 
 /* Mobile: stack to tabs (handled with a class toggle in JS) */
 @media (max-width:560px){
@@ -1290,11 +1114,12 @@ body{
     overflow-y:auto;                 /* MY LISTS, MORE and the footer must reach */
   }
   .browser-panes{flex-direction:column}
+  .footer-rail-zone{width:auto}
   .browser.show-detail .browser-rail{display:none}
   .browser.show-rail   .browser-detail{display:none}
 
   /* One pane at a time means one header at a time. Showing both left a dead
-     "Domains" column beside the lists — it looked like a control, highlighted
+     "Domains" column beside the lists - it looked like a control, highlighted
      on touch, and did nothing. */
   .browser.show-rail .browser-head-detail{display:none}
   .browser.show-rail .browser-head-rail{width:100%;border-right:none}
@@ -1310,8 +1135,9 @@ body{
   }
   .browser.show-detail .browser-head-detail{flex:1 1 auto}
 
-  /* Touch targets: rail rows and footer items need a thumb-sized hit area. */
-  .folder,.rail-meta-item,.rail-import{min-height:46px;display:flex;align-items:center}
+  /* Touch targets: rail rows need a thumb-sized hit area. */
+  .folder,.rail-import{min-height:46px;display:flex;align-items:center}
+  .rail-pair{margin-top:28px}   /* 6a: visual separation from active domains on mobile */
 }
 </style>
 </head>
@@ -1320,34 +1146,24 @@ body{
 <!-- ─── Top bar ─── -->
 <div class="topbar">
   <div class="logo-wrap">
-    <button class="logo" id="tabWordDock" data-tab="wd">
-      <span class="logo-badge">W</span>
-      <span class="logo-word">ordDock</span>
+    <button class="logo" id="tabLatijn" data-tab="wd">
+      <span class="logo-badge">L</span>
+      <span class="logo-word">atijn</span>
     </button>
-    <div class="logo-hover-list" id="logoHoverList">
+    <div class="logo-hover-list">
       <div class="logo-hover-label">Studying now:</div>
       <div id="logoHoverName"></div>
     </div>
-    <!-- logo menu retired: the logo now toggles study <-> browser directly.
-         Empty element kept so existing JS refs stay valid (no-op). -->
-    <div class="logo-menu" id="logoMenu" hidden></div>
   </div>
-  <!-- hidden selector pills retired with the menu; kept hidden for any legacy refs -->
   <div class="topbar-spacer"></div>
-  <button class="tab" id="tabDomain" data-tab="domain" hidden><span class="tab-content" id="tabDomainValue">—</span></button>
-  <button class="tab" id="tabList" data-tab="list" hidden><span class="tab-content" id="tabListValue">—</span></button>
-  <button class="tab" id="tabFilter" data-tab="filter" hidden><span class="tab-content" id="tabFilterValue">No filter</span></button>
 </div>
-
-<!-- backdrop retired with the menu; kept (no-op) so JS refs stay valid -->
-<div class="menu-backdrop" id="menuBackdrop" hidden></div>
 
 <!-- ─── Reusable in-app dialog (replaces native confirm) ─── -->
 <div class="wd-dialog-backdrop" id="wdDialogBackdrop" hidden>
   <div class="wd-dialog" role="dialog" aria-modal="true">
     <div class="wd-dialog-title" id="wdDialogTitle"></div>
     <div class="wd-dialog-body" id="wdDialogBody"></div>
-    <!-- Optional field area: used by the Save-as and domain-picker dialogs.
+    <!-- Optional field area: used by the Save-as dialog.
          Hidden for a plain confirm. -->
     <div class="wd-dialog-field" id="wdDialogField" hidden>
       <input type="text" id="wdDialogInput" class="wd-dialog-input" autocomplete="off" spellcheck="false">
@@ -1402,30 +1218,37 @@ body{
     <div class="browser-detail">
       <!-- LISTS view -->
       <div class="detail-view" id="viewLists">
-        <div class="detail-head" id="browserDetailHead">Lists</div>
+        <div class="detail-head" id="browserDetailHead"><span id="browserDetailTitle">Lists</span><button type="button" class="filter-door" id="filterDoor" hidden>Filter: all cards</button></div>
+        <div id="filterPanel" class="filter-panel" hidden></div>
         <div id="browserLists" class="browser-lists"></div>
-        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a WordDock file needs"><span>?</span><span class="rules-word">What a file needs</span></button></div>
+        <div class="upload-row" id="browserUpload">+ Import a list (.xlsx)<button type="button" id="importRulesHelp" class="import-rules-help" aria-label="What a Latijn file needs"><span>?</span><span class="rules-word">What a file needs</span></button></div>
         <div id="listMessage" class="list-message"></div>
-        <!-- Global-actions zone: sync + backup. Flows beneath the lists (not
-             pinned) — page-level, since these act on ALL progress, not a list. -->
-        <div id="browserGlobalZone" class="browser-global-zone"></div>
+
       </div>
       <!-- ABOUT WORDDOCK view (content injected from the about page source) -->
     </div>
   </div>
   <!-- Site footer: opens the About surface — a twin of this browser, staying
-       inside WordDock. The About logo returns to study, the same gate as here. -->
+       inside Latijn. The About logo returns to study, the same gate as here. -->
   <div class="browser-footer">
-    <a href="#" id="aboutFooterLink">About WordDock</a>
+    <!-- Sync anchor: the ONE browser-wide sync entry point. Sync is global,
+         so it lives here, not under every domain's list panel. Tapping opens
+         the sync panel (wd-dialog clothing). Placement beside vs above the
+         About link is a W11 form decision. -->
+    <div class="footer-rail-zone">
+      <a href="#" id="syncAnchor" class="sync-anchor"></a>
+    </div>
+    <div class="footer-detail-zone">
+      <a href="#" id="aboutFooterLink" data-text="About Latijn v26.67">About Latijn</a>
+    </div>
   </div>
   <input type="file" id="fileInput" accept=".xlsx" hidden>
-  <input type="file" id="scoresFileInput" accept=".json,application/json" hidden>
 </div>
 
-<!-- ─── About WordDock (twin of the browser: same layout, same logo, same
-     counter-positioned title — consistency by REUSING the browser's classes,
+<!-- ─── About Latijn (twin of the browser: same layout, same logo, same
+     counter-positioned title - consistency by REUSING the browser's classes,
      never copying them. Left = a static, always-visible topic list (NOT the
-     domain rail's dynamic zones — a guide's table of contents shows every entry
+     domain rail's dynamic zones - a guide's table of contents shows every entry
      always). Right = the selected topic as headed prose. Topics are data
      (aboutTopics), so growing to ~10 sections is an array edit, not a layout
      change. Reached from the footer; the logo returns to study. ─── -->
@@ -1433,7 +1256,6 @@ body{
   <div class="browser-head">
     <div class="browser-head-rail clickable">About</div>
     <div class="browser-head-detail">
-      <span class="surface-title" id="aboutPaneTitle">WordDock</span>
     </div>
   </div>
   <div class="browser-panes">
@@ -1451,7 +1273,7 @@ body{
 
 <!-- (old overlayList retired; browser above is its replacement) -->
 
-<!-- ─── Info page (full screen, behind WordDock tab) ─── -->
+<!-- ─── Info page (full screen, behind Latijn tab) ─── -->
 <!-- ─── Domain page (full screen, like Info) ─── -->
 <div class="infopage" id="domainpage">
   <div class="infopage-inner">
@@ -1463,22 +1285,23 @@ body{
 
     <div class="domain-universe-label">All domains</div>
     <div class="domain-universe" id="domainUniverse"></div>
-    <p class="domain-note">Domains are curated. <strong>MY LISTS</strong> gathers anything you import that doesn't match a curated domain — each keeps its own progress. Bold means you've made progress in that domain.</p>
-    <p class="domain-note"><strong>One rule for your own lists:</strong> within a domain, every entry needs its own ID — never restart numbering in a new file. Progress is tracked per ID, so two files that both start at 0001 would share scores between different words. WordDock checks this when you import and warns you.</p>
+    <p class="domain-note">Latijn maintains the WD domains. <strong>My domains</strong> holds your own - anything you import under a name of your own. Each domain keeps its own progress; bold means you've made progress there. Lists are yours to slice and annotate, WD lists included; only a domain is fixed.</p>
+    <p class="domain-note"><strong>One rule for your own lists:</strong> within a domain, every entry needs its own ID - never restart numbering in a new file. Progress is tracked per ID, so two files that both start at 0001 would share scores between different words. Latijn checks this when you import and warns you.</p>
   </div>
 </div>
 
 <!-- SheetJS for excel I/O (Layer 2) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="xlsx.full.min.js"></script>
+<script src="qrcode.js"></script>   <!-- 3b: QR encoder, self-hosted (MIT, Kazuhiko Arase) -->
 
 <script>
 /* ════════════════════════════════════════════
-   WordDock — Layer 1 + Layer 2
+   Latijn — Layer 1 + Layer 2
    Contract v26.05.25
    ════════════════════════════════════════════ */
 
 const SCHEMA_VERSION = "26.05.25";
-const DOMAIN = "NL-LA";
+const DOMAIN = "NL-RU";
 
 // Runtime domain — initialized to DOMAIN, but tracks the active list's
 // domain after an import that targets a different one.
@@ -1514,15 +1337,33 @@ const LISTS_DIR = "lists/";
 const catalog = {
   // The list of available masters. Adding a domain = adding an entry here
   // plus hosting its <domain>.json file next to index.html.
+  //
+  // No typed row counts. A domain's size is known only from its file: live
+  // once fetched this session (loadMaster sets rowCount), or remembered in
+  // localStorage from an earlier fetch in this browser (knownCount). Until
+  // one of those exists the size is null and the folder renders bare —
+  // a hand-typed number would drift as the corpus grows, and a mastery
+  // percentage against a wrong total is a quiet lie.
   _domains: [
-    { domain: "NL-LA", display: { EN: "Dutch → Latin", NL: "Nederlands → Latijn" }, rowCount: 10 }
+    { domain: "NL-RU", display: { EN: "Dutch → Russian", NL: "Nederlands → Russisch" } },
+    { domain: "NL-IT", display: { EN: "Dutch → Italian", NL: "Nederlands → Italiaans" } },
+    { domain: "NL-FR", display: { EN: "Dutch → French", NL: "Nederlands → Frans" } },
+    { domain: "NL-LA", display: { EN: "Dutch → Latin", NL: "Nederlands → Latijn" } }
   ],
+  // The remembered size: written by loadMaster on every successful fetch,
+  // so it is at most one corpus-edit out of date and heals at the next visit.
+  knownCount(domain){
+    try {
+      const n = parseInt(localStorage.getItem("wd_rowcount_" + domain), 10);
+      return Number.isInteger(n) && n > 0 ? n : null;
+    } catch { return null; }
+  },
   manifest(){
     return this._domains.map(d => ({
       domain: d.domain,
       display: d.display,
       version: SCHEMA_VERSION,
-      rowCount: d.rowCount
+      rowCount: Number.isInteger(d.rowCount) ? d.rowCount : this.knownCount(d.domain)
     }));
   },
   async loadMaster(domain){
@@ -1540,18 +1381,16 @@ const catalog = {
     if (!resp.ok) throw new Error("Could not fetch " + path + " (HTTP " + resp.status + ")");
     const rows = await resp.json();
 
-    // The file has arrived, so the typed rowCount above is now the second-best
-    // answer to a question we can answer exactly. Overwrite it.
-    //
-    // rowCount is the denominator of the mastery percentage, and it is typed by
-    // hand when a domain is added. Grow a list without editing that number and
-    // the percentage reports against a total that no longer exists — quietly,
-    // with nothing on screen looking wrong. Letting the corpus correct the
-    // catalog removes the chance to forget, rather than asking us to remember.
-    // The typed number survives only as a placeholder for a domain nobody has
-    // opened yet.
+    // The file has arrived — the one exact answer to "how many rows". Keep it
+    // twice: on the entry for this session (the live count), and in
+    // localStorage for every future session in this browser (the remembered
+    // count that knownCount reads). The corpus informs the catalog; nothing
+    // is typed, so nothing can drift.
     const entry = this._domains.find(d => d.domain === domain);
-    if (entry && Array.isArray(rows)) entry.rowCount = rows.length;
+    if (entry && Array.isArray(rows)){
+      entry.rowCount = rows.length;
+      try { localStorage.setItem("wd_rowcount_" + domain, String(rows.length)); } catch {}
+    }
 
     return rows;
   },
@@ -1571,26 +1410,98 @@ function getRS(id){ return RS[id] || 0; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LAYER 2 — Excel I/O
-   WordDock file = the 25-column SF25 shape, headers in row 1 starting with
-   ID, ≥10 valid rows. The app reads ID + Q/A pairs + the grammatical tags;
+   Latijn file = the 26-column WD26 shape, headers in row 1 starting with
+   L. Rows without ID, Q1 and A1 are skipped. The app reads ID + Q/A pairs + the grammatical tags;
    RS is NOT in the file (it lives only in localStorage). The app's internal
-   field names now match the SF25 column names directly (ID, ENTRY, CAT, CTAG,
+   field names now match the WD26 column names directly (ID, ENTRY, CAT, SUBCAT,
    L) — no adapter mapping; the old SEQ_ID/GRAMCAT/GRAMTAG/LEMMA/LEVEL names
    were retired in the 2026-07-10 rename pass.
    ════════════════════════════════════════════════════════════════════════ */
 
-/* Canonical 25-column SF25 order — the authoritative shape. */
+/* Canonical 26-column WD26 order — the authoritative shape. */
+/* WD26, final order (2026-09-12). L first: the curator decides the level bed
+   BEFORE numbering the ID rail, and the file reads in that order. NOTE is a
+   core column: one writer per column — NOTE belongs
+   to whoever curates the domain, like CAT/SUBCAT/L. No pipes anywhere.
+   SUBCAT and NOTE may carry several tags separated by commas; tagsOf() is the
+   one reader of that convention. */
 const COLUMNS = [
-  "ID", "ENTRY", "CAT", "CTAG", "L",
+  "L", "ID", "ENTRY", "CAT", "SUBCAT", "NOTE",
   "Q1","A1","Q2","A2","Q3","A3","Q4","A4","Q5","A5",
   "Q6","A6","Q7","A7","Q8","A8","Q9","A9","Q10","A10"
 ];
 const COL_INDEX = Object.fromEntries(COLUMNS.map((n, i) => [n, i]));
+
+/* Comma-separated tags in a cell, trimmed, empties dropped. Case is kept as
+   written; matching (the filter) folds case. "masculine, irregular" → two tags. */
+function tagsOf(cell){
+  return String(cell || "").split(",").map(t => t.trim()).filter(Boolean);
+}
+
+/* ── Phase 2: one filter per DOMAIN ─────────────────────────────────────────
+   { L, CAT, SUBCAT, NOTE } — each null ("all") or a case-folded value. All four
+   null = no filter = the key is absent = today's behaviour. The filter lives on
+   the browse side and in wd_filter_<DOMAIN>; the study side only feels it
+   through buildDeck(). RS is never touched by a filter. */
+const FILTER_AXES = [
+  { key:"L",      label:"Level" },
+  { key:"CAT",    label:"Category" },
+  { key:"SUBCAT", label:"Subcategory" },
+  { key:"NOTE",   label:"Note" }
+];
+function filterKey(domain){ return "wd_filter_" + domain; }
+function emptyFilter(){ return { L:null, CAT:null, SUBCAT:null, NOTE:null }; }
+function filterIsEmpty(f){ return !f || FILTER_AXES.every(a => f[a.key] === null); }
+function getFilter(domain){
+  try {
+    const f = JSON.parse(localStorage.getItem(filterKey(domain)));
+    return (f && !filterIsEmpty(f)) ? { ...emptyFilter(), ...f } : null;
+  } catch { return null; }
+}
+function setFilter(domain, f){
+  try {
+    if (filterIsEmpty(f)) localStorage.removeItem(filterKey(domain));
+    else localStorage.setItem(filterKey(domain), JSON.stringify(f));
+  } catch {}
+}
+function fold(v){ return String(v || "").trim().toLowerCase(); }
+/* The values a row offers per axis, case-folded. L and CAT are one value;
+   SUBCAT and NOTE are comma-separated tags. */
+function rowValues(row, key){
+  if (key === "L")   return [fold(row.L)].filter(Boolean);
+  if (key === "CAT") return [fold(row.CAT)].filter(Boolean);
+  const cell = key === "SUBCAT" ? row.SUBCAT : (row._preserved && row._preserved.NOTE);
+  return tagsOf(cell).map(fold);
+}
+function rowMatches(row, f){
+  if (!f) return true;
+  return FILTER_AXES.every(a => f[a.key] === null || rowValues(row, a.key).includes(f[a.key]));
+}
+function filteredRows(rows, f){ return f ? rows.filter(r => rowMatches(r, f)) : rows; }
+/* Every row of every list in the domain. Lists overlap by ID (Full and a
+   teacher's copy carry the same words with different NOTEs), so counting must
+   see all rows and count IDs, not rows: a value's count = how many distinct
+   cards in the domain carry it, in any list. */
+function domainRows(domain){
+  const out = [];
+  for (const l of listsInDomain(domain)) for (const r of l.rows) out.push(r);
+  return out;
+}
+function domainCardCount(domain){
+  return new Set(domainRows(domain).map(r => r.ID)).size;
+}
+/* Distinct cards matching a filter across the domain's lists. */
+function domainMatchCount(domain, f){
+  return new Set(filteredRows(domainRows(domain), f).map(r => r.ID)).size;
+}
+function filterSummary(f){
+  return FILTER_AXES.map(a => f[a.key]).filter(Boolean).join(" \u00B7 ");
+}
 const MIN_VALID_ROWS = 10;
 
-/* Parse a WordDock xlsx file (File or ArrayBuffer).
+/* Parse a Latijn xlsx file (File or ArrayBuffer).
    Returns { ok: true, list } or { ok: false, error }. */
-async function parseWordDockXlsx(file){
+async function parseLatijnXlsx(file){
   let arrayBuffer;
   try {
     arrayBuffer = await file.arrayBuffer();
@@ -1605,13 +1516,13 @@ async function parseWordDockXlsx(file){
     return { ok: false, error: "Not a readable .xlsx file: " + e.message };
   }
 
-  // Find the first sheet whose A1 cell is "ID"
+  // Find the first sheet whose A1 cell is "L" (WD26 final order)
   let dataSheet = null;
   let dataSheetName = null;
   for (const name of wb.SheetNames){
     const sheet = wb.Sheets[name];
     const a1 = sheet["A1"];
-    if (a1 && a1.v === "ID"){
+    if (a1 && a1.v === "L"){
       dataSheet = sheet;
       dataSheetName = name;
       break;
@@ -1619,7 +1530,7 @@ async function parseWordDockXlsx(file){
   }
   if (!dataSheet){
     return { ok: false, error:
-      "No data sheet found. A WordDock file must have a sheet whose A1 cell is \"ID\"." };
+      "No data sheet found. A Latijn file must have a sheet whose A1 cell is \"L\"." };
   }
 
   // Convert to row-of-arrays form, preserving the header row.
@@ -1633,16 +1544,22 @@ async function parseWordDockXlsx(file){
   }
 
   const header = aoa[0].map(h => h === null ? "" : String(h));
-  // Verify the canonical 25 columns (SF25) are present in order.
+  // Verify the canonical 26 columns (WD26) are present in order.
   for (let i = 0; i < COLUMNS.length; i++){
     if (header[i] !== COLUMNS[i]){
       return { ok: false, error:
         `Column ${i+1} should be "${COLUMNS[i]}" but is "${header[i] || "(empty)"}". ` +
-        `WordDock files use a fixed 25-column order.` };
+        `Latijn files use a fixed 26-column order: L, ID, ENTRY, CAT, SUBCAT, NOTE, Q1, A1 ... Q10, A10.` };
     }
   }
-  // Capture any extra columns beyond the canonical 25 (preserve through round-trip)
-  const extraColumns = header.slice(COLUMNS.length).filter(h => h);
+  // Capture any extra columns beyond the canonical 26 (preserve through
+  // round-trip). Offsets are kept so values stay aligned to their headers
+  // even if an unnamed (empty-header) column sits between named ones.
+  const extraOffsets = [];
+  for (let i = COLUMNS.length; i < header.length; i++){
+    if (header[i]) extraOffsets.push(i);
+  }
+  const extraColumns = extraOffsets.map(i => header[i]);
 
   // Parse data rows
   const rows = [];
@@ -1663,7 +1580,11 @@ async function parseWordDockXlsx(file){
       continue;
     }
 
-    const idStr = String(id).trim();
+    // v26.81: IDs are 4-digit strings. Excel loves to turn 0001 into 1 unless the
+    // cell is text; a curator should not have to know that. Pad here — 1 and
+    // 0001 land on the same card, so RS never splits across two spellings.
+    let idStr = String(id).trim();
+    if (/^\d{1,4}$/.test(idStr)) idStr = idStr.padStart(4, "0");
 
     // Build the Q/A pairs (only those with both Q and A filled).
     const pairs = [];
@@ -1673,19 +1594,25 @@ async function parseWordDockXlsx(file){
       if (q && a) pairs.push({ q: String(q), a: String(a) });
     }
 
-    // Build the row in the app's field names, which now equal the SF25
-    // column names directly (ID, CAT, CTAG, L, ENTRY). RS is NOT in the
+    // Build the row in the app's field names, which equal the WD26
+    // column names directly (ID, CAT, SUBCAT, L, ENTRY). RS is NOT in the
     // file — it lives only in localStorage, joined at runtime by (domain + ID).
     const row = {
       ID: idStr,
       CAT: arr[COL_INDEX.CAT]  ? String(arr[COL_INDEX.CAT])  : "",
-      CTAG: arr[COL_INDEX.CTAG] ? String(arr[COL_INDEX.CTAG]) : "",
+      SUBCAT: arr[COL_INDEX.SUBCAT] ? String(arr[COL_INDEX.SUBCAT]) : "",
       pairs,
         _preserved: {
         L: arr[COL_INDEX.L]     ?? null,
-        ENTRY: arr[COL_INDEX.ENTRY] ?? null
+        ENTRY: arr[COL_INDEX.ENTRY] ?? null,
+        NOTE: arr[COL_INDEX.NOTE] ?? null
       },
-      _extras: null,
+      // WD26 no-wipe: values beyond the canonical 26 are CARRIED, never
+      // interpreted. null when the file has no extra columns.
+      _extras: extraOffsets.length
+        ? extraOffsets.map(i =>
+            (arr[i] === undefined || arr[i] === null || arr[i] === "") ? null : arr[i])
+        : null,
       // Convenience: L is on the row for filtering.
       get L(){ return this._preserved.L; }
     };
@@ -1694,7 +1621,7 @@ async function parseWordDockXlsx(file){
 
   if (rows.length < MIN_VALID_ROWS){
     return { ok: false, error:
-      `Only ${rows.length} valid rows found. A WordDock file requires at least ${MIN_VALID_ROWS} rows where ID, Q1, and A1 are all filled.` };
+      `Only ${rows.length} valid rows found. A Latijn file requires at least ${MIN_VALID_ROWS} rows where ID, Q1, and A1 are all filled.` };
   }
 
   // ── Identity comes from the FILENAME, never from the hidden Metadata sheet.
@@ -1720,8 +1647,8 @@ async function parseWordDockXlsx(file){
 /* Split "NL-RU_vakantie.xlsx" into { domain:"NL-RU", name:"vakantie" }.
    Underscore is the separator; everything after the first one is the name
    (so "NL-RU_zomer_2026" → name "zomer_2026"). Hyphens are ordinary name
-   characters, which is why domain codes (NL-RU) and Full-List both work.
-   Returns domain:null when the leading token isn't a plausible domain — the
+   characters, which is why domain codes (NL-RU) and Full both work.
+   Returns domain:null when the leading token isn't a plausible domain - the
    import dialog then asks the user instead of guessing. */
 function parseFilename(rawName){
   const base = (rawName || "").replace(/\.xlsx$/i, "").trim();
@@ -1738,10 +1665,15 @@ function parseFilename(rawName){
   return { domain: null, name: base || "Imported" };
 }
 
-/* Serialize the active list back to a WordDock xlsx (Blob).
+/* Serialize the active list back to a Latijn xlsx (Blob).
    Uses the row's current localStorage RS, not the value that came in from file. */
 function serializeToXlsx(list, exportName){
-  const headers = [...COLUMNS, ...(list.extraColumns || [])];
+  // v26.87: the six core columns (L, ID, ENTRY, CAT, SUBCAT, NOTE) always round-trip;
+  // extras (beyond column 26) ride along uninterpreted.
+  const extras = [...(list.extraColumns || [])];
+  // v26.80: NOTE is a core column; nothing is auto-appended. RS is NOT exported
+  // (decided 2026-09-12): the key is the RS channel, Excel carries content only.
+  const headers = [...COLUMNS, ...extras];
   const aoa = [headers];
   for (const row of list.rows){
     const arr = new Array(headers.length).fill(null);
@@ -1749,14 +1681,22 @@ function serializeToXlsx(list, exportName){
     arr[COL_INDEX.ID]    = row.ID;
     arr[COL_INDEX.ENTRY] = pres.ENTRY ?? null;
     arr[COL_INDEX.CAT]   = row.CAT || null;
-    arr[COL_INDEX.CTAG]  = row.CTAG || null;
+    arr[COL_INDEX.SUBCAT] = row.SUBCAT || null;
     arr[COL_INDEX.L]     = pres.L ?? null;
+    arr[COL_INDEX.NOTE]  = pres.NOTE ?? null;
     for (let i = 0; i < 10; i++){
       const p = row.pairs[i];
       arr[COL_INDEX["Q"+(i+1)]] = p ? p.q : null;
       arr[COL_INDEX["A"+(i+1)]] = p ? p.a : null;
     }
-    // SF25: RS is NOT written to the file — it lives only in localStorage.
+    // WD26 no-wipe: extra (beyond-26) values ride back under their own
+    // headers — carried, never interpreted.
+    if (row._extras){
+      const maxExtras = headers.length - COLUMNS.length;
+      for (let i = 0; i < row._extras.length && i < maxExtras; i++){
+        arr[COLUMNS.length + i] = row._extras[i] ?? null;
+      }
+    }
     aoa.push(arr);
   }
   const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1772,7 +1712,7 @@ function serializeToXlsx(list, exportName){
     ["Domain", list.domain],
     ["Date", today],
     ["Row count", list.rows.length],
-    ["Exported by", "WordDock v" + SCHEMA_VERSION]
+    ["Exported by", "Latijn v" + SCHEMA_VERSION]
   ];
   const wsMeta = XLSX.utils.aoa_to_sheet(metaAoa);
   XLSX.utils.book_append_sheet(wb, wsMeta, "Metadata");
@@ -1797,13 +1737,13 @@ let peeking = false;
    Embedded Sources (fetched from <DOMAIN>.json) are NOT persisted: they are
    re-fetched on every boot, so storing 675 rows twice would be waste.
    Imported lists ARE persisted (wd_lists), because nothing else can bring
-   them back — the user's file lives on their disk, not on our server. */
+   them back - the user's file lives on their disk, not on our server. */
 const LISTS = {};
 
 /* The one reserved list name: the curated master shipped with a domain.
    An export can never produce it (the Save-as dialog forbids it), so a
-   user file can never collide with the curated Full-List. */
-const FULL_LIST_NAME = "Full-List";
+   user file can never collide with the curated Full. */
+const FULL_LIST_NAME = "Full";   // v26.77: shorter, less redundant
 
 const LISTS_KEY = "wd_lists";
 
@@ -1814,7 +1754,7 @@ const LISTS_KEY = "wd_lists";
    • CURATED domain (e.g. a slice of NL-RU) → store only the IDs. Every row
      already exists in the <DOMAIN>.json the app fetches on boot, so storing
      675 rows again would duplicate ~135 KB for nothing. IDs alone are ~5 KB.
-     Rehydration resolves them against the domain's Full-List.
+     Rehydration resolves them against the domain's Full.
      (Accepted consequence: if the curator later removes a word from the
      corpus, that ID resolves to nothing and quietly drops from the list —
      which is the correct outcome, the curator removed it.)
@@ -1826,14 +1766,28 @@ function saveLists(){
   const out = {};
   for (const l of Object.values(LISTS)){
     if (l.source !== "imported") continue;          // embedded ones re-fetch
-    const base = { listId: l.listId, name: l.name, domain: l.domain, source: "imported" };
+    const base = { listId: l.listId, name: l.name, domain: l.domain, source: "imported",
+                   extraColumns: l.extraColumns || null };
     if (isCurated(l.domain)){
-      out[l.listId] = { ...base, mode: "ids", ids: l.rows.map(r => r.ID) };
+      // WD26: extras are stored SPARSELY — only rows that actually carry a
+      // value. A handful of marks costs a few hundred bytes, so the
+      // no-duplication economy of ID-mode stands untouched.
+      const extras = {};
+      let anyExtras = false;
+      for (const r of l.rows){
+        if (r._extras && r._extras.some(v => v !== null && v !== "")){
+          extras[r.ID] = r._extras;
+          anyExtras = true;
+        }
+      }
+      out[l.listId] = { ...base, mode: "ids", ids: l.rows.map(r => r.ID),
+                        ...(anyExtras ? { extras } : {}) };
     } else {
       out[l.listId] = { ...base, mode: "rows", rows: l.rows.map(r => ({
-        ID: r.ID, CAT: r.CAT, CTAG: r.CTAG,
-        L: r._preserved.L, ENTRY: r._preserved.ENTRY,
-        pairs: r.pairs
+        ID: r.ID, CAT: r.CAT, SUBCAT: r.SUBCAT,
+        L: r._preserved.L, ENTRY: r._preserved.ENTRY, NOTE: r._preserved.NOTE ?? null,
+        pairs: r.pairs,
+        _extras: r._extras || null
       })) };
     }
   }
@@ -1845,16 +1799,16 @@ function saveLists(){
    the engine must see one row shape everywhere, whatever the source). */
 function hydrateRow(r){
   return {
-    ID: r.ID, CAT: r.CAT || "", CTAG: r.CTAG || "",
+    ID: r.ID, CAT: r.CAT || "", SUBCAT: r.SUBCAT || "",
     pairs: r.pairs || [],
-    _preserved: { L: r.L ?? null, ENTRY: r.ENTRY ?? null },
-    _extras: null,
+    _preserved: { L: r.L ?? null, ENTRY: r.ENTRY ?? null, NOTE: r.NOTE ?? null },
+    _extras: r._extras ?? null,
     get L(){ return this._preserved.L; }
   };
 }
 
 /* Rehydrate imported lists on boot.
-   "rows" lists rebuild immediately. "ids" lists need their domain's Full-List
+   "rows" lists rebuild immediately. "ids" lists need their domain's Full
    fetched first, so they resolve lazily — see resolveIdLists(). */
 const PENDING_ID_LISTS = [];
 
@@ -1869,15 +1823,15 @@ function loadPersistedLists(){
     } else if (Array.isArray(s.rows)){
       LISTS[s.listId] = {
         listId: s.listId, name: s.name, domain: s.domain, source: "imported",
-        extraColumns: null,
+        extraColumns: s.extraColumns || null,
         rows: s.rows.map(hydrateRow)
       };
     }
   }
 }
 
-/* Resolve any stored ID-only lists for a domain, now that its Full-List rows
-   are in memory. Each ID is looked up in the Full-List; missing IDs (removed
+/* Resolve any stored ID-only lists for a domain, now that its Full rows
+   are in memory. Each ID is looked up in the Full; missing IDs (removed
    from the corpus since) are simply skipped. */
 function resolveIdLists(domain, fullRows){
   if (!PENDING_ID_LISTS.length) return;
@@ -1885,11 +1839,26 @@ function resolveIdLists(domain, fullRows){
   for (let i = PENDING_ID_LISTS.length - 1; i >= 0; i--){
     const s = PENDING_ID_LISTS[i];
     if (s.domain !== domain) continue;
-    const rows = s.ids.map(id => byId.get(id)).filter(Boolean);
+    const ex = s.extras || null;
+    const rows = s.ids.map(id => {
+      const base = byId.get(id);
+      if (!base) return null;
+      if (!ex || !ex[id]) return base;      // unmarked rows stay shared
+      // WD26: a marked row gets a per-list clone. Extras belong to the FILE,
+      // not the word — the same word may carry different marks in different
+      // lists, and the shared Full row must never be polluted.
+      return {
+        ID: base.ID, CAT: base.CAT, SUBCAT: base.SUBCAT,
+        pairs: base.pairs,
+        _preserved: base._preserved,
+        _extras: ex[id],
+        get L(){ return this._preserved.L; }
+      };
+    }).filter(Boolean);
     if (rows.length){
       LISTS[s.listId] = {
         listId: s.listId, name: s.name, domain: s.domain, source: "imported",
-        extraColumns: null, rows
+        extraColumns: s.extraColumns || null, rows
       };
     }
     PENDING_ID_LISTS.splice(i, 1);
@@ -1918,7 +1887,7 @@ function showStudyToast(text){
 }
 
 /* ─── Sync identity: a pairing key ─────────────────────────────────────────
-   WordDock's account is a random key the user carries between their own
+   Latijn's account is a random key the user carries between their own
    devices. No email, no password, no personal data — the server never learns
    anything about a person, only that some opaque key has some vocabulary
    scores.
@@ -1926,9 +1895,9 @@ function showStudyToast(text){
    Why a key rather than a magic-link email: it needs no email-sending service
    (a whole third-party dependency, an API key, a sender domain), and email
    delivery is unreliable in exactly the places a phone-first audience lives.
-   The cost is that losing every device loses the account — acceptable here,
-   because RS is a proxy for mastery, not the asset: it is rebuilt by studying,
-   and the scores file is the real backup.
+   The cost is that losing every device AND the key loses the cloud copy —
+   acceptable here, because RS is a proxy for mastery, not the asset: it is
+   rebuilt by studying, and the key kept outside the devices is the net.
 
    Alphabet excludes 0/O and 1/I/L — a key is read off one screen and typed on
    another, so characters that can be misread would cost more than the entropy
@@ -1977,7 +1946,7 @@ function clearSyncKey(){
 /* A plain text prompt. wdPromptName() is filename-specific (it validates and
    previews a list name); this is the general one. Resolves to the typed string,
    or null if cancelled. */
-function wdPrompt(title, body, placeholder, okLabel){
+function wdPrompt(title, body, placeholder, okLabel, uppercase){
   return new Promise(resolve => {
     const back   = document.getElementById("wdDialogBackdrop");
     const field  = document.getElementById("wdDialogField");
@@ -1995,6 +1964,11 @@ function wdPrompt(title, body, placeholder, okLabel){
     prev.textContent = "";
     input.value = "";
     input.placeholder = placeholder || "";
+    // Live-uppercase (sync keys): lowercase in = capitals shown, so Shift is
+    // never needed — which also sidesteps Windows' Shift+numpad arrow quirk.
+    input.oninput = uppercase
+      ? (e) => { e.target.value = e.target.value.toUpperCase(); }
+      : null;
     back.hidden = false;
     back.classList.add("open");
     requestAnimationFrame(() => requestAnimationFrame(() => input.focus()));
@@ -2021,173 +1995,6 @@ function wdPrompt(title, body, placeholder, okLabel){
   });
 }
 
-/* The Sync section of the Progress pane. Rendered fresh each time it opens.
-
-   The comparison is not decoration: the user must be able to see, BEFORE
-   opting in, exactly what does and does not leave their browser. Off-grid is
-   the default and stays fully functional forever — sync is a convenience
-   layer, never a requirement, and saying so plainly is what makes the default
-   an honest one rather than a hidden downgrade. */
-function renderSyncSection(root){
-  if (!root) return;
-  root.innerHTML = "";
-  const key = getSyncKey();
-
-  const h = document.createElement("h2");
-  h.className = "section-title";
-  h.textContent = "Sync";
-  root.appendChild(h);
-
-  if (!key){
-    const p = document.createElement("p");
-    p.className = "setting-desc";
-    p.innerHTML =
-      "Right now your progress lives <b>only in this browser</b> \u2014 nothing " +
-      "leaves it. Turn sync on and this browser's progress is also kept on " +
-      "WordDock's server, so your other devices can pick it up.<br><br>" +
-      "There are no accounts, no email, no password. Sync uses a random key " +
-      "you carry to your other device. WordDock never learns who you are \u2014 " +
-      "only that some key has some scores.";
-    root.appendChild(p);
-
-    const warn = document.createElement("div");
-    warn.className = "warn";
-    warn.innerHTML =
-      "<strong>Sharing this computer?</strong> Progress belongs to the browser, " +
-      "so everyone studying here already shares one set of scores \u2014 and sync " +
-      "would carry all of it to your devices. If more than one person uses this " +
-      "computer, give each their own browser profile (or a different browser) " +
-      "first.";
-    root.appendChild(warn);
-
-    const actions = document.createElement("div");
-    actions.className = "scores-actions";
-
-    const on = document.createElement("button");
-    on.className = "list-btn";
-    on.type = "button";
-    on.textContent = "Turn on sync";
-    on.addEventListener("click", async () => {
-      // Claim at the server so two users can never share a key. The client
-      // generates offline, so a collision is possible in principle; this makes
-      // it impossible in fact. Retry a few times — with 853 billion keys, one
-      // collision would already be remarkable.
-      let fresh = null;
-      for (let attempt = 0; attempt < 5 && !fresh; attempt++){
-        fresh = await syncClaim(generateSyncKey());
-      }
-      if (!fresh){
-        await wdConfirm(
-          "Couldn't set up sync",
-          "Something went wrong claiming a key. Your progress is untouched \u2014 " +
-          "try again in a moment.",
-          "OK", null
-        );
-        return;
-      }
-      setSyncKey(fresh);
-      renderSyncSection(root);
-      syncPush();                        // seed the server with what's here
-      await wdConfirm(
-        "Sync is on",
-        "Your key is " + formatSyncKey(fresh) + ". On your other device open " +
-        "Sync \u2192 \u201CI have a key\u201D and type it in. " +
-        "The key stays visible here, so you can come back for it.",
-        "OK", null
-      );
-    });
-
-    const have = document.createElement("button");
-    have.className = "list-btn";
-    have.type = "button";
-    have.textContent = "I have a key";
-    have.addEventListener("click", async () => {
-      const typed = await wdPrompt(
-        "Enter your key",
-        "Type the key shown under Sync on your other device. The dash is " +
-        "optional and capitals don't matter \u2014 just the 8 characters is " +
-        "enough.",
-        "e.g. 7K2M-9XQF", "Connect"
-      );
-      if (typed === null) return;
-      const raw = normalizeSyncKey(typed);
-      if (!isValidSyncKey(raw)){
-        await wdConfirm(
-          "That key doesn't look right",
-          "A WordDock key is 8 characters, like 7K2M-9XQF. Check it " +
-          "against the other device and try again.",
-          "OK", null
-        );
-        return;
-      }
-      setSyncKey(raw);
-      renderSyncSection(root);
-      // Pull straight away: the whole point of typing a key is to see the
-      // other device's progress here, now, rather than at some later moment.
-      await syncPull();
-      renderSyncSection(root);
-      // Progress now shows inline (domain rail + list rows), so refresh the
-      // browser, not a separate pane.
-      if (browserPane === "lists") renderBrowser();
-      renderBrowserRail();
-    });
-
-    actions.appendChild(on);
-    actions.appendChild(have);
-    root.appendChild(actions);
-    return;
-  }
-
-  // ── Sync is on ──────────────────────────────────────────────────────────
-  const p = document.createElement("p");
-  p.className = "setting-desc";
-  p.textContent = "Enter the key below on another device \u2014 your progress " +
-    "will then sync to both.";
-  root.appendChild(p);
-
-  const keyBox = document.createElement("div");
-  keyBox.className = "sync-key";
-  keyBox.textContent = formatSyncKey(key);
-  root.appendChild(keyBox);
-
-  const actions = document.createElement("div");
-  actions.className = "scores-actions";
-
-  const copy = document.createElement("button");
-  copy.className = "list-btn";
-  copy.type = "button";
-  copy.textContent = "Copy key";
-  copy.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(formatSyncKey(key));
-      copy.textContent = "Copied";
-    } catch {
-      copy.textContent = "Select it above";
-    }
-    setTimeout(() => { copy.textContent = "Copy key"; }, 1600);
-  });
-
-  const off = document.createElement("button");
-  off.className = "list-btn";
-  off.type = "button";
-  off.textContent = "Turn off sync";
-  off.addEventListener("click", async () => {
-    const ok = await wdConfirm(
-      "Turn off sync?",
-      "This browser stops syncing. Your progress here is untouched, and the " +
-      "copy on the server stays \u2014 entering this key again reconnects you.",
-      "Turn off", "Keep sync on"
-    );
-    if (!ok) return;
-    clearSyncKey();
-    renderSyncSection(root);
-  });
-
-  actions.appendChild(copy);
-  actions.appendChild(off);
-  root.appendChild(actions);
-}
-
 /* ─── Sync client ──────────────────────────────────────────────────────────
    Pull on foreground, push on background. Nothing else.
 
@@ -2206,8 +2013,96 @@ function renderSyncSection(root){
    Every failure is swallowed. Local storage remains the source of truth, so a
    failed sync costs nothing and the next foreground heals it. */
 
-const SYNC_API = "https://worddock-sync.michellanssens.workers.dev";
+/* ─── Sync protocol timing ──────────────────────────────────────────────────
+   Reads are cheap; writes are not. A pull looks up one row, a push writes one
+   — at the database a write costs a thousand times a read. So the shape is:
+   pull freely, push rarely, and never push nothing.
+
+   THE THREE-WAY PUSH RULE. A push leaves only when all three hold:
+     1. at least one deck finished since the last successful push (the flag),
+     2. a natural moment — backgrounding, leaving, or opening,
+     3. at least SYNC_PUSH_COOLDOWN since the last push went out.
+   Miss any one and nothing leaves. The flag SURVIVES a miss: it lives in
+   localStorage, so a suppressed push is not a lost push — it goes out at the
+   next natural moment, or on the next open if the tab never got one.
+
+   WHY THE FLAG IS STORED, NOT A VARIABLE. A phone may kill a backgrounded tab
+   with no warning at all: no pagehide, no visibilitychange, no last breath.
+   In-memory state dies with it. Written down, the flag is still there when the
+   app next opens, and the catch-up push carries yesterday's decks after all.
+
+   WHY sendBeacon. On the way out, a normal request is often cancelled
+   mid-flight — exactly the moment we need it to complete. sendBeacon hands the
+   payload to the browser, which delivers it after the page is gone. The
+   trade-off is that we never see the reply, which is fine: a push has nothing
+   to tell us. fetch+keepalive is the fallback where sendBeacon is unavailable.
+
+   PULL BEFORE PUSH, ALWAYS. A push REPLACES the cloud row. Pushing before
+   merging would overwrite the cloud with a device that hasn't seen the other
+   device's work yet - silently lowering scores that were already safe. So on
+   open the order is pull, merge, then catch up. Never the other way round.
+
+   ⚑ THE KNOB TO WATCH. These two numbers are estimates, not measurements. The
+   real cost driver at scale is the number of pushes per user per day (target:
+   about two, one per study session) and, close behind it, the hourly pull —
+   because every request costs the same at the door whether it carries data up
+   or down. Divide D1's rows-written-per-day by the number of syncing users to
+   get the true push rate, then tune here. See the FUTURE-TO-DO register. */
+const SYNC_API = "https://sync.worddock.app";
+const SYNC_DIRTY_KEY = "wd_sync_dirty";     // "1" while a finished deck is unpushed
+const SYNC_LASTPUSH_KEY = "wd_sync_lastpush";
+const SYNC_PUSH_COOLDOWN = 10 * 60 * 1000;  // 10 minutes
+const SYNC_PULL_INTERVAL = 60 * 60 * 1000;  // hourly, foreground only
+const SYNC_DELTA_ASK = 100;                 // cards this browser knows better than the key: above this, adoption asks first
+const SYNC_STAMP_KEY = "wd_sync_stamp";     // 2c: the cloud's updated_at as this device last saw it
+const SYNC_LASTPULL_KEY = "wd_sync_lastpull"; // 2d: when this device last TRIED to pull
+const SYNC_PULL_MIN_GAP  = 60 * 1000;           // 2d: guardrail against the alt-tab clicker
+const SYNC_MYPUSH_KEY    = "wd_sync_mypush";    // 2e: updated_at of THIS device's last successful push
+const SYNC_MODE_KEY      = "wd_sync_mode";      // 2e: "sync" | "backup" — detected from pull stamps
+const SYNC_SOLO_PULLS_KEY= "wd_sync_solopulls"; // 2e: consecutive pulls where stamp == own push
+const SYNC_SOLO_RESET    = 10;                  // 2e: revert to backup after this many solo pulls
+const SYNC_COOLDOWN_SYNC = 15 * 60 * 1000;     // 2e: 15 min — another device may be waiting
+const SYNC_COOLDOWN_BKUP = 3 * 60 * 60 * 1000; // 2e: 3 h  — cloud is just a safety copy
 let syncBusy = false;
+let syncPullTimer = null;
+
+/* Called at deck completion — the ONLY moment a score can change. */
+function markSyncDirty(){
+  try { localStorage.setItem(SYNC_DIRTY_KEY, "1"); } catch {}
+  if (typeof renderSyncAnchor === "function") renderSyncAnchor();   // the dot turns amber
+}
+function syncIsDirty(){
+  try { return localStorage.getItem(SYNC_DIRTY_KEY) === "1"; } catch { return false; }
+}
+function clearSyncDirty(){
+  try { localStorage.removeItem(SYNC_DIRTY_KEY); } catch {}
+  if (typeof renderSyncAnchor === "function") renderSyncAnchor();   // back to green
+}
+
+/* 2c — the one number that turns max-merge from a habit into an exception.
+   The server stamps every write (updated_at). This device remembers the stamp
+   it last saw, in both directions: after a pull (what it read) and after a
+   push with a reply (what it wrote). Together with the dirty flag that is a
+   one-slot version vector — exactly enough for one blob under one key. */
+function getSyncStamp(){
+  try { return parseInt(localStorage.getItem(SYNC_STAMP_KEY) || "0", 10) || 0; } catch { return 0; }
+}
+function setSyncStamp(n){
+  if (!n) return;
+  try { localStorage.setItem(SYNC_STAMP_KEY, String(n)); } catch {}
+}
+function syncCooldownPassed(){
+  // 2e: adaptive — 15 min for a sync-user, 3 h for a backup-user.
+  try {
+    const last = parseInt(localStorage.getItem(SYNC_LASTPUSH_KEY) || "0", 10);
+    const mode = localStorage.getItem(SYNC_MODE_KEY) || "backup";
+    const gap  = (mode === "sync") ? SYNC_COOLDOWN_SYNC : SYNC_COOLDOWN_BKUP;
+    return !last || (Date.now() - last) >= gap;
+  } catch { return true; }
+}
+function stampSyncPush(){
+  try { localStorage.setItem(SYNC_LASTPUSH_KEY, String(Date.now())); } catch {}
+}
 
 function allPools(){
   const out = {};
@@ -2249,24 +2144,123 @@ function writePools(pools){
   loadRS();   // refresh the in-memory copy for the active domain
 }
 
+/* Split since v26.35: fetchCloud is network-only, applyCloud is local-only.
+   The gap between them is where the adoption gate looks before touching.
+   Ordinary pulls run both back to back — behavior unchanged. */
+function _syncTimeout(){
+  // Fail in seconds, not at the OS's leisure (observed: 15 s hang, F6).
+  // Older browsers without AbortSignal.timeout simply get no limit.
+  return (typeof AbortSignal !== "undefined" && AbortSignal.timeout)
+    ? AbortSignal.timeout(8000) : undefined;
+}
+
+async function fetchCloud(key){
+  const res = await fetch(SYNC_API + "/pull?key=" + key, { signal: _syncTimeout() });
+  return await res.json();
+}
+
+/* Replace, not merge: every local pot becomes what the cloud holds, and a
+   pot the cloud no longer knows is removed here too — so deletions and
+   decrements travel. Only reached when this device is clean, i.e. everything
+   it ever changed already went up; nothing local can be lost. */
+function replacePools(cloud){
+  const keep = new Set(Object.keys(cloud));
+  const gone = [];
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k && k.startsWith("wd_rs_") && !keep.has(k.slice("wd_rs_".length))) gone.push(k);
+  }
+  for (const k of gone){ try { localStorage.removeItem(k); } catch {} }
+  writePools(cloud);
+}
+
+/* mode "merge": max per card, used by adoption (the gate already decided).
+   mode "rule" (routine pulls): the three-way rule of 2c —
+     stamp unchanged since I last looked  → nobody else wrote → local stays
+     stamp moved and I am clean           → take the cloud as it is
+     stamp moved and I am dirty           → both sides worked → max
+   First contact on a device that has never seen a stamp merges once, the
+   old way, so nothing about the upgrade can surprise anyone. */
+function applyCloud(data, mode){
+  if (!data || data.empty || !data.progress) return;
+  const stamp = parseInt(data.updated_at, 10) || 0;
+  let how = "merge";
+  if (mode === "rule"){
+    const seen = getSyncStamp();
+    if (seen && stamp && stamp === seen) return;        // local stays
+    if (seen && !syncIsDirty()) how = "replace";
+    // 2e: detect whether another device is pushing to this key
+    try {
+      const myPush = parseInt(localStorage.getItem(SYNC_MYPUSH_KEY) || "0", 10);
+      // sync if: cloud has a stamp AND (we never pushed OR it differs from our push)
+      const someoneElsePushed = stamp && (myPush === 0 || stamp !== myPush);
+      if (someoneElsePushed){
+        localStorage.setItem(SYNC_MODE_KEY, "sync");
+        localStorage.setItem(SYNC_SOLO_PULLS_KEY, "0");
+      } else {
+        const solo = parseInt(localStorage.getItem(SYNC_SOLO_PULLS_KEY) || "0", 10) + 1;
+        localStorage.setItem(SYNC_SOLO_PULLS_KEY, String(solo));
+        if (solo >= SYNC_SOLO_RESET) localStorage.setItem(SYNC_MODE_KEY, "backup");
+      }
+    } catch {}
+  }
+  if (how === "replace") replacePools(data.progress);
+  else                   writePools(mergePools(allPools(), data.progress));
+  setSyncStamp(stamp);
+  // A running deck is untouched: deck completion re-reads the live pool and
+  // applies only its own deltas, so a mid-session pull can no more clobber a
+  // deck than an external write to the pool can. A deck nobody STARTED is
+  // different — it was dealt from the pre-merge snapshot — so it is dropped
+  // and rebuilt from the pool that now exists. (F3, free rider of the split.)
+  if (deckUnstarted()) initDeck();
+  if (browserPane === "lists") renderBrowser();
+}
+
+function deckUnstarted(){
+  return Array.isArray(pipe) && pipe.length > 0 && !deckDone && !showingA &&
+         deckScore === 0 &&
+         pipe.every(s => s.fi === 0 && !s.passDirty && s.timesDirty === 0);
+}
+
+/* Cards this browser scores higher than the key does — the measure of what
+   merging would pour INTO the key. An entry the cloud lacks counts as 0:
+   pouring brand-new cards into the key is exactly what we are measuring. */
+function deltaAgainstCloud(cloudProgress){
+  const local = allPools();
+  let n = 0;
+  for (const d of Object.keys(local)){
+    const a = local[d], b = (cloudProgress && cloudProgress[d]) || {};
+    for (const id of Object.keys(a)){
+      if (a[id] > (b[id] || 0)) n++;
+    }
+  }
+  return n;
+}
+
+/* 2d — the pull guardrail. Every routine pull (open, hourly, tab return)
+   passes here; a second attempt within a minute is dropped without touching
+   the line. Stamped at the ATTEMPT so vain offline retries are braked too.
+   The adoption peek (fetchCloud in the gate) does not go through here — a
+   deliberate, rare act may always look. Built before it was needed, on
+   Michel's rule: guardrails go up while the road is still in view. */
+function syncPullRecently(){
+  try {
+    const last = parseInt(localStorage.getItem(SYNC_LASTPULL_KEY) || "0", 10);
+    return last && (Date.now() - last) < SYNC_PULL_MIN_GAP;
+  } catch { return false; }
+}
+function stampSyncPull(){
+  try { localStorage.setItem(SYNC_LASTPULL_KEY, String(Date.now())); } catch {}
+}
+
 async function syncPull(){
   const key = getSyncKey();
   if (!key || syncBusy) return;
+  if (syncPullRecently()) return;        // 2d: braked, nothing sent
+  stampSyncPull();
   syncBusy = true;
   try {
-    const res  = await fetch(SYNC_API + "/pull?key=" + key);
-    const data = await res.json();
-    if (data.empty) return;                    // nothing on the server yet
-    if (!data.progress) return;
-
-    const local  = allPools();
-    const merged = mergePools(local, data.progress);
-    writePools(merged);
-
-    // A running deck is untouched: deck completion re-reads the live pool and
-    // applies only its own deltas, so a mid-session pull can no more clobber a
-    // deck than a scores restore can.
-    if (browserPane === "lists") renderBrowser();
+    applyCloud(await fetchCloud(key), "rule");
   } catch {
     /* offline or server down — local stays authoritative */
   } finally {
@@ -2274,52 +2268,132 @@ async function syncPull(){
   }
 }
 
-async function syncPush(){
+/* The gate. Every caller passes through here; none of them decides for itself
+   whether a push is warranted. `force` bypasses the rules and is reserved
+   for the administrative handshakes (key creation, key adoption): one-shot
+   pushes behind explicit dialogs, never timers — which is why it cannot
+   chain or loop. */
+function syncPush(force, leaving){   // force=true → administrative push, must not claim the mypush stamp
   const key = getSyncKey();
   if (!key) return;
-  const body = JSON.stringify({
-    key,
-    progress: allPools(),
-    lastList: readLastList() || null
-  });
+  if (!force && !syncIsDirty()) return;          // rule 1: nothing new to say
+  if (!force && !syncCooldownPassed()) return;   // rule 3: too soon
+
+  const body = JSON.stringify({ key, progress: allPools() });
+
+  /* CONTENT TYPE IS LOAD-BEARING. text/plain is one of the three types a
+     browser will send cross-origin without asking permission first.
+     application/json is not: it triggers a preflight OPTIONS, and a beacon
+     leaving as the page disappears rarely survives that round trip — it dies
+     as a CORS error having delivered nothing. (Observed, v26.29.) The Worker
+     never reads this header; it takes the body as text and parses it itself.
+     Do not "tidy" this to application/json. */
+  const CT = "text/plain;charset=UTF-8";
+
+  if (!force) stampSyncPush();   // cooldown starts at the attempt, not the
+                                 // arrival - and only natural pushes start it;
+                                 // forced (administrative) pushes leave the
+                                 // clock alone (v26.34)
+
+  /* The flag is cleared only where we can tell the difference. sendBeacon
+     returns true when the browser ACCEPTS the payload, not when it arrives —
+     no receipt ever comes — so with a beacon we clear optimistically and
+     accept that a lost push waits for the next finished deck. The fallback
+     fetch does get an answer, so there we wait for it. Either way a repeated
+     push is harmless: the merge takes the maximum, so re-sending changes
+     nothing. Optimism is the cheap direction to be wrong in. */
   try {
-    // keepalive lets the request survive the page being backgrounded or closed
-    // — without it the push would often be cancelled mid-flight, which is the
-    // one moment we actually need it to complete.
-    await fetch(SYNC_API + "/push", {
+    /* 2c: beacon ONLY when the page is leaving for good (pagehide) — it is
+       the one transport that survives that moment, at the price of never
+       answering. Everywhere else the page is still alive, so a keepalive
+       fetch does the same job AND brings the stamp back, which is what lets
+       the next pull know the cloud matches what we hold. */
+    if (leaving && navigator.sendBeacon){
+      const blob = new Blob([body], { type: CT });
+      if (navigator.sendBeacon(SYNC_API + "/push", blob)){
+        clearSyncDirty();
+        return;
+      }
+    }
+    fetch(SYNC_API + "/push", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": CT },
       body,
       keepalive: true
-    });
+    })
+      .then(r => (r && r.ok) ? r.json().catch(() => ({ ok: true })) : null)
+      .then(j => {
+        if (!j) return;
+        clearSyncDirty();
+        const t = parseInt(j.updated_at, 10) || 0;
+        setSyncStamp(t);
+        // 2e: only NATURAL pushes claim the mypush stamp. A forced (administrative)
+        // push — key adoption, key creation — overwrites the wolk's stamp with merged
+        // data, but the fact it happened is not evidence that WE were the rightful
+        // writer the next pull should compare against. Leaving it unset lets the next
+        // pull see a "vreemde stempel" and correctly detect a sync-user.
+        if (!force){
+          try { localStorage.setItem(SYNC_MYPUSH_KEY, String(t)); } catch {}
+        }
+      })
+      .catch(() => {});
   } catch {
-    /* swallowed: the next background push carries the same state */
+    /* swallowed: local stays authoritative, the flag stands, the next natural
+       moment tries again */
   }
 }
 
 /* Claim a key at the server, so two users can never end up sharing one.
    Returns the key actually claimed (possibly a regenerated one), or null. */
+/* STRICT since v26.36 (F7): no server, no key. The old fallback minted
+   unclaimed phantoms offline — keys the cloud had never heard of, that the
+   adoption gate rightly refuses and that no second device could ever join.
+   A key that exists nowhere protects nothing; better no key than a lie.
+   Network failure THROWS — claimFreshKey catches and aborts at once. */
 async function syncClaim(key){
-  try {
-    const res  = await fetch(SYNC_API + "/claim", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ key })
-    });
-    const data = await res.json();
-    if (data.ok)    return key;
-    if (data.taken) return null;      // caller regenerates
-    return key;                       // server unreachable: proceed offline
-  } catch {
-    return key;                       // offline: the key still works locally
-  }
+  const res = await fetch(SYNC_API + "/claim", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ key }),
+    signal: _syncTimeout()
+  });
+  const data = await res.json();
+  if (data.ok)    return key;
+  if (data.taken) return null;        // caller regenerates
+  return null;                        // unexpected reply: do not mint
+}
+
+/* Catch-up on open: pull and merge FIRST, then push whatever this device still
+   owes. The order is not stylistic - see "pull before push" above. */
+async function syncCatchUp(){
+  await syncPull();
+  syncPush();
+}
+
+/* The hourly pull runs only while the app is in front. A background tab is
+   costing the server nothing and showing the user nothing. */
+function startSyncPullTimer(){
+  stopSyncPullTimer();
+  if (!getSyncKey()) return;
+  syncPullTimer = setInterval(() => {
+    if (document.visibilityState === "visible") syncPull();
+  }, SYNC_PULL_INTERVAL);
+}
+function stopSyncPullTimer(){
+  if (syncPullTimer){ clearInterval(syncPullTimer); syncPullTimer = null; }
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") syncPush();
-  else                                       syncPull();
+  if (document.visibilityState === "hidden"){
+    syncPush();                 // natural moment — the gate decides
+    stopSyncPullTimer();
+  } else {
+    syncCatchUp();              // pull, merge, then settle any debt
+    startSyncPullTimer();
+  }
 });
-window.addEventListener("pagehide", syncPush);
+// Leaving for good. sendBeacon is what makes this one actually arrive.
+window.addEventListener("pagehide", () => syncPush(false, true));
 
 function switchActiveList(listId){
   const list = LISTS[listId];
@@ -2331,9 +2405,7 @@ function switchActiveList(listId){
   if (list.domain !== DOMAIN_RUNTIME){
     DOMAIN_RUNTIME = list.domain;
     loadRS();   // re-reads wd_rs_<domain>
-    $tabDomainValue.textContent = DOMAIN_RUNTIME;
   }
-  $tabListValue.textContent = activeListName;
   document.getElementById("logoHoverName").textContent =
     DOMAIN_RUNTIME + "\u00B7" + activeListName;
   saveLastList(list.listId);   // resume here on the next boot
@@ -2359,9 +2431,6 @@ function paintCounter(score, done){
   $counterNum.innerHTML =
     '<span class="counter-n">' + score + "</span>/12" + (done ? " \u2713" : "");
 }
-const $tabDomainValue = document.getElementById("tabDomainValue");
-const $tabListValue   = document.getElementById("tabListValue");
-const $tabFilterValue = document.getElementById("tabFilterValue");
 
 /* ─── Domain surface ─── */
 /* MY LISTS is NOT a domain — it is a display ZONE in the rail that gathers
@@ -2369,7 +2438,7 @@ const $tabFilterValue = document.getElementById("tabFilterValue");
    domain keeps its own identity and its own RS pool (wd_rs_<DOMAIN>), so an
    uncurated domain later added to the catalog simply graduates to ACTIVE with
    zero data migration. */
-const MY_ZONE_LABEL = "MY LISTS";
+const MY_ZONE_LABEL = "My domains";   // 6b: it gathers DOMAINS, not lists
 
 // Is this domain part of the curated catalog?
 function isCurated(domain){
@@ -2467,7 +2536,14 @@ async function loadDomainMaster(domain){
 
 /* ─── Deck construction (§5.7.1): take lowest-RS 10 ─── */
 function buildDeck(){
-  const sorted = [...ALL].sort((a,b) => {
+  // Phase 2: the domain's filter narrows the source; sorting is unchanged and
+  // the RS pool is untouched. An empty result must never reach the card, so a
+  // filter that matches nothing in THIS list is ignored here (the deck is built
+  // from everything) and left in place: the browse side shows "0 in filter" on
+  // the row, and the list click and boot paths decide what to say about it.
+  let src = filteredRows(ALL, getFilter(DOMAIN_RUNTIME));
+  if (!src.length) src = ALL;
+  const sorted = [...src].sort((a,b) => {
     const ra = getRS(a.ID), rb = getRS(b.ID);
     if (ra !== rb) return ra - rb;
     return a.ID < b.ID ? -1 : 1;
@@ -2544,6 +2620,8 @@ function gradeGood(){
       localStorage.setItem(poolKey, JSON.stringify(pool));
       RS = pool;   // keep the in-memory copy in sync with the store
       markStudied(DOMAIN_RUNTIME);   // for ACTIVE ordering
+      markSyncDirty();               // the one moment a score can change
+      maybeAskToKeepSafe();          // consent cascade — fires at most twice, ever
     }
     render();
     return;
@@ -2572,12 +2650,7 @@ function moveTo(targetIdx){
 function render(){
   if (deckDone){
     // The green tint and the "done" message stay — that is the reward for
-    // finishing a deck. What was removed here: the one-line backup nudge and
-    // the "back up now?" celebration prompt that used to appear on top of it.
-    // Backup is no longer pushed at the user; it is a choice they make on the
-    // Progress page, where the passive "since last backup" number is the only
-    // signal. An interruption that fires on a schedule is exactly the kind of
-    // active nag we set out to remove.
+    // finishing a deck.
     $card.classList.add("deck-done");
     $cardTag.textContent  = "";
     paintCounter(deckScore, true);
@@ -2588,9 +2661,11 @@ function render(){
   $card.classList.remove("deck-done");
   const s     = cur();
   const field = s.row.pairs[s.fi];
-  // CAT-CTAG, uppercase, hyphen-joined; or just CAT if no tag
+  // CAT · SUBCAT, or just CAT if no sub-category.
+  // CAT · SUBCAT, uppercase, as written (commas included). Order is fixed
+  // on purpose: stability over the odd Dutch reading (decided 2026-09-13).
   const cat = (s.row.CAT || "").toUpperCase();
-  const tag = (s.row.CTAG || "").toUpperCase();
+  const tag = (s.row.SUBCAT || "").trim().toUpperCase();
   $cardTag.textContent = tag ? cat + " \u00B7 " + tag : cat;
   if (showingA){
     if (peeking){
@@ -2637,10 +2712,6 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeAllSurfaces();
     return;
   }
-  if (document.getElementById("logoMenu").classList.contains("open")) {
-    if (e.key === "Escape") closeLogoMenu();
-    return;
-  }
   if (e.key === " " || e.key === "Enter"){
     e.preventDefault();
     if (deckDone)  { initDeck(); return; }
@@ -2656,10 +2727,7 @@ document.addEventListener("keydown", e => {
 
 /* ─── Tabs & panels ─── */
 const tabs = {
-  wd:     document.getElementById("tabWordDock"),
-  domain: document.getElementById("tabDomain"),
-  list:   document.getElementById("tabList"),
-  filter: document.getElementById("tabFilter")
+  wd: document.getElementById("tabLatijn")
 };
 const overlays = {};   // (all overlays retired; kept empty so loops are no-ops)
 const $domainpage = document.getElementById("domainpage");
@@ -2667,7 +2735,6 @@ const $aboutbrowser = document.getElementById("aboutbrowser");
 const $domainCurrent = document.getElementById("domainCurrent");
 const $domainUniverse = document.getElementById("domainUniverse");
 const $listbrowser = document.getElementById("listbrowser");
-const $logoMenu = document.getElementById("logoMenu");
 
 /* ─── In-app confirm dialog (promise-based; replaces native confirm) ─── */
 function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel", isHtml = false){
@@ -2688,7 +2755,10 @@ function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel", isHtml =
     if (cancelLabel !== null) cancel.textContent = cancelLabel;
     back.hidden = false;
     back.classList.add("open");
+    // nav: Back cancels, exactly like Escape or the backdrop.
+    navOpen("dialog", () => cleanup(false));
     function cleanup(result){
+      navClosed("dialog");
       cancel.hidden = false;   // restore for the next dialog
       back.classList.remove("open");
       back.hidden = true;
@@ -2715,7 +2785,7 @@ function wdConfirm(title, body, okLabel = "OK", cancelLabel = "Cancel", isHtml =
 /* Ask the user to name a list, showing the resulting filename live as they
    type. The preview is the teaching device: naming has consequences, and the
    user sees them assemble. Resolves to the chosen name, or null on cancel.
-   The reserved name (Full-List) is refused — only a curated master carries it,
+   The reserved name (Full) is refused — only a curated master carries it,
    so an export can never mint a file that collides with one. */
 function wdPromptName(title, body, domain, prefill){
   return new Promise(resolve => {
@@ -2734,12 +2804,22 @@ function wdPromptName(title, body, domain, prefill){
     input.value = prefill || "";
     input.placeholder = "e.g. vakantie, examen-week";
 
-    function cleanName(v){ return (v || "").trim().replace(/[^\w\-]+/g, "-").replace(/^-+|-+$/g, ""); }
+    // Forgiveness: humans naturally type the full filename. Strip a typed
+    // ".xlsx" and the domain prefix (any casing, even repeated) BEFORE the
+    // character cleaning, so "NL-RU_utagtest.xlsx" and "utagtest" resolve
+    // to the same name — the double prefix becomes impossible.
+    function cleanName(v){
+      let s = (v || "").trim().replace(/\.xlsx$/i, "");
+      const pfx = domain ? (domain + "_").toLowerCase() : null;
+      while (pfx && s.toLowerCase().startsWith(pfx)) s = s.slice(pfx.length);
+      return s.replace(/[^\w\-]+/g, "-").replace(/^-+|-+$/g, "");
+    }
     function refresh(){
       const n = cleanName(input.value);
       const reserved = n.toLowerCase() === FULL_LIST_NAME.toLowerCase();
       preview.textContent = n ? domain + "_" + n + ".xlsx" : "";
-      if (reserved) preview.textContent = "\u201C" + FULL_LIST_NAME + "\u201D is reserved — choose another name.";
+      if (reserved){ preview.textContent = ""; ok.disabled = true; ok.style.opacity = "0.45"; ok.style.cursor = "not-allowed";
+        preview.textContent = "\u201C" + FULL_LIST_NAME + "\u201D is reserved — choose a different name."; }
       const valid = !!n && !reserved;
       ok.disabled = !valid;
       ok.style.opacity = valid ? "" : "0.45";
@@ -2750,6 +2830,8 @@ function wdPromptName(title, body, domain, prefill){
 
     back.hidden = false;
     back.classList.add("open");
+    // nav: Back cancels, exactly like Escape or the backdrop.
+    navOpen("dialog", () => cleanup(null));
     // Focus AFTER the dialog has actually painted. Calling focus() while the
     // backdrop is still transitioning in can silently fail — the element isn't
     // laid out yet — which left the field looking dead: correct, but with no
@@ -2760,6 +2842,7 @@ function wdPromptName(title, body, domain, prefill){
     }));
 
     function cleanup(result){
+      navClosed("dialog");
       back.classList.remove("open");
       back.hidden = true;
       field.hidden = true;
@@ -2798,6 +2881,93 @@ function wdPromptName(title, body, domain, prefill){
    Booting a returning learner into a file manager instead of a card would be
    the worse mistake; this avoids it without the developer's annoyance of being
    thrown out of the browser on every refresh. */
+/* ─── Back-button contract ──────────────────────────────────────────────────
+   Back does exactly what the user just did, in reverse: it peels ONE layer.
+   Dialog -> closes. Mobile detail pane -> back to the rail. Surface -> back to
+   studying. Studying -> leaves the app, because an app that will not close
+   when the phone rings is an app in the way.
+
+   HOW IT WORKS. The browser keeps a stack of entries and tells us when the
+   user pops one. Every time the app goes a layer deeper we push an entry that
+   changes nothing visible (no hash, no path — the address bar stays clean) and
+   remember how to undo that layer. On popstate we undo the topmost one.
+
+   THE ONE RULE THAT KEEPS THIS HONEST: every close route reports back. A layer
+   shut by its own × or Cancel calls navClosed(), which drops its entry. Skip
+   that and the stack outlives the screen — then one Back silently eats two
+   layers. navPopping guards the re-entry: while Back is driving, the closers it
+   calls must not report a close of their own.
+
+   ⚑ FLAG FOR THE RAIL REBUILD (Active domains / More). Two couplings live here:
+
+   1. NAV_MOBILE must stay equal to the max-width in the browser's media query
+      (currently 560px). The "pane" layer only exists where the CSS actually
+      hides one pane; on desktop both panes are visible, so registering a layer
+      there would make Back appear to do nothing once — a phantom step.
+
+   2. Exactly four places move between rail and detail today: clicking a domain
+      folder, clicking an About topic, the "Domains" header, and the About
+      header. Each is marked "nav: pane layer". Splitting the rail into zones is
+      presentation and adds no fifth route — the folders are still built by one
+      function. But if the rebuild ever opens the detail pane by some OTHER
+      route, that route MUST call navOpenPane(), or Back will skip the rail and
+      drop the user straight back into studying. */
+const NAV_MOBILE = 560;
+const navStack = [];        // [{ kind, close }], deepest layer last
+let navPopping = false;     // true while Back (or our own history.go) drives
+
+function navIsMobile(){
+  return window.matchMedia("(max-width:" + NAV_MOBILE + "px)").matches;
+}
+
+/* Went a layer deeper. `close` must undo exactly this layer, nothing else. */
+function navOpen(kind, close){
+  navStack.push({ kind, close });
+  try { history.pushState({ wd: navStack.length }, ""); } catch {}
+}
+
+/* A layer closed through its own UI. Drop its entry and any that sat above it
+   (a dialog on top of a pane both vanish when the surface closes). */
+function navClosed(kind){
+  if (navPopping) return;
+  const i = navStack.map(l => l.kind).lastIndexOf(kind);
+  if (i === -1) return;
+  const drop = navStack.length - i;
+  navStack.length = i;
+  navPopping = true;
+  try { history.go(-drop); } catch { navPopping = false; }
+}
+
+/* Surfaces are mutually exclusive, so opening one while another is open is a
+   REPLACEMENT, not a descent: it keeps the single surface entry (Back from
+   About goes to studying, not back to the browser) and drops anything above. */
+function navOpenSurface(close){
+  const i = navStack.map(l => l.kind).lastIndexOf("surface");
+  if (i === -1){ navOpen("surface", close); return; }
+  const above = navStack.length - 1 - i;
+  navStack[i].close = close;
+  if (above > 0){
+    navStack.length = i + 1;
+    navPopping = true;
+    try { history.go(-above); } catch { navPopping = false; }
+  }
+}
+
+/* Mobile only — see flag 2 above. */
+function navOpenPane(close){
+  if (!navIsMobile()) return;
+  if (navStack.some(l => l.kind === "pane")) return;
+  navOpen("pane", close);
+}
+
+window.addEventListener("popstate", () => {
+  if (navPopping){ navPopping = false; return; }   // our own history.go landing
+  const layer = navStack.pop();
+  if (!layer) return;                              // base: the browser leaves
+  navPopping = true;
+  try { layer.close(); } finally { navPopping = false; }
+});
+
 const VIEW_KEY = "wd_view";
 
 function saveView(pane){          // pane = null when the browser is closed
@@ -2810,18 +2980,23 @@ function readView(){
   try { return sessionStorage.getItem(VIEW_KEY); } catch { return null; }
 }
 
-function closeAllSurfaces(){
+/* `silent` is for internal use only: it suppresses the history report when the
+   caller is already managing the stack (Back driving, or openSurface replacing
+   one surface with another). Every user-facing close route calls this bare. */
+function closeAllSurfaces(silent){
   for (const k in overlays) overlays[k].classList.remove("open");
   $domainpage.classList.remove("open");
   $listbrowser.classList.remove("open");
   $aboutbrowser.classList.remove("open");
   for (const k in tabs) tabs[k].classList.remove("active");
   saveView(null);                 // back to study
+  if (!silent) navClosed("surface");
 }
 
 function openSurface(which){
   // surfaces are mutually exclusive
-  closeAllSurfaces();
+  closeAllSurfaces(true);
+  navOpenSurface(() => closeAllSurfaces(true));
   if (which === "domain"){
     renderDomainPage();
     $domainpage.classList.add("open");
@@ -2842,17 +3017,6 @@ function openSurface(which){
   }
 }
 
-/* ─── Logo dropdown menu ─── */
-const $menuBackdrop = document.getElementById("menuBackdrop");
-function toggleLogoMenu(){
-  const open = $logoMenu.classList.toggle("open");
-  $menuBackdrop.classList.toggle("open", open);
-}
-function closeLogoMenu(){
-  $logoMenu.classList.remove("open");
-  $menuBackdrop.classList.remove("open");
-}
-
 // Domain page close button
 document.getElementById("domainBack").addEventListener("click", () => {
   closeAllSurfaces();
@@ -2867,45 +3031,12 @@ tabs.wd.addEventListener("click", (e) => {
     $listbrowser.classList.contains("open") ||
     $aboutbrowser.classList.contains("open") ||
     document.querySelector(".overlay.open");
-  closeLogoMenu();
   if (surfaceOpen){
     closeAllSurfaces();
   } else {
     openSurface("list");
   }
 });
-
-// Clicking the backdrop closes the menu
-$menuBackdrop.addEventListener("click", closeLogoMenu);
-
-// Menu items route to their surfaces
-$logoMenu.querySelectorAll(".logo-menu-item").forEach(item => {
-  item.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const which = item.dataset.menu;
-    closeLogoMenu();
-    if (which === "domain"){
-      openSurface("domain");
-    } else if (which === "list"){
-      openSurface("list");
-    } else if (overlays[which]){
-      openSurface(which);
-    }
-  });
-});
-
-// Clicking anywhere outside the menu closes it
-document.addEventListener("click", (e) => {
-  if (!$logoMenu.contains(e.target) && !tabs.wd.contains(e.target)){
-    closeLogoMenu();
-  }
-});
-
-// The pills are hidden (nav goes through the logo menu). These remain wired
-// in case the pills are ever shown again — each just opens its surface.
-tabs.domain.addEventListener("click", () => openSurface("domain"));
-tabs.list  .addEventListener("click", () => openSurface("list"));
-tabs.filter.addEventListener("click", () => openSurface("filter"));
 
 // close affordances
 document.querySelectorAll("[data-close]").forEach(b =>
@@ -2923,7 +3054,16 @@ const $fileInput    = document.getElementById("fileInput");
 const $listMessage  = document.getElementById("listMessage");
 const $browserRail  = document.getElementById("browserRail");
 const $browserLists = document.getElementById("browserLists");
-const $browserDetailHead = document.getElementById("browserDetailHead");
+const $browserDetailHead  = document.getElementById("browserDetailHead");
+const $browserDetailTitle = document.getElementById("browserDetailTitle");
+const $filterDoor         = document.getElementById("filterDoor");
+const $filterPanel        = document.getElementById("filterPanel");
+$filterDoor.addEventListener("click", () => {
+  filterPanelOpen = !filterPanelOpen;
+  if (!filterPanelOpen) filterDraft = null;
+  renderFilterDoor();
+  renderFilterPanel();
+});
 
 function setListMessage(text, kind){
   $listMessage.textContent = text || "";
@@ -3024,8 +3164,14 @@ function makeFolderEl(domain){
     }
     renderBrowser();
     // mobile: reveal the detail pane after picking a domain
+    // nav: pane layer (1 of 4) — Back returns to the rail
     $listbrowser.classList.remove("show-rail");
     $listbrowser.classList.add("show-detail");
+    navOpenPane(() => {
+      showBrowserPane("lists");
+      $listbrowser.classList.remove("show-detail");
+      $listbrowser.classList.add("show-rail");
+    });
   });
   return f;
 }
@@ -3039,49 +3185,93 @@ function addRailLabel(text){
 
 // MORE collapse state: null = decide from context (open when ACTIVE is empty).
 let moreExpanded = null;
+let myExpanded   = null;   // 6b: My domains folds like Catalog
 
 function renderBrowserRail(){
   $browserRail.innerHTML = "";
   const { active, my, more } = classifyDomains();
 
-  // ACTIVE — in practice never empty (the studying-now domain always sits here)
-  if (active.length){
-    addRailLabel("Active");
-    active.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
-  }
+  // 6b — the rail answers three questions with as few words as possible.
+  // "What am I studying?" needs no header: the studying-now domain is marked
+  // and the other engaged domains are bold; the ORDER says it.
+  // 6b, best of both worlds: the two headers sit together as a fixed pair at
+  // the rail's middle and never move. Catalog opens UPWARD (its domains are WD
+  // domains, the same family as the engaged ones above), My domains opens
+  // DOWNWARD, under its header. Whatever opens grows away from the pair.
+  const top = document.createElement("div");  top.className = "rail-band rail-top";
+  const pair = document.createElement("div"); pair.className = "rail-pair";
+  const bot = document.createElement("div");  bot.className = "rail-band rail-bottom";
+  $browserRail.appendChild(top); $browserRail.appendChild(pair); $browserRail.appendChild(bot);
 
-  // MY LISTS — ALWAYS shown, even when empty. A zone earns its place when it
-  // has content OR an affordance: this one carries the import action, so it
-  // teaches the feature instead of hiding it in an info page nobody reads.
-  addRailLabel(MY_ZONE_LABEL);
-  my.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
-  if (!my.length){
-    const hint = document.createElement("div");
-    hint.className = "rail-zone-empty";
-    hint.textContent = "Your own lists land here.";
-    $browserRail.appendChild(hint);
-  }
-  const imp = document.createElement("div");
-  imp.className = "rail-import";
-  imp.innerHTML = "<span>+</span><span>Import a list</span>";
-  // Importing from HERE means "this is my own" — so when the filename can't
-  // name a domain, the picker defaults to MY LISTS rather than a curated one.
-  imp.addEventListener("click", () => $fileInput.click());
-  $browserRail.appendChild(imp);
+  // "What am I studying?" No header: the studying-now domain is marked and
+  // the other engaged domains are bold; the ORDER says it.
+  active.forEach(d => top.appendChild(makeFolderEl(d)));
 
-  // MORE — collapsible. Defaults open when there's nothing in ACTIVE yet.
-  if (more.length){
-    const expanded = (moreExpanded === null) ? (active.length === 0) : moreExpanded;
+  // Catalog — "What else exists?" One door, no count. Its drawer unfolds
+  // upward from the pair. Defaults open when nothing is engaged yet.
+  {
+    let expanded = (moreExpanded === null) ? (active.length === 0) : moreExpanded;
+    const myDefault = (myExpanded === null) ? (my.length > 0) : myExpanded;
+    if (expanded && myDefault) expanded = false;   // accordion: one drawer at a time, yours first
+    if (expanded){
+      const drawer = document.createElement("div"); drawer.className = "rail-drawer";
+      more.forEach(d => drawer.appendChild(makeFolderEl(d)));
+      if (!more.length){
+        const note = document.createElement("div");
+        note.className = "rail-zone-empty";
+        note.textContent = "Everything in the catalog is already in use.";
+        drawer.appendChild(note);
+      }
+      top.appendChild(drawer);
+    }
     const header = document.createElement("div");
-    header.className = "rail-more-toggle";
+    header.className = "rail-more-toggle" + (expanded ? " open" : "");
     header.innerHTML =
-      '<span class="more-count">' + more.length + "</span>" +
-      "<span>More</span>" +
-      '<span class="more-caret">' + (expanded ? "▾" : "▸") + "</span>";
-    header.addEventListener("click", () => { moreExpanded = !expanded; renderBrowserRail(); });
-    $browserRail.appendChild(header);
-    if (expanded) more.forEach(d => $browserRail.appendChild(makeFolderEl(d)));
+      "<span>Catalog</span>" +
+      '<span class="more-caret">' + (expanded ? "▴" : "▸") + "</span>";
+    header.addEventListener("click", () => {
+      moreExpanded = !expanded;
+      if (moreExpanded) myExpanded = false;        // accordion
+      renderBrowserRail();
+    });
+    pair.appendChild(header);
   }
+
+  // My domains — "What is mine?" keeps its header: Michel's quiet signal
+  // ("this could be something for you"). Empty, the sentence is the door.
+  const b2 = bot;
+
+  // Collapsible like Catalog. Open by default when you own domains (never hide
+  // what is yours); collapsed when empty, so the header alone is the quiet
+  // signal and opening it reveals the invitation.
+  {
+    const expandedMy = (myExpanded === null) ? (my.length > 0) : myExpanded;
+    const header = document.createElement("div");
+    header.className = "rail-more-toggle" + (expandedMy ? " open" : "");
+    header.innerHTML =
+      "<span>" + MY_ZONE_LABEL + "</span>" +
+      '<span class="more-caret">' + (expandedMy ? "\u25be" : "\u25b8") + "</span>";
+    header.addEventListener("click", () => {
+      myExpanded = !expandedMy;
+      if (myExpanded) moreExpanded = false;        // accordion
+      renderBrowserRail();
+    });
+    pair.appendChild(header);
+    if (expandedMy){
+      my.forEach(d => b2.appendChild(makeFolderEl(d)));
+      if (!my.length){
+        const hint = document.createElement("div");
+        hint.className = "rail-zone-empty";
+        hint.innerHTML =
+          '<span class="rail-door">Import a list</span> under a domain that you create' +
+          '<span class="rail-door rail-why" title="How to name a domain of your own">?</span>';
+        hint.querySelector(".rail-door:not(.rail-why)").addEventListener("click", () => $fileInput.click());
+        hint.querySelector(".rail-why").addEventListener("click", showMyDomainRules);
+        b2.appendChild(hint);
+      }
+    }
+  }
+
 }
 
 /* Coverage for a single LIST (a lens over the pool), as opposed to a whole
@@ -3103,50 +3293,787 @@ function listCoverage(list){
   return (points / (list.rows.length * MASTERY_RS)) * 100;
 }
 
-/* The global-actions zone — sync and backup — flowing beneath the lists.
+/* ── Sync: one browser-wide state, one quiet door ─────────────────────────
+   Sync is global (it acts on ALL progress), so it no longer renders under
+   every domain's list panel. Its home is the footer anchor; tapping opens
+   this panel in wd-dialog clothing. The standing lines are STATEMENTS, not
+   instructions - the how-to lives behind the "?" (same pattern as the
+   import "?": a dialog, via wdConfirm with HTML).
 
-   It is GLOBAL, not per-list: sync connects all your progress, backup writes
-   every pool to one file. So it sits below the lists as a page-level zone, not
-   on any list row. Sync comes first because it's the median user's real want
-   (progress on their phone and laptop); backup sits below, always available —
-   never nested behind sync, because the UN-synced user is the one whose only
-   safety net is a file, so they must never have to find it inside sync's
-   controls. Rendered fresh each open so sync's connected/disconnected state is
-   never stale. */
-function renderGlobalZone(){
-  const host = document.getElementById("browserGlobalZone");
-  if (!host) return;
-  host.innerHTML = "";
+   States (per BROWSER, keyed on the stored sync key):
+     A-early : no key, no progress yet  → line + [I have a key] + ?
+               (a returning user on a fresh device needs the key door
+               BEFORE any deck; Turn-on would protect an empty pool —
+               "the server stores learners, not passers-by")
+     A-full  : no key, some progress    → line + [I have a key] + ?
+                                          (4b: no Turn-on here; minting lives
+                                          in the cascade and behind About)
+     B       : key present              → "Sync is on." + key + [Copy]
+                                          [Turn off sync] + ?           */
 
-  // ── Sync (primary) ──
-  const syncHost = document.createElement("div");
-  syncHost.className = "sync-section gz-first";   // gz-first suppresses the
-  host.appendChild(syncHost);                     // section-title's own border,
-  renderSyncSection(syncHost);                    // since the zone already has one
-
-  // ── Backup (secondary, always available) ──
-  const backup = document.createElement("div");
-  backup.className = "gz-backup";
-  backup.innerHTML =
-    '<h2 class="section-title">Backup</h2>' +
-    '<div class="gz-backup-actions">' +
-      '<button class="list-btn js-export-scores" type="button">↓ Back up scores</button>' +
-      '<button class="list-btn js-import-scores" type="button">↑ Restore from file</button>' +
-      '<button class="gz-info-toggle" type="button" aria-label="About backups">?</button>' +
-    '</div>' +
-    '<p class="gz-backup-info" hidden>A backup file is the only true snapshot of ' +
-      'your progress. Connecting devices keeps them in step, but if you ever ' +
-      'clear all of them, a file is what brings your progress back.</p>' +
-    '<div class="scores-msg"></div>';
-  host.appendChild(backup);
-
-  const toggle = backup.querySelector(".gz-info-toggle");
-  const info   = backup.querySelector(".gz-backup-info");
-  toggle.addEventListener("click", () => { info.hidden = !info.hidden; });
+function hasAnyProgress(){
+  try {
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith("wd_rs_")){
+        const map = JSON.parse(localStorage.getItem(k)) || {};
+        for (const id in map){ if (map[id] !== 0) return true; }
+      }
+    }
+  } catch {}
+  return false;
 }
 
+/* (v26.41: a second, never-rendered help text once lived here — removed;
+   the panel's ? renders _renderSyncHelp below, the single source.) */
+
+/* ── Sync panel state machine ────────────────────────────────────────────
+   One stable frame; content switches between four states:
+     main        — sync on or off (the default view)
+     help        — About sync text
+     confirm-off — Turn off sync? confirmation
+     enter-key   — I have a key input
+   No external dialogs (wdConfirm/wdPrompt) are used from within the panel.
+   ──────────────────────────────────────────────────────────────────────── */
+
+let _syncState = "main";
+
+/* The panel's sub-states (help, confirm-off, enter-key) are one layer deeper
+   than main, so Back returns to main - the same move as the panel's own Back
+   button. They never nest, so one entry covers all three. */
+function setSyncState(s){
+  if (s !== "main") _linkNotice = "";   // 3b: any step away from main ends the notice
+  _syncState = s;
+  renderSyncPanelBody();
+  if (s === "main") navClosed("syncstate");
+  else if (!navStack.some(l => l.kind === "syncstate")){
+    navOpen("syncstate", () => setSyncState("main"));
+  }
+}
+
+function renderSyncPanelBody(){
+  const body = document.getElementById("syncPanelBody");
+  if (!body) return;
+  body.innerHTML = "";
+
+  if (_syncState === "help")        return _renderSyncHelp(body);
+  if (_syncState === "confirm-off") return _renderSyncConfirmOff(body);
+  if (_syncState === "confirm-new") return _renderSyncConfirmNew(body);
+  if (_syncState === "enter-key")   return _renderSyncEnterKey(body);
+  if (_syncState === "key-collision") return _renderSyncKeyCollision(body);
+  if (_syncState === "claim-failed")  return _renderSyncClaimFailed(body);
+  if (_syncState === "show-qr")       return _renderSyncShowQr(body);
+  _renderSyncMain(body);
+}
+
+function _syncBtn(label, cls, onClick, extraStyle){
+  const b = document.createElement("button");
+  b.className = "wd-dialog-btn" + (cls ? " " + cls : "");
+  b.type = "button";
+  b.textContent = label;
+  if (extraStyle) b.style.cssText = extraStyle;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function _syncActions(...btns){
+  const d = document.createElement("div");
+  d.className = "wd-dialog-actions";
+  btns.forEach(b => d.appendChild(b));
+  return d;
+}
+
+function _syncTitle(text){
+  const h = document.createElement("h2");
+  h.className = "section-title";
+  h.textContent = text;
+  return h;
+}
+
+function _syncDesc(text){
+  const p = document.createElement("p");
+  p.className = "setting-desc";
+  p.textContent = text;
+  return p;
+}
+
+function _syncPane(root){
+  const d = document.createElement("div");
+  d.className = "sync-pane";
+  root.appendChild(d);
+  return d;
+}
+
+function _renderSyncMain(root){
+  const key = getSyncKey();
+  const pane = _syncPane(root);
+
+  if (key){
+    pane.appendChild(_syncTitle("Sync is on - this is your key:"));   // one line fewer: the PIN line must fit
+    const center = document.createElement("div");
+    center.className = "sync-center";
+    const keyBox = document.createElement("div");
+    keyBox.className = "sync-key";
+    keyBox.textContent = formatSyncKey(key);
+    center.appendChild(keyBox);
+    // PIN line only when there is no link notice — the notice IS the news then
+    if (_linkNotice){
+      const n = document.createElement("p");
+      n.className = "setting-desc";
+      n.style.cssText = "color:#c44;margin-top:8px;font-weight:700";
+      n.textContent = _linkNotice;
+      center.appendChild(n);
+    } else {
+      const pin = document.createElement("p");
+      pin.className = "setting-desc";
+      pin.style.cssText = "margin-top:8px";
+      const pinB = document.createElement("b");
+      pinB.textContent = "Treat your key like a PIN: keep it safe, and never leave it on a device that isn't yours.";
+      pin.appendChild(pinB);
+      center.appendChild(pin);
+    }
+    pane.appendChild(center);
+
+    const copy = _syncBtn("Copy key", "wd-dialog-ok", async () => {
+      try {
+        await navigator.clipboard.writeText(formatSyncKey(key));
+        copy.textContent = "Copied";
+      } catch { copy.textContent = "Select it above"; }
+      setTimeout(() => { copy.textContent = "Copy key"; }, 1600);
+    }, "min-width:100px");
+    root.appendChild(_syncActions(
+      copy,
+      _syncBtn("Show QR", "", () => setSyncState("show-qr")),
+      _syncBtn("?", "wd-dialog-cancel", () => setSyncState("help"))   // v26.83: Turn off sync moved to About → Devices & your key
+    ));
+  } else {
+    pane.appendChild(_syncTitle("Sync is off"));
+    pane.appendChild(_syncDesc("Your progress lives only in this browser."));
+
+    const err = document.createElement("p");
+    err.className = "setting-desc";
+    err.style.cssText = "color:#c44;margin-top:6px;min-height:1.2em";
+    pane.appendChild(err);
+
+    // 4b: one loud door. Minting is NOT offered here any more — the cascade
+    // offers it after the first deck (and once more at 1000 points), and About
+    // keeps a door for the rare seeker. Nobody gets nudged toward a second key
+    // from a panel they opened out of curiosity. (R1's guard dialog survives
+    // behind the About door.)
+    root.appendChild(_syncActions(
+      _syncBtn("I have a key", "wd-dialog-ok", () => setSyncState("enter-key")),
+      _syncBtn("?", "wd-dialog-cancel", () => setSyncState("help"))
+    ));
+  }
+}
+
+function _renderSyncHelp(root){
+  const pane = _syncPane(root);
+  pane.appendChild(_syncTitle("Your sync key keeps your progress safe"));
+  // ONE scroll wrapper, plain paragraphs inside (F9). Title carries the
+  // headline so the body stays short enough to never scroll. Michel's
+  // wording, v26.43; the second paragraph is the only instruction, hence bold.
+  const wrap = document.createElement("div");
+  wrap.className = "sync-scroll";
+  const p1 = document.createElement("p");
+  p1.className = "setting-desc";
+  p1.textContent =
+    "It's a random key, no account needed. Enter it on another browser or " +
+    "device and both share the same progress, possibly with a small delay.";
+  const p2 = document.createElement("p");
+  p2.className = "setting-desc";
+  const b = document.createElement("b");
+  b.textContent =
+    "Lose your phone or wipe your browser? Your key restores everything. " +
+    "Keep it somewhere safe, like a PIN.";
+  p2.appendChild(b);
+  wrap.appendChild(p1);
+  wrap.appendChild(p2);
+  pane.appendChild(wrap);
+  root.appendChild(_syncActions(_syncBtn("Back", "", () => setSyncState("main"))));
+}
+
+function _renderSyncConfirmNew(root){
+  const pane = _syncPane(root);
+  pane.appendChild(_syncTitle("Create a new key?"));
+  pane.appendChild(_syncDesc(
+    "This makes a brand-new key, starting from the progress in this " +
+    "browser. Already have a key - from another device, or from " +
+    "before? Use it instead: a new key can\u2019t see an old key\u2019s progress."
+  ));
+  const err = document.createElement("p");
+  err.className = "setting-desc";
+  err.style.cssText = "color:#c44;margin-top:6px;min-height:1.2em";
+  pane.appendChild(err);
+
+  const create = _syncBtn("Create new key", "wd-dialog-cancel", async () => {   // 4b: dim — the costly mistake
+    create.textContent = "Creating...";
+    create.disabled = true;
+    await doCreateKey();   // success and both failures each paint their own state
+  });
+
+  root.appendChild(_syncActions(
+    _syncBtn("I have a key", "wd-dialog-ok", () => setSyncState("enter-key")),
+    create,
+    _syncBtn("Cancel", "wd-dialog-cancel", () => setSyncState("main"))
+  ));
+}
+
+function _renderSyncConfirmOff(root){
+  const pane = _syncPane(root);
+  const key = getSyncKey() || "";
+  pane.appendChild(_syncTitle("Turn off sync?"));
+  const center = document.createElement("div");
+  center.className = "sync-center";
+  center.appendChild(_syncDesc(
+    "This device stops syncing. Nothing is deleted - your scores stay here. " +
+    "To reconnect later you will need your key:"
+  ));
+  // 4b: the shared-device exit nudges you to take your key with you.
+  const keyBox = document.createElement("div");
+  keyBox.className = "sync-key";
+  keyBox.textContent = key ? formatSyncKey(key) : "";
+  center.appendChild(keyBox);   // shown, selectable; Copy lives on the main panel (a second button clipped here)
+  pane.appendChild(center);
+  root.appendChild(_syncActions(
+    _syncBtn("Keep sync on", "wd-dialog-ok", () => setSyncState("main")),
+    _syncBtn("Turn off", "wd-dialog-cancel", () => {
+      clearSyncKey();
+      stopSyncPullTimer();
+      renderSyncAnchor();
+      setSyncState("main");
+    })
+  ));
+}
+
+function _renderSyncEnterKey(root){
+  const pane = _syncPane(root);
+  pane.appendChild(_syncTitle("Enter your key"));
+  const center = document.createElement("div");
+  center.className = "sync-center";
+  center.appendChild(_syncDesc("Enter your key (dash is optional):"));
+
+  const inp = document.createElement("input");
+  inp.className = "wd-dialog-input";
+  inp.type = "text";
+  inp.placeholder = "e.g. 7K2M-9XQF";
+  if (_prefillKey){ inp.value = formatSyncKey(_prefillKey); _prefillKey = ""; }   // 3b: from a scanned link; Connect still required
+  inp.setAttribute("autocomplete", "off");
+  inp.setAttribute("spellcheck", "false");
+  center.appendChild(inp);
+
+  // 4b: THE moment a person knows whose device this is — say it here, once,
+  // right under the field (the pane clips what falls below its fixed height).
+  const pin = document.createElement("p");
+  pin.className = "setting-desc";
+  pin.style.cssText = "margin-top:6px";
+  const pinB = document.createElement("b");
+  pinB.textContent = "Treat your key like a PIN: keep it safe, and never leave it on a device that isn't yours.";
+  pin.appendChild(pinB);
+  center.appendChild(pin);
+  const err = document.createElement("p");
+  err.className = "setting-desc";
+  err.style.cssText = "color:#c44;margin-top:4px;min-height:1em";
+  center.appendChild(err);
+  pane.appendChild(center);
+
+  const connect = _syncBtn("Connect", "wd-dialog-ok", async () => {
+    const raw = normalizeSyncKey(inp.value);
+    if (!isValidSyncKey(raw)){
+      err.textContent = "A Latijn key is 8 characters, like 7K2M-9XQF. Check it and try again.";
+      return;
+    }
+    connect.textContent = "Connecting...";
+    connect.disabled = true;
+    /* THE GATE (v26.35). Look before touching: nothing installs the key until
+       the cloud has been seen. Three refusals, in order — offline (adoption is
+       the one act that needs the server), unknown key (a typo must not mint a
+       phantom), big delta (ask first, one state deeper, two doors). */
+    let peek;
+    try {
+      peek = await fetchCloud(raw);
+    } catch {
+      err.textContent = "Can't reach the sync server - try again when you're online.";
+      connect.textContent = "Connect";
+      connect.disabled = false;
+      return;
+    }
+    if (peek && peek.empty){
+      err.textContent = "This key doesn't exist. Check the 8 characters and try again.";
+      connect.textContent = "Connect";
+      connect.disabled = false;
+      return;
+    }
+    if (deltaAgainstCloud(peek.progress) > SYNC_DELTA_ASK){
+      _pendingAdopt = { key: raw, data: peek };
+      setSyncState("key-collision");
+      return;
+    }
+    adoptKey(raw, peek);
+  });
+
+  root.appendChild(_syncActions(
+    connect,
+    _syncBtn("Cancel", "", () => setSyncState("main"))
+  ));
+
+  setTimeout(() => inp.focus(), 50);
+}
+
+/* The one place a key enters this browser (v26.35). Same tail the old
+   Connect had, order unchanged: install, apply, forced push up, timers,
+   paint. Every door that says yes ends here. */
+let _pendingAdopt = null;
+
+function adoptKey(key, data){
+  setSyncKey(key);
+  applyCloud(data, "merge");
+  // Merged state goes back up, forced: this browser's own progress must
+  // reach the other device, and no deck was finished to raise the flag.
+  syncPush(true);
+  startSyncPullTimer();
+  renderSyncAnchor();
+  if (browserPane === "lists") renderBrowser();
+  renderBrowserRail();
+  // You typed this key seconds ago — echoing it back is noise (F8). The
+  // green footer and the arriving progress ARE the confirmation. "main"
+  // stays queued for the next time the panel opens.
+  setSyncState("main");
+  hideSyncPanel();
+}
+
+function _renderSyncClaimFailed(root){
+  const pane = _syncPane(root);
+  pane.appendChild(_syncTitle("Couldn't set up sync"));
+  pane.appendChild(_syncDesc(
+    _claimFail === "offline"
+      ? "You appear to be offline. Your progress is untouched - try again when you're online."
+      : "The key server refused just now. Your progress is untouched - try again in a moment."
+  ));
+  const retry = _syncBtn("Try again", "wd-dialog-ok", async () => {
+    retry.textContent = "Creating...";
+    retry.disabled = true;
+    await doCreateKey();
+  });
+  root.appendChild(_syncActions(
+    retry,
+    _syncBtn("Cancel", "wd-dialog-cancel", () => setSyncState("main"))
+  ));
+}
+
+function _renderSyncKeyCollision(root){
+  const pane = _syncPane(root);
+  const p = _pendingAdopt;
+  if (!p){ setSyncState("enter-key"); return; }
+  const n = deltaAgainstCloud(p.data.progress);
+  pane.appendChild(_syncTitle("Shared computer, or not your device?"));
+  const warn = document.createElement("p");
+  warn.className = "setting-desc";
+  const warnB = document.createElement("b");
+  warnB.textContent = "Use a private/incognito window instead - that way each person's progress stays safe.";
+  warn.appendChild(warnB);
+  pane.appendChild(warn);
+  pane.appendChild(_syncDesc(
+    n + " cards here score higher than the key does. Merging means every card " +
+    "will receive the highest score here and in the key."
+  ));
+
+  const merge = _syncBtn("Merge both", "wd-dialog-ok", async () => {
+    const q = _pendingAdopt;
+    if (!q) return;
+    merge.textContent = "Merging...";
+    merge.disabled = true;
+    // The door acts on the cloud as it IS, not as it was when the dialog
+    // opened: one fresh look. If that look fails, the snapshot serves —
+    // merge only goes up, so stale can never destroy, only lag.
+    let fresh = q.data;
+    try { fresh = await fetchCloud(q.key); } catch {}
+    _pendingAdopt = null;
+    adoptKey(q.key, fresh);
+  });
+
+  root.appendChild(_syncActions(
+    merge,
+    _syncBtn("Cancel", "wd-dialog-cancel", () => {
+      _pendingAdopt = null;
+      setSyncState("enter-key");
+    })
+  ));
+}
+
+/* ── 3b: QR on the panel, link on arrival ────────────────────────────────
+   The laptop SHOWS a QR that is just a link with the key in it; the phone
+   SCANS it with its ordinary camera app (no in-app scanner — that is what
+   Firefox and Safari lack, not display). The link opens Latijn with the key
+   already typed into "Enter your key". Nothing is adopted by a link: Connect
+   still has to be tapped, the PIN line is right there, the gate still runs.
+   Comfort, never a back door. And a device that already has a key takes no
+   other key from a link — scanning a friend's QR must not pour your progress
+   into their key. */
+let _prefillKey  = "";
+let _linkNotice  = "";
+
+function _renderSyncShowQr(root){
+  const pane = _syncPane(root);
+  const key = getSyncKey();
+  pane.appendChild(_syncTitle("Scan with your phone's camera"));
+  const center = document.createElement("div");
+  center.className = "sync-center";
+  center.style.cssText = "align-items:center";
+  const box = document.createElement("div");
+  box.style.cssText = "background:#fff;padding:6px;border-radius:8px;display:inline-block;line-height:0";
+  try {
+    const qr = qrcode(0, "M");
+    qr.addData("https://worddock.app/?key=" + key);
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0 });
+  } catch {
+    box.textContent = formatSyncKey(key || "");
+  }
+  center.appendChild(box);
+  const d = _syncDesc("It opens Latijn with your key ready - you still tap Connect there.");
+  d.style.cssText = "margin-top:8px;text-align:center";
+  center.appendChild(d);
+  pane.appendChild(center);
+  root.appendChild(_syncActions(_syncBtn("Back", "", () => setSyncState("main"))));
+}
+
+/* On arrival with ?key=... in the address: take the key out of the URL at
+   once (a key in the address bar is a PIN on a sticky note), then route by
+   one rule. Empty device → Enter your key, prefilled. Keyed device → the
+   panel opens on its own key with a plain sentence; switching keys is a
+   deliberate two-step (Turn off sync, then I have a key), never a link. */
+function handleKeyLink(){
+  let raw = "";
+  try {
+    const u = new URL(location.href);
+    raw = normalizeSyncKey(u.searchParams.get("key") || "");
+    if (u.searchParams.has("key")){
+      u.searchParams.delete("key");
+      history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+    }
+  } catch { return; }
+  if (!isValidSyncKey(raw)) return;
+  if (getSyncKey()){
+    _linkNotice = "This device is already connected to a key. To switch keys, turn off sync first.";
+    showSyncPanel();                    // paints "main" itself, notice included
+    return;
+  }
+  _prefillKey = raw;
+  showSyncPanel();
+  setSyncState("enter-key");
+}
+
+/* ── Consent cascade & shared key flows ──────────────────────────────────
+   Asked at most TWICE, ever (wd_sync_asked: "" → "1" → "2"), both times at
+   a deck completion — the one moment progress is real and fresh:
+     ask #1: the first completed deck, no key yet;
+     ask #2 (final): still no key, and total positive RS ≥ 1000 — real
+             stakes now exist. After that: eternal silence; the sync panel
+             remains for whoever changes their mind. No clocks anywhere —
+             the threshold is earned points, nothing else.                */
+
+const SYNC_ASKED_KEY = "wd_sync_asked";
+const FINAL_ASK_RS   = 1000;
+
+function totalPositiveRS(){
+  let sum = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith("wd_rs_")){
+        const map = JSON.parse(localStorage.getItem(k)) || {};
+        for (const id in map){ if (map[id] > 0) sum += map[id]; }
+      }
+    }
+  } catch {}
+  return sum;
+}
+
+async function claimFreshKey(){
+  // Claim at the server so two users can never share a key. The client
+  // generates offline, so a collision is possible in principle; this makes
+  // it impossible in fact.
+  // Network failure THROWS through to the caller — since v26.37 the two
+  // honest reasons get two honest sentences (offline vs server refusal).
+  let fresh = null;
+  for (let attempt = 0; attempt < 5 && !fresh; attempt++){
+    fresh = await syncClaim(generateSyncKey());
+  }
+  return fresh;
+}
+
+/* One create routine for every door that mints (v26.37). Failure is a
+   STATE, not a red whisper: the panel shows what happened and offers
+   Try again — no menu echo the user has no business with. */
+let _claimFail = "server";   // "offline" | "server" - why the last mint failed
+
+async function doCreateKey(){
+  let fresh = null;
+  try {
+    fresh = await claimFreshKey();
+  } catch {
+    _claimFail = "offline";
+    setSyncState("claim-failed");
+    return false;
+  }
+  if (!fresh){
+    _claimFail = "server";
+    setSyncState("claim-failed");
+    return false;
+  }
+  setSyncKey(fresh);
+  // Forced: a brand-new key must carry the progress this browser already
+  // holds, or the second device would join an empty row.
+  syncPush(true);
+  startSyncPullTimer();
+  renderSyncAnchor();
+  setSyncState("main");
+  return true;
+}
+
+/* Step 2 of the cascade — and the ONE key-shown dialog everywhere (the
+   section's Turn-on uses it too): key big, Copy present, one keep-it-safe
+   line. Pairing instructions live in the "?" dialog and the key-entry
+   prompt, not here. */
+async function turnOnSyncFlow(){
+  let fresh = null, offline = false;
+  try {
+    fresh = await claimFreshKey();
+  } catch {
+    offline = true;
+  }
+  if (!fresh){
+    await wdConfirm(
+      "Couldn't set up sync",
+      (offline
+        ? "You appear to be offline. Your progress is untouched - try again when you're online."
+        : "The key server refused just now. Your progress is untouched - try again in a moment."),
+      "OK", null
+    );
+    return false;
+  }
+  setSyncKey(fresh);
+  // Forced: the gate would refuse this one (no deck finished since the flag
+  // was last cleared), but a brand-new key must carry the progress this
+  // browser already holds, or the second device would join an empty row.
+  syncPush(true);
+  startSyncPullTimer();
+  renderSyncAnchor();
+  showSyncPanel();
+  return true;
+}
+
+/* Step 1 (and the final ask): one question, three doors. The yes-door is
+   first and green; "I have a key" is a quiet line, not a third button —
+   it answers a different question ("I'm not new"). */
+function showConsentDialog(finalAsk){
+  return new Promise(resolve => {
+    const bd = document.createElement("div");
+    bd.className = "wd-dialog-backdrop open";
+    const bodyTop = finalAsk
+      ? "You\u2019ve built real progress. Latijn can keep it safe in the " +
+        "cloud - anonymously: just numbers under a random key. No " +
+        "account, no email, no name."
+      : "Latijn can store your scores in the cloud - anonymously: " +
+        "just numbers under a random key. No account, no email, no name. " +
+        "Then a lost phone or a cleared browser can\u2019t take your progress.";
+    const bodyTail = finalAsk
+      ? '<div class="wd-dialog-body">We won\u2019t ask again. Sync stays ' +
+        'available under <b>Sync</b> at the bottom of the browse page.</div>'
+      : "";
+    bd.innerHTML =
+      '<div class="wd-dialog">' +
+        '<div class="wd-dialog-title">' +
+          (finalAsk ? "Keep your progress safe?" : "Keep your progress safe?") +
+        '</div>' +
+        '<div class="wd-dialog-body">' + bodyTop + '</div>' + bodyTail +
+        '<div class="wd-dialog-body" style="margin-top:6px;opacity:.8">Not your own device? ' +
+          'Use a private/incognito window instead - otherwise other users\u2019 scores could get mixed up.</div>' +
+        '<div class="wd-dialog-actions" style="flex-wrap:wrap">' +
+          '<button class="wd-dialog-btn wd-dialog-ok" type="button" data-act="yes">Yes, keep it safe</button>' +
+          '<button class="wd-dialog-btn" type="button" data-act="havekey">I already have a key</button>' +
+          '<button class="wd-dialog-btn wd-dialog-cancel" type="button" data-act="later">Not now</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(bd);
+    function done(v){ bd.remove(); resolve(v); }
+    bd.querySelector('[data-act="yes"]').addEventListener("click", () => done("yes"));
+    bd.querySelector('[data-act="later"]').addEventListener("click", () => done("later"));
+    bd.querySelector('[data-act="havekey"]').addEventListener("click", () => done("havekey"));
+    bd.addEventListener("click", (e) => { if (e.target === bd) done("later"); });
+  });
+}
+
+async function maybeAskToKeepSafe(){
+  if (getSyncKey()) return;                          // already protected
+  let asked = "";
+  try { asked = localStorage.getItem(SYNC_ASKED_KEY) || ""; } catch {}
+  if (asked === "2") return;                         // eternal silence
+  const finalAsk = asked === "1";
+  if (finalAsk && totalPositiveRS() < FINAL_ASK_RS) return;
+
+  const choice = await showConsentDialog(finalAsk);
+  const next = finalAsk ? "2" : "1";
+  try { localStorage.setItem(SYNC_ASKED_KEY, next); } catch {}
+  if (choice === "yes")          await turnOnSyncFlow();
+  else if (choice === "havekey"){ showSyncPanel(); setSyncState("enter-key"); }
+  // "later": nothing — the anchor and panel remain.
+}
+
+function ensureSyncPanel(){
+  let bd = document.getElementById("syncPanelBackdrop");
+  if (bd) return bd;
+  bd = document.createElement("div");
+  bd.className = "wd-dialog-backdrop";
+  bd.id = "syncPanelBackdrop";
+  bd.hidden = true;
+  bd.innerHTML = '<div class="wd-dialog">' +
+    '<button type="button" id="syncPanelClose" aria-label="Close">\u00d7</button>' +
+    '<div id="syncPanelBody"></div>' +
+    '</div>';
+  document.body.appendChild(bd);
+  bd.addEventListener("click", (e) => { if (e.target === bd) hideSyncPanel(); });
+  bd.querySelector("#syncPanelClose").addEventListener("click", hideSyncPanel);
+  return bd;
+}
+function showSyncPanel(){
+  const bd = ensureSyncPanel();
+  _syncState = "main";
+  renderSyncPanelBody();
+  bd.hidden = false;
+  bd.classList.add("open");
+  navOpen("sync", hideSyncPanel);       // nav: Back closes the panel
+}
+function hideSyncPanel(){
+  _linkNotice = "";                     // 3b: a link notice lives for one panel visit
+  const bd = document.getElementById("syncPanelBackdrop");
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.hidden = true;
+  navClosed("sync");                    // drops any sub-state entry with it
+}
+
+/* The footer anchor: one quiet line of truth. */
+function renderSyncAnchor(){
+  const a = document.getElementById("syncAnchor");
+  if (!a) return;
+  const on = !!getSyncKey();
+  const pending = on && syncIsDirty();   // 2c: amber while a push is owed
+  a.innerHTML = '<span class="sync-dot' + (on ? ' on' : '') + (pending ? ' pending' : '') + '"></span>' +
+    (on ? "Sync is on" : "Sync is off");
+}
+
+let filterPanelOpen = false;
+let filterDraft = null;        // the panel's working copy while open
+
+function renderFilterDoor(){
+  const f = getFilter(browserDomain);
+  const lists = listsInDomain(browserDomain);
+  $filterDoor.hidden = !lists.length;
+  $filterDoor.classList.toggle("on", !!f);
+  $filterDoor.textContent = f ? "Filter: " + filterSummary(f) : "Filter: all cards";
+  $filterDoor.setAttribute("aria-expanded", filterPanelOpen ? "true" : "false");
+}
+
+/* The panel: four rows of chips with counts over the whole domain, a live
+   match count, Apply and Show all. Counts are the discipline — a typo shows
+   up as its own chip with a count of 1. */
+function renderFilterPanel(){
+  $filterPanel.hidden = !filterPanelOpen;
+  if (!filterPanelOpen) return;
+  const rows = domainRows(browserDomain);
+  if (!filterDraft) filterDraft = getFilter(browserDomain) || emptyFilter();
+  $filterPanel.innerHTML = "";
+  for (const axis of FILTER_AXES){
+    const counts = new Map();   // folded → { label, ids:Set }
+    for (const r of rows){
+      for (const v of rowValues(r, axis.key)){
+        const raw = axis.key === "L" ? r.L : axis.key === "CAT" ? r.CAT :
+                    axis.key === "SUBCAT" ? tagsOf(r.SUBCAT).find(t => fold(t) === v) :
+                    tagsOf(r._preserved && r._preserved.NOTE).find(t => fold(t) === v);
+        const e = counts.get(v) || { label: String(raw || v).trim(), ids: new Set() };
+        e.ids.add(r.ID); counts.set(v, e);
+      }
+    }
+    if (!counts.size) continue;   // an axis nobody filled stays out of sight
+    const values = [...counts.entries()].map(([v,e]) => [v, { label:e.label, n:e.ids.size }]);
+    if (axis.key === "L") values.sort((a,b) => a[0] < b[0] ? -1 : 1);
+    else values.sort((a,b) => b[1].n - a[1].n || (a[0] < b[0] ? -1 : 1));
+
+    const line = document.createElement("div"); line.className = "filter-axis";
+    const name = document.createElement("div"); name.className = "filter-axis-name"; name.textContent = axis.label;
+    const chips = document.createElement("div"); chips.className = "filter-chips";
+    const mk = (label, value, n) => {
+      const b = document.createElement("button"); b.type = "button";
+      b.className = "filter-chip" + (filterDraft[axis.key] === value ? " sel" : "") + (value === null ? " all" : "");
+      b.textContent = label;
+      if (n !== null){ const sp = document.createElement("span"); sp.className = "n"; sp.textContent = n; b.appendChild(sp); }
+      b.addEventListener("click", () => { filterDraft[axis.key] = value; renderFilterPanel(); });
+      chips.appendChild(b);
+    };
+    mk("all", null, null);
+    for (const [v, e] of values) mk(e.label, v, e.n);
+    line.appendChild(name); line.appendChild(chips);
+    $filterPanel.appendChild(line);
+  }
+
+  const n = domainMatchCount(browserDomain, filterIsEmpty(filterDraft) ? null : filterDraft);
+  const foot = document.createElement("div"); foot.className = "filter-foot";
+  const count = document.createElement("div");
+  count.className = "filter-count" + (n === 0 ? " zero" : "");
+  count.textContent = filterIsEmpty(filterDraft) ? "All " + domainCardCount(browserDomain) + " cards"
+                    : (n === 0 ? "No cards match" : n + " card" + (n === 1 ? "" : "s") + " match");
+  const btns = document.createElement("div"); btns.style.display = "flex"; btns.style.gap = "8px";
+  const all = document.createElement("button"); all.type = "button";
+  all.className = "wd-dialog-btn wd-dialog-cancel"; all.textContent = "Show all";
+  all.addEventListener("click", () => applyFilter(emptyFilter()));
+  const apply = document.createElement("button"); apply.type = "button";
+  apply.className = "wd-dialog-btn wd-dialog-ok"; apply.textContent = "Apply";
+  apply.addEventListener("click", () => {
+    if (n === 0){ setListMessage("No cards match this filter - loosen a row first.", "error"); return; }
+    applyFilter(filterDraft);
+  });
+  btns.appendChild(all); btns.appendChild(apply);
+  foot.appendChild(count); foot.appendChild(btns);
+  $filterPanel.appendChild(foot);
+}
+
+/* Applying rebuilds the deck only when the studied list is in this domain.
+   RS writes only at deck completion, so an unfinished deck loses nothing
+   persistent - but it does restart, and the person is told. */
+async function applyFilter(f){
+  const domain = browserDomain;
+  const studiedHere = (domain === DOMAIN_RUNTIME);
+  const midDeck = studiedHere && deckScore > 0 && !deckDone;
+  if (midDeck){
+    const go = await wdConfirm(filterIsEmpty(f) ? "Show all cards?" : "Apply this filter?",
+      "Your current deck in " + domainDisplayName(domain) + " restarts with the new selection.",
+      filterIsEmpty(f) ? "Show all" : "Apply", "Keep deck");
+    if (!go) return;
+  }
+  setFilter(domain, f);
+  filterPanelOpen = false;
+  filterDraft = null;
+  // The studied list may hold none of the selection (a teacher's tags live in
+  // his copy, not in Full). Then the deck is left alone and the person is
+  // pointed at the rows, where the list that matches is the one not dimmed.
+  const noneHere = studiedHere && !filterIsEmpty(f) && filteredRows(ALL, f).length === 0;
+  if (studiedHere && !noneHere) initDeck();
+  setListMessage(
+    filterIsEmpty(f) ? "Filter removed - all cards."
+    : noneHere ? "Filter on: " + filterSummary(f) + " - no matching cards in \u201C" + activeListName + "\u201D; choose a list below."
+    : "Filter on: " + filterSummary(f), noneHere ? "error" : "success");
+  renderBrowserLists();
+}
+
+let filterPanelDomain = null;  // the panel belongs to one domain; leaving closes it
 function renderBrowserLists(){
-  $browserDetailHead.textContent = "Lists in " + domainDisplayName(browserDomain);
+  $browserDetailTitle.textContent = "Lists in " + domainDisplayName(browserDomain);
+  if (filterPanelDomain !== browserDomain){ filterPanelOpen = false; filterDraft = null; filterPanelDomain = browserDomain; }
+  const filter = getFilter(browserDomain);
+  renderFilterDoor();
+  renderFilterPanel();
   $browserLists.innerHTML = "";
   const lists = listsInDomain(browserDomain).sort((a,b) => {
     if (a.source === "embedded" && b.source !== "embedded") return -1;
@@ -3168,7 +4095,7 @@ function renderBrowserLists(){
     main.className = "list-row-main";
     const name = document.createElement("div");
     name.className = "list-row-name";
-    // Show the FULL identity (NL-RU_Full-List), not just the name. It repeats
+    // Show the FULL identity (NL-RU_Full), not just the name. It repeats
     // the pane header, and that redundancy is accepted deliberately: a new user
     // hasn't yet internalised the left-pane/right-pane structure, and seeing the
     // whole name teaches the naming convention they must use when exporting.
@@ -3182,6 +4109,17 @@ function renderBrowserLists(){
     const covStr = (cov !== null) ? " · " + formatCoverage(cov) : "";
     meta.textContent = list.rows.length + " lemmas" + covStr +
       (list.listId === activeListId ? " · studying now" : "");
+    // Phase 2: with a filter on, each list shows its share; a list with none
+    // dims, and studying it is refused (below) rather than handed an empty deck.
+    let inFilter = null;
+    if (filter){
+      inFilter = filteredRows(list.rows, filter).length;
+      const sp = document.createElement("span");
+      sp.className = "in-filter";
+      sp.textContent = " · " + inFilter + " in filter";
+      meta.appendChild(sp);
+      if (inFilter === 0) row.classList.add("filtered-out");
+    }
     main.appendChild(name);
     main.appendChild(meta);
 
@@ -3204,7 +4142,7 @@ function renderBrowserLists(){
     dl.addEventListener("mouseleave", cueOff);
     dl.addEventListener("click", (e) => { e.stopPropagation(); exportList(list.listId); });
     actions.appendChild(dl);
-    // Delete — only on the user's own imported lists. The curated Full-List
+    // Delete — only on the user's own imported lists. The curated Full
     // re-fetches on every boot, so "deleting" it would be theatre.
     if (list.source === "imported"){
       const del = document.createElement("button");
@@ -3229,8 +4167,17 @@ function renderBrowserLists(){
         closeAllSurfaces();
         return;
       }
+      if (inFilter === 0){
+        const showAll = await wdConfirm(
+          "No cards in \u201C" + list.name + "\u201D match your filter",
+          "Filter: " + filterSummary(filter) + ". Go back to choose another list or change the filter, or show all cards to study \u201C" + list.name + "\u201D without a filter.",
+          "Show all", "Back");
+        if (!showAll) return;
+        setFilter(list.domain, null);
+        renderBrowserLists();
+      }
       // EVERY switch asks. Not because every switch destroys something, but
-      // because switching lists is the erratic behaviour WordDock exists to
+      // because switching lists is the erratic behaviour Latijn exists to
       // counter: ideally you leave a list when you have mastered it, not
       // because you drifted. A moment of deliberation is the point. It also
       // resolves a real ambiguity on touch, where there is no hover cue to say
@@ -3271,18 +4218,17 @@ function renderBrowserLists(){
     });
     $browserLists.appendChild(row);
   }
-  renderGlobalZone();   // sync + backup, flowing beneath the lists
 }
 
 // Full browser render: rail + detail. Keeps browserDomain sensible.
-/* ── About WordDock: topics as DATA ───────────────────────────────────────
+/* ── About Latijn: topics as DATA ───────────────────────────────────────
    Each entry is {id, title, html}. The rail lists every title (always, in
    order); selecting one shows its html on the right as headed prose. To add a
    section (Contact, Collaboration, References…) append an entry here — no
    layout code changes. Kept flat for now; grouping under super-headers could be
    added later without disturbing this shape. Content reuses the app's own text
    styles (.section-title, .setting-desc), so the guide reads exactly like the
-   sync/backup prose already in the browser. */
+   sync prose already in the browser. */
 /* WORDDOCK_VERSION is declared in the head script at the top of this file.
    It is shown quietly in About so the DEPLOYED build can be checked from the
    app itself (phone included), not just by viewing source. */
@@ -3291,10 +4237,10 @@ const aboutTopics = [
   { id:"idea", title:"The idea", html:
     '<h2 class="section-title gz-first">The idea</h2>' +
     '<p class="setting-desc">Learning sticks when you meet the right item at the ' +
-    'right moment — your weakest word, not a random one. WordDock keeps a running ' +
+    'right moment - your weakest word, not a random one. Latijn keeps a running ' +
     'score for every word and always builds your next deck from the ones you know ' +
     'least well. No streaks, no penalties, no pressure: just your weakest words, ' +
-    'surfaced first, until they aren\u2019t weak any more.</p>' },
+    'surfaced first, until they aren\u2019t weak any more.</p><a id="more-idea" style="font-size:11px;color:var(--counter);opacity:0.45;display:block;margin-top:16px;user-select:all">#more-idea</a>' },
 
   { id:"studying", title:"Studying", html:
     '<h2 class="section-title gz-first">Studying</h2>' +
@@ -3306,64 +4252,93 @@ const aboutTopics = [
     '<p class="setting-desc">Behind each word is a running score. At deck ' +
     'completion it rises by one if you never slipped, and falls by one or two if ' +
     'you did. That one score does three jobs at once: it tallies how well you know ' +
-    'the word, it decides which words come up next (lowest first), and \u2014 past ' +
-    'a mark of <b>10</b> \u2014 it counts the word as mastered. Nothing about time ' +
-    'enters into it: no decay, no \u201Cdays since review.\u201D</p>' },
+    'the word, it decides which words come up next (lowest first), and - past ' +
+    'a mark of <b>10</b> - it counts the word as mastered. Nothing about time ' +
+    'enters into it: no decay, no \u201Cdays since review.\u201D</p><a id="more-studying" style="font-size:11px;color:var(--counter);opacity:0.45;display:block;margin-top:16px;user-select:all">#more-studying</a>' },
 
   { id:"progress", title:"Progress &amp; mastery", html:
     '<h2 class="section-title gz-first">Progress &amp; mastery</h2>' +
     '<p class="setting-desc">Each domain and each list shows a <b>mastery ' +
-    'percentage</b> \u2014 how far you are toward knowing every word in it. A ' +
+    'percentage</b> - how far you are toward knowing every word in it. A ' +
     'list\u2019s number climbs quickly (a small set, studied daily); a whole ' +
     'domain\u2019s number is the slower, truer measure of how far through the ' +
     'subject you\u2019ve come. A word counts as mastered once its score reaches ' +
     '<b>10</b>, about ten clean recalls; 100% means every word is at mastery or ' +
-    'beyond.</p>' },
+    'beyond.</p><a id="more-progress" style="font-size:11px;color:var(--counter);opacity:0.45;display:block;margin-top:16px;user-select:all">#more-progress</a>' },
 
   { id:"domains", title:"Domains &amp; lists", html:
     '<h2 class="section-title gz-first">Domains &amp; lists</h2>' +
-    '<p class="setting-desc">A <b>domain</b> is a subject \u2014 a language pair ' +
-    'like <code>NL-RU</code>, or a field. Within it, the <b>Full-List</b> is the ' +
-    'complete set WordDock provides; your own imported files sit alongside it. ' +
+    '<p class="setting-desc">A <b>domain</b> is a subject - a language pair ' +
+    'like <code>NL-RU</code>, or a field. Within it, <b>Full</b> is the ' +
+    'complete set Latijn provides; your own imported files sit alongside it. ' +
     'Progress is shared across a whole domain, so studying any list in it builds ' +
-    'the same scores.</p>' },
+    'the same scores.</p><a id="more-domains" style="font-size:11px;color:var(--counter);opacity:0.45;display:block;margin-top:16px;user-select:all">#more-domains</a>' },
 
   { id:"ownlists", title:"Your own lists", html:
     '<h2 class="section-title gz-first">Your own lists</h2>' +
     '<p class="setting-desc">You can import an <code>.xlsx</code> file to add a ' +
     'list, or export any list to hand it to someone else. A file holds a ' +
-    'list\u2019s <b>content</b> \u2014 its words and cards \u2014 never your ' +
+    'list\u2019s <b>content</b> - its words and cards - never your ' +
     'scores. For an import to be accepted it needs all of the following:</p>' +
     '<ol class="about-rules">' +
-    '<li>A sheet whose <b>cell A1 is literally <code>ID</code></b>.</li>' +
-    '<li>The <b>25 columns</b>, in order: <code>ID \u00B7 ENTRY \u00B7 CAT \u00B7 ' +
-    'CTAG \u00B7 L \u00B7 Q1 \u00B7 A1 \u00B7 \u2026 \u00B7 Q10 \u00B7 A10</code>.</li>' +
-    '<li>At least <b>10 rows</b> with <code>ID</code>, <code>Q1</code> and ' +
-    '<code>A1</code> filled.</li>' +
-    '<li>A filename shaped <b><code>DOMAIN_name.xlsx</code></b> \u2014 the domain, ' +
+    '<li>A sheet whose <b>header row is exactly these 26 columns</b>, in order - ' +
+    'so cell A1 reads <code>L</code>: <code>L \u00B7 ID \u00B7 ENTRY \u00B7 CAT \u00B7 ' +
+    'SUBCAT \u00B7 NOTE \u00B7 Q1 \u00B7 A1 \u00B7 \u2026 \u00B7 Q10 \u00B7 A10</code>.</li>' +
+    '<li>Rows with <code>ID</code>, <code>Q1</code> and <code>A1</code> filled - ' +
+    'other rows are skipped.</li>' +
+    '<li>A filename shaped <b><code>DOMAIN_name.xlsx</code></b> - the domain, ' +
     'an underscore, then your name (e.g. <code>NL-RU_holiday.xlsx</code>). The ' +
     'filename is the list\u2019s identity.</li>' +
-    '<li>Within a domain, <b>every entry needs its own ID</b> \u2014 never restart ' +
+    '<li>Within a domain, <b>every entry needs its own ID</b> - never restart ' +
     'numbering. Progress is tracked per ID, so two files both starting at ' +
-    '<code>0001</code> would make different words share scores. WordDock warns you ' +
+    '<code>0001</code> would make different words share scores. Latijn warns you ' +
     'if it spots this.</li>' +
-    '</ol>' },
+    '</ol><a id="more-ownlists" style="font-size:11px;color:var(--counter);opacity:0.45;display:block;margin-top:16px;user-select:all">#more-ownlists</a>' },
 
-  { id:"devices", title:"Devices &amp; backup", html:
-    '<h2 class="section-title gz-first">Devices &amp; backup</h2>' +
-    '<p class="setting-desc">Your scores stay on your device, in your browser. ' +
-    'Nothing leaves it unless you choose to connect another device.</p>' +
-    '<p class="setting-desc">If you study on more than one device, open <b>Sync</b> ' +
-    'and enter the same key on each. Your progress then travels between them. No ' +
-    'account, no email, no password \u2014 WordDock only ever sees the key, never ' +
-    'who you are. Connecting always raises a device to the highest progress across ' +
-    'your devices; it never lowers a score another has already earned.</p>' +
-    '<p class="setting-desc">A <b>backup file</b> is the only true snapshot of your ' +
-    'progress. Connecting devices keeps them in step, but if you ever clear the ' +
-    'data on all of them, a file is what brings your progress back.</p>' +
-    '<p class="setting-desc">Sharing a computer? Progress belongs to the browser, ' +
-    'so everyone studying in the same one shares one set of scores. A separate ' +
-    'browser profile keeps progress apart.</p>' },
+  { id:"devices", title:"Devices &amp; your key", html:
+    '<h2 class="section-title gz-first">Devices &amp; your key</h2>' +
+    '<p class="setting-desc"><b>Treat your key like a PIN: keep it safe, and never leave it on a device that isn\u2019t yours.</b></p>' +
+    '<p class="setting-desc">Your scores live in your browser, on your device. ' +
+    'Sync makes a copy in the cloud under a random key - no account, no email, no ' +
+    'password; Latijn only ever sees the key, never who you are. Enter the same ' +
+    'key on another device and both show the same progress, possibly with a small ' +
+    'delay. Scores travel in both directions: a word you struggled with on your ' +
+    'phone stays a word to repeat on your laptop.</p>' +
+    '<p class="setting-desc"><b>Your key is your way back.</b> Lose your phone or ' +
+    'wipe your browser? Enter your key on any device and your progress returns. ' +
+    'Keep it somewhere outside your devices - written down, or in a message to ' +
+    'yourself. To start over on this device, clear this site\u2019s data in your ' +
+    'browser\u2019s site settings - only Latijn is affected, nothing else.</p>' +
+    '<p class="setting-desc"><b>Shared computer?</b> The clean way: open a ' +
+    'private/incognito window, enter your key, study - close the window and nothing ' +
+    'stays behind. If that is not possible: enter your key, study, and choose ' +
+    '<b>Turn off sync</b> before you leave. That removes your key from that computer; ' +
+    'your progress is safe under your key, but a copy of the scores stays in that ' +
+    'browser. A device left connected lets the next person change your scores, and ' +
+    'Latijn cannot see that - hence the PIN rule above. Two people who share one ' +
+    'browser can also simply study in different domains: scores are kept per ' +
+    'domain, so they never touch.</p>' +
+    '<p class="setting-desc">Latijn\u2019s server is free and has a daily limit. If ' +
+    'it is ever reached, syncing pauses until the next day and your scores stay ' +
+    'safe in your browser.</p>' +
+    '<p class="setting-desc"><b>No key yet?</b> Latijn offers one after your first ' +
+    'deck. You can also create one here - but only if you are sure you do not ' +
+    'already have one: a new key cannot see an old key\u2019s progress.</p>' +
+    '<p><button type="button" class="wd-dialog-btn wd-dialog-cancel" id="aboutCreateKey">Create a key</button> ' +
+    '<button type="button" class="wd-dialog-btn wd-dialog-cancel" id="aboutTurnOff">Turn off sync on this device</button></p>' +
+    '<a id="more-devices" style="font-size:11px;color:var(--counter);opacity:0.45;display:block;margin-top:16px;user-select:all">#more-devices</a>' },
+
+  { id:"more", title:"More", html:
+    '<h2 class="section-title gz-first">More</h2>' +
+    '<p class="setting-desc">Work in progress. Each anchor below links to deeper background on the corresponding About section - methodology, spec details, academic references.</p>' +
+    '<ul class="about-rules">' +
+    '<li><a href="#more-idea">#more-idea</a> - The idea: weakest-first, RS mechanics, methodology</li>' +
+    '<li><a href="#more-studying">#more-studying</a> - Studying: deck logic, grading rules, 12-pass contract</li>' +
+    '<li><a href="#more-progress">#more-progress</a> - Progress: coverage metric, two-number principle</li>' +
+    '<li><a href="#more-domains">#more-domains</a> - Domains: shared scores, domain permanence</li>' +
+    '<li><a href="#more-ownlists">#more-ownlists</a> - Your own lists: WD26 file rules, ID rule</li>' +
+    '<li><a href="#more-devices">#more-devices</a> - Devices: sync protocol, privacy, key rotation policy</li>' +
+    '</ul>' },
 ];
 
 let aboutTopicId = aboutTopics[0].id;   // first topic auto-selected
@@ -3384,14 +4359,31 @@ function renderAbout(){
       renderAbout();
       // Mobile: selecting a topic reveals the content pane (same one-pane
       // behaviour as picking a domain reveals its lists).
+      // nav: pane layer (2 of 4) — Back returns to the topic list
       const ab = document.getElementById("aboutbrowser");
       ab.classList.add("show-detail");
       ab.classList.remove("show-rail");
+      navOpenPane(() => {
+        ab.classList.remove("show-detail");
+        ab.classList.add("show-rail");
+      });
     });
     rail.appendChild(row);
   }
   const topic = aboutTopics.find(t => t.id === aboutTopicId) || aboutTopics[0];
   content.innerHTML = topic.html;
+  // 4b: the seeker's door to minting lives here, behind R1's guard dialog.
+  const off = document.getElementById("aboutTurnOff");
+  if (off) off.addEventListener("click", () => {
+    if (!getSyncKey()) return;                       // nothing to turn off
+    showSyncPanel(); setSyncState("confirm-off");    // the honest dialog, unchanged
+  });
+  const mint = document.getElementById("aboutCreateKey");
+  if (mint) mint.addEventListener("click", () => {
+    if (getSyncKey()){ showSyncPanel(); setSyncState("main"); return; }   // already have one: show it
+    showSyncPanel();
+    setSyncState("confirm-new");
+  });
 }
 
 function renderBrowser(){
@@ -3427,7 +4419,7 @@ const $browserPaneTitle = document.getElementById("browserPaneTitle");
    number doing three jobs at once: a score (higher = more), a sort key (lower
    surfaces first in your next deck), and — past this line — a mastery signal.
    Those don't conflict; mastery is just "far enough along the same honest
-   quantity." The value is fixed and the same for everyone (stated in About WordDock),
+   quantity." The value is fixed and the same for everyone (stated in About Latijn),
    never a per-user setting — a configurable threshold would fracture what
    "mastered" means across people, the same trap as a preferences toggle. */
 const MASTERY_RS = 10;
@@ -3504,12 +4496,12 @@ function showBrowserPane(pane){
 
 /* Find IDs the incoming list reuses for a DIFFERENT word than the domain
    already knows. Compares against every list already in that domain — the
-   curated Full-List included (fetching it if it isn't loaded yet, since the
+   curated Full included (fetching it if it isn't loaded yet, since the
    check is worthless without it).
 
    The list being REPLACED is excluded: re-importing an edited version of your
    own file must not collide with itself. And a matching ID with a matching
-   word is not a clash — that's the same word, which is the whole point. */
+   word is not a clash - that's the same word, which is the whole point. */
 async function findIdClashes(incoming, domain){
   const known = new Map();     // ID -> ENTRY, as the domain already understands it
 
@@ -3553,7 +4545,7 @@ $fileInput.addEventListener("change", async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
   setListMessage("Reading " + file.name + "…");
-  const result = await parseWordDockXlsx(file);
+  const result = await parseLatijnXlsx(file);
   // reset so the same file can be re-picked
   $fileInput.value = "";
   if (!result.ok){
@@ -3579,10 +4571,10 @@ $fileInput.addEventListener("change", async (e) => {
   if (!domain){
     // No parseable domain token at all (e.g. "Copy of biology.xlsx").
     await wdConfirm(
-      "This file needs a domain in its name",
-      "Start the filename with the domain, then an underscore, then your own " +
-      "name — like NL-RU_holiday.xlsx or BIOLOGY_plants.xlsx. Rename the file " +
-      "and import it again.",
+      "This file needs a name like DOMAIN_Listname.xlsx",
+      "A filename has three parts: a DOMAIN name, an underscore, and a List name. " +
+      "Example: NL-RU_Holiday.xlsx or BIOLOGY_Chapter1.xlsx. " +
+      "Rename the file and try again.",
       "OK", null
     );
     setListMessage("");
@@ -3610,7 +4602,10 @@ $fileInput.addEventListener("change", async (e) => {
       "Replace \u201C" + list.name + "\u201D in " + domain + "?",
       domain + " already has a list with this name (" + existing.rows.length +
       " rows). Importing replaces its contents with this file's " +
-      list.rows.length + ". Your progress in " + domain + " is not affected.",
+      list.rows.length + ". Your progress in " + domain + " is not affected." +
+      (existing.listId === activeListId
+        ? " Your current deck restarts from the new content."
+        : ""),
       "Replace", "Cancel"
     );
   } else if (isCurated(domain)){
@@ -3620,16 +4615,25 @@ $fileInput.addEventListener("change", async (e) => {
       " and will share progress with the lists already there.",
       "Import", "Cancel"
     );
+  } else if (listsInDomain(domain).length){
+    // v26.88: a My domain that already holds lists is not "new". Same shape as
+    // the Catalog wording, so both kinds of domain are seen to work alike.
+    ok = await wdConfirm(
+      "Import into " + domain + "?",
+      "\u201C" + list.name + "\u201D will be added to " + domain +
+      ", one of your domains, and will share progress with the lists already there.",
+      "Import", "Cancel"
+    );
   } else {
     // A token that isn't curated. The app CANNOT tell a deliberate new domain
     // (BIOLOGY) from an accident (COPY, from "Copy_of_biology.xlsx") — only the
     // human knows. So state the consequence plainly and let them judge.
     ok = await wdConfirm(
-      domain + " isn't a WordDock domain",
-      "This list would become its own domain in MY LISTS, with its own separate " +
-      "progress. If that isn't what you meant, cancel and rename the file to " +
-      "start with the right domain — like NL-RU_holiday.xlsx.",
-      "Import into MY LISTS", "Cancel"
+      domain + " isn't a Latijn domain",
+      "Your file will be imported under a new DOMAIN called \"" + domain + "\" with list name \"" + list.name + "\". " +
+      "Every file starting with " + domain + "_ will share the same progress. " +
+      "If that isn't what you meant, cancel and rename the file.",
+      "Create DOMAIN and import", "Cancel"
     );
   }
   if (!ok){ setListMessage("Import cancelled."); return; }
@@ -3645,8 +4649,8 @@ $fileInput.addEventListener("change", async (e) => {
     const ok = await wdConfirm(
       "These IDs are already used in " + domain,
       clash.count + " ID" + (clash.count > 1 ? "s" : "") + " in this file belong to " +
-      "different words in " + domain + ". WordDock tracks progress per ID, so these " +
-      "lists would share scores wrongly — " + clash.example + ". " +
+      "different words in " + domain + ". Latijn tracks progress per ID, so these " +
+      "lists would share scores wrongly - " + clash.example + ". " +
       "Give every word in " + domain + " its own ID, or import this as a new domain.",
       "Import anyway", "Cancel"
     );
@@ -3654,6 +4658,15 @@ $fileInput.addEventListener("change", async (e) => {
   }
 
   registerList(list);                  // persists to localStorage
+
+  // (c)-rule: replacing the list you are STUDYING deals a fresh deck from
+  // the new rows at once. Not a silent discard — the Replace dialog said
+  // so, and an unfinished deck has consolidated nothing (RS writes only at
+  // deck completion). The lens must never outlive the shelf copy.
+  if (existing && list.listId === activeListId){
+    ALL = list.rows;
+    initDeck();
+  }
 
   // NOTE: importing writes NOTHING to the RS pool.
   //
@@ -3683,13 +4696,19 @@ $fileInput.addEventListener("change", async (e) => {
   renderBrowser();
 
   let msg = "Imported \u201C" + list.name + "\u201D into " + domain +
-    " \u2014 " + list.rows.length + " rows, saved in this browser. Click it to study.";
-  if (result.warnings && result.warnings.length){
-    msg += " " + result.warnings.length + " warning" +
-      (result.warnings.length > 1 ? "s" : "") + " (see console).";
-    console.warn("WordDock import warnings:", result.warnings);
-  }
+    " - " + list.rows.length + " rows, saved in this browser. Click it to study.";
   setListMessage(msg, "success");
+  if (result.warnings && result.warnings.length){
+    console.warn("Latijn import warnings:", result.warnings);
+    // 10c: a curator must SEE this, not find it in a console. Imported anyway.
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const html = "<p style='margin:0 0 8px'>The list was imported, but check this:</p>" +
+      "<ul style='margin:0;padding-left:18px'>" +
+      result.warnings.slice(0, 8).map(w => "<li>" + esc(w) + "</li>").join("") +
+      (result.warnings.length > 8 ? "<li>\u2026 and " + (result.warnings.length - 8) + " more (see console)</li>" : "") +
+      "</ul>";
+    wdConfirm("Import warnings", html, "OK", null, true);
+  }
 });
 
 async function exportList(listId){
@@ -3699,14 +4718,17 @@ async function exportList(listId){
     return;
   }
   // The user names their own copy. The curated master's reserved name
-  // (Full-List) is never offered as a prefill and never accepted, so an
+  // (Full) is never offered as a prefill and never accepted, so an
   // exported file can't collide with the curated list on re-import.
   const isFull = (list.name === FULL_LIST_NAME);
   const name = await wdPromptName(
     "Save this list as\u2026",
-    isFull
-      ? "This is the curated " + list.domain + " list. Give your copy a name."
-      : "Name your copy of \u201C" + list.name + "\u201D.",
+    (isFull
+      ? "This is " + list.domain + " Full. Give your copy a name."
+      : "Name your copy of \u201C" + list.name + "\u201D.")
+      + " Type only the name - Latijn puts " + list.domain +
+      "_ in front: the domain links this file to your " + list.domain +
+      " progress.",
     list.domain,
     isFull ? "" : list.name
   );
@@ -3723,7 +4745,7 @@ async function exportList(listId){
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setListMessage("Exported as " + filename, "success");
+    setListMessage("Your file " + filename + " is ready to be saved.", "success");
   } catch (e){
     setListMessage("Export failed: " + e.message, "error");
   }
@@ -3732,7 +4754,7 @@ async function exportList(listId){
 /* Remove one of the user's own lists.
 
    A list is a LENS; the progress lives in the domain's pool. So removing a
-   slice of a curated domain destroys nothing — the words are in the Full-List,
+   slice of a curated domain destroys nothing — the words are in the Full,
    the scores are in wd_rs_<DOMAIN>, and re-importing the same slice rejoins
    both. But an UNCURATED list's rows exist only in this browser, and its pool
    belongs to that domain alone — so when its last list goes, the pool goes
@@ -3754,15 +4776,15 @@ async function deleteList(listId){
   // deleted" read as if the deed were done. Say what the button will do.
   let body;
   if (curated){
-    body = "Your progress stays in the " + list.domain + " Full-List.";
+    body = "Your progress stays in " + list.domain + ".";
   } else if (lastOfDomain){
     body = "This deletes the list and its progress. You'd need the file to bring it back.";
   } else {
-    body = "Your progress stays — your other " + list.domain + " lists still use it.";
+    body = "Your progress stays - your other " + list.domain + " lists still use it.";
   }
 
   const ok = await wdConfirm(
-    "Remove \u201C" + list.name + "\u201D from WordDock?",
+    "Remove \u201C" + list.name + "\u201D from Latijn?",
     body, "Remove", "Keep"
   );
   if (!ok) return;
@@ -3774,19 +4796,20 @@ async function deleteList(listId){
 
   if (lastOfDomain){
     try { localStorage.removeItem("wd_rs_" + domain); } catch {}
+    setFilter(domain, null);   // the filter goes with the pot
   }
 
-  // If we just deleted what was being studied, fall back to a Full-List. The
+  // If we just deleted what was being studied, fall back to a Full. The
   // deleted list's own domain may have none (it was uncurated), and NL-RU's
   // may not even be loaded (we boot into the last-studied domain) — so take
-  // any loaded Full-List, and fetch the default only if there is none.
+  // any loaded Full, and fetch the default only if there is none.
   if (wasActive){
     let fallback = LISTS["embedded_" + domain]
                 || Object.values(LISTS).find(l => l.source === "embedded");
     if (fallback){
       switchActiveList(fallback.listId);
     } else {
-      await loadDomainMaster("NL-LA");     // nothing loaded — fetch the default
+      await loadDomainMaster("NL-RU");     // nothing loaded - fetch the default
     }
   }
   // The pane may now be showing a domain that no longer exists.
@@ -3797,29 +4820,34 @@ async function deleteList(listId){
 }
 
 // List browser: back button closes; dashed upload row triggers file picker
-// Back link (in About WordDock) returns to the lists view, staying in the browser
+// Back link (in About Latijn) returns to the lists view, staying in the browser
 document.getElementById("browserBack").addEventListener("click", () => showBrowserPane("lists"));
 // Clicking the "Domains" header also returns to the lists view
 /* The "Domains" header is the way back to the rail.
 
    On desktop both panes are visible, so it just returns the detail pane to the
-   lists view (leaving About WordDock). On mobile only one pane shows at a
+   lists view (leaving About Latijn). On mobile only one pane shows at a
    time, and this is the ONLY route back to the domain list — the rail, with
-   MY LISTS, MORE and the About WordDock footer, is hidden inside it.
+   MY LISTS, MORE and the About Latijn footer, is hidden inside it.
    Without this the header looked tappable, highlighted on touch, and did
    nothing. */
 document.getElementById("browserDomainsHeader").addEventListener("click", () => {
   showBrowserPane("lists");                       // detail returns to the lists view
   $listbrowser.classList.remove("show-detail");   // …then, on mobile, show the rail
   $listbrowser.classList.add("show-rail");
+  navClosed("pane");                              // nav: pane layer (3 of 4)
 });
 
-// About WordDock: footer opens it; its own nav mirrors the browser's.
+// About Latijn: footer opens it; its own nav mirrors the browser's.
 const $aboutFooterLink = document.getElementById("aboutFooterLink");
+const $syncAnchor = document.getElementById("syncAnchor");
+$syncAnchor.addEventListener("click", (e) => { e.preventDefault(); showSyncPanel(); });
+renderSyncAnchor();
 // The version rides on the browse-page footer, so the DEPLOYED build shows the
 // moment the browser opens (one click on the logo) — no need to enter About.
 // Sourced from the one constant, so it never drifts from the top-of-file marker.
-$aboutFooterLink.textContent = "About WordDock " + WORDDOCK_VERSION;
+$aboutFooterLink.textContent = "About Latijn " + WORDDOCK_VERSION;
+  $aboutFooterLink.dataset.text  = "About Latijn " + WORDDOCK_VERSION;   // keeps the no-shift pseudo-element in sync
 $aboutFooterLink.addEventListener("click", (e) => {
   e.preventDefault();
   openSurface("about");
@@ -3830,27 +4858,42 @@ $aboutFooterLink.addEventListener("click", (e) => {
 document.querySelector("#aboutbrowser .browser-head-rail").addEventListener("click", () => {
   $aboutbrowser.classList.remove("show-detail");
   $aboutbrowser.classList.add("show-rail");
+  navClosed("pane");                              // nav: pane layer (4 of 4)
 });
 /* The five requirements, shown on the spot. Clicking through to the whole Info
-   page answered a question the user didn't ask ("what is WordDock? how do I
+   page answered a question the user didn't ask ("what is Latijn? how do I
    study?") and lost their place. They asked one thing; answer that one thing,
    and leave them where they were. */
 const FILE_RULES_HTML =
   "<ol class='dlg-rules'>" +
-  "<li>A sheet whose <b>header row is exactly these 25 columns</b>, in order — " +
-  "so cell A1 reads <code>ID</code>:<br>" +
-  "<code>ID · ENTRY · CAT · CTAG · L · Q1 · A1 · … · Q10 · A10</code></li>" +
-  "<li>At least <b>10 rows</b> where <code>ID</code>, <code>Q1</code> and " +
-  "<code>A1</code> are all filled.</li>" +
-  "<li>A filename shaped <b><code>DOMAIN_name.xlsx</code></b> — domain first, " +
-  "then an underscore, then your own name. Like <code>NL-RU_holiday.xlsx</code>." +
+  "<li>A sheet whose <b>header row is exactly these 26 columns</b>, in order - " +
+  "so cell A1 reads <code>L</code>:<br>" +
+  "<code>L · ID · ENTRY · CAT · SUBCAT · NOTE · Q1 · A1 · … · Q10 · A10</code></li>" +
+  "<li>Rows where <code>ID</code>, <code>Q1</code> and <code>A1</code> are all " +
+  "filled - other rows are skipped.</li>" +
+  "<li>A filename shaped <b><code>DOMAIN_name.xlsx</code></b> - domain first, " +
+  "then an underscore, then your list name. Like <code>NL-RU_Holiday.xlsx</code>." +
   "</li>" +
-  "<li>Within one domain, <b>every entry needs its own ID</b> — never restart " +
+  "<li>Within one domain, <b>every entry needs its own ID</b> - never restart " +
   "numbering in a new file.</li>" +
   "</ol>";
 
 function showFileRules(){
-  wdConfirm("What a WordDock file needs", FILE_RULES_HTML, "OK", null, true);
+  wdConfirm("What a Latijn file needs", FILE_RULES_HTML, "OK", null, true);
+}
+
+/* 6b: a focused dialog for the My-domains ? — explains naming, not Excel structure */
+const MY_DOMAIN_RULES_HTML =
+  "<p style='margin:0 0 10px'>The filename part <b>before the underscore</b> is the name of the domain.</p>" +
+  "<p style='margin:0 0 6px;font-family:monospace;font-size:13px'>" +
+  "BIOLOGY_chapter1.xlsx &rarr; domain <b>BIOLOGY</b><br>" +
+  "NL-IT_holiday.xlsx &rarr; domain <b>NL-IT</b> <span style='opacity:.7'>(joins existing NL-IT progress)</span>" +
+  "</p>" +
+  "<p style='margin:10px 0 0'>Keep domain names short and consistent - every list with the same domain shares the same progress. " +
+  "Once you've created a domain, it stays in your browser until you remove it or wipe your browser data.</p>";
+
+function showMyDomainRules(){
+  wdConfirm("Creating your own domain", MY_DOMAIN_RULES_HTML, "OK", null, true);
 }
 
 // The same rules, reachable BEFORE you fail — a curator wants them while making
@@ -3866,180 +4909,6 @@ document.getElementById("importRulesHelp").addEventListener("click", (e) => {
 // the picker is gone, so the context signal has no job.)
 document.getElementById("browserUpload").addEventListener("click", () => $fileInput.click());
 
-/* ════════════════════════════════════════════════════════════════════════
-   Score backup — export / import ALL domains as one JSON file.
-   RS lives only in localStorage (one bucket per domain, key wd_rs_<DOMAIN>).
-   This is the sole durable backup + the transport path between devices.
-   ════════════════════════════════════════════════════════════════════════ */
-
-const SCORES_FILE_TYPE = "worddock-scores";
-
-// Stable key ordering, so "identical" comparisons don't trip on order.
-function sortedObj(o){
-  const out = {};
-  for (const k of Object.keys(o || {}).sort()) out[k] = o[k];
-  return out;
-}
-
-// Read a domain's stored scores, keeping only non-zero entries (0 is implicit).
-function readDomainScores(domain){
-  let map = {};
-  try { map = JSON.parse(localStorage.getItem("wd_rs_" + domain)) || {}; }
-  catch (e) { map = {}; }
-  const nz = {};
-  for (const id in map){ if (map[id] !== 0) nz[id] = map[id]; }
-  return nz;
-}
-
-// Gather every domain that has any non-zero score.
-function gatherAllScores(){
-  const scores = {};
-  for (let i = 0; i < localStorage.length; i++){
-    const k = localStorage.key(i);
-    if (k && k.startsWith("wd_rs_")){
-      const domain = k.slice("wd_rs_".length);
-      const nz = readDomainScores(domain);
-      if (Object.keys(nz).length) scores[domain] = nz;
-    }
-  }
-  return scores;
-}
-
-// Update every visible scores-message element (original + cloned settings).
-function setScoresMsg(text){
-  document.querySelectorAll(".scores-msg").forEach(el => { el.textContent = text || ""; });
-}
-
-function exportScores(){
-  const scores = gatherAllScores();
-  const domainCount = Object.keys(scores).length;
-  if (!domainCount){
-    setScoresMsg("Nothing to export yet — scores build up as you complete decks.");
-    return null;
-  }
-  const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const payload = { type: SCORES_FILE_TYPE, version: 1, exported: today, scores };
-  const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
-  // Time as well as date. The app cannot overwrite a file — the browser owns
-  // everything after the download is handed over — so a second backup on the
-  // same day used to land as "… (1).json", and our "your file is ready: X"
-  // message then named a file that didn't exist. HHMM makes the collision
-  // impossible instead of managing it. Date stays first, so files still sort
-  // chronologically.
-  const hhmm = String(now.getHours()).padStart(2, "0") +
-               String(now.getMinutes()).padStart(2, "0");
-  const filename = "WordDock-scores_" + today + "_" + hhmm + ".json";
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  // "Exported" was the wrong verb (lists are exported; scores are backed up),
-  // and claiming the backup is DONE is not something the app can know: the
-  // browser gives no callback for "user cancelled the save dialog". What IS
-  // certain is that the file was created and handed to the browser. Say that.
-  setScoresMsg("Your backup file is ready: " + filename);
-  return { filename, domainCount };
-}
-
-// Parse + apply an imported scores file. Empty/identical domains merge
-// silently; domains that differ AND already have scores prompt once.
-async function importScoresFromFile(file){
-  let payload;
-  try {
-    payload = JSON.parse(await file.text());
-  } catch (e) {
-    setScoresMsg("Couldn't read that file — it isn't valid JSON.");
-    return;
-  }
-  if (!payload || payload.type !== SCORES_FILE_TYPE || typeof payload.scores !== "object"){
-    setScoresMsg("That doesn't look like a WordDock scores file.");
-    return;
-  }
-  const fileScores = payload.scores;
-  const domains = Object.keys(fileScores);
-  if (!domains.length){
-    setScoresMsg("That file has no scores in it.");
-    return;
-  }
-
-  const silent = [];     // domains to write with no prompt
-  const conflicts = [];  // domains that differ and already have scores
-  for (const domain of domains){
-    const fileMap = sortedObj(fileScores[domain]);
-    const existing = sortedObj(readDomainScores(domain));
-    const isEmpty  = Object.keys(existing).length === 0;
-    const same     = JSON.stringify(existing) === JSON.stringify(fileMap);
-    if (isEmpty || same) silent.push({ domain, map: fileMap });
-    else                 conflicts.push({ domain, map: fileMap });
-  }
-
-  // Apply the safe ones immediately.
-  for (const s of silent) localStorage.setItem("wd_rs_" + s.domain, JSON.stringify(s.map));
-
-  // One confirm covering all conflicting domains.
-  let overwrote = 0;
-  if (conflicts.length){
-    const ok = await wdConfirm(
-      "Replace this browser's scores?",
-      "This browser already has progress. Loading the file replaces it.",
-      "Use the file", "Keep what's here"
-    );
-    if (ok){
-      for (const c of conflicts) localStorage.setItem("wd_rs_" + c.domain, JSON.stringify(c.map));
-      overwrote = conflicts.length;
-    }
-  }
-
-  // Refresh in-memory RS for the active domain (next deck reflects it).
-  loadRS();
-
-  const applied = silent.length + overwrote;
-  if (applied){
-    setScoresMsg("Restored your scores from " + file.name + ".");
-  } else {
-    setScoresMsg("Nothing changed — kept this browser's scores.");
-  }
-
-  // Redraw what the user is looking at. The restore wrote new values, but the
-  // view was rendered BEFORE it — so without this the screen keeps showing the
-  // old numbers and the change looks like it silently failed. Refresh the
-  // browser (inline domain/list %s and the global zone), preserving the
-  // outcome message the restore just set.
-  const msg = document.querySelector(".scores-msg");
-  const keep = msg ? msg.textContent : "";
-  if (browserPane === "lists") renderBrowser();
-  if (keep) setScoresMsg(keep);          // re-render wipes the message; put it back
-  renderBrowserRail();
-}
-
-// Delegated clicks: works for the settings page AND its browser-pane clone.
-document.addEventListener("click", (e) => {
-  const exp = e.target.closest && e.target.closest(".js-export-scores");
-  const imp = e.target.closest && e.target.closest(".js-import-scores");
-  if (exp){
-    e.preventDefault();
-    // Collapse the "?" explanation (if open) before showing the result. You've
-    // acted, so you no longer need "what is a backup?"; you need the outcome —
-    // and hiding the info frees the space so the confirmation isn't pushed below
-    // the fold on a small screen.
-    const info = document.querySelector(".gz-backup-info");
-    if (info) info.hidden = true;
-    exportScores();   // sets the "backup file ready" message via setScoresMsg,
-                      // which writes to the global zone's .scores-msg directly
-  }
-  else if (imp){ e.preventDefault(); document.getElementById("scoresFileInput").click(); }
-});
-
-document.getElementById("scoresFileInput").addEventListener("change", async (e) => {
-  const file = e.target.files && e.target.files[0];
-  e.target.value = "";   // allow re-picking the same file
-  if (!file) return;
-  setScoresMsg("Reading " + file.name + "…");
-  await importScoresFromFile(file);
-});
-
 /* ─── Boot ─── */
 
 /* Convert the embedded master's "loose" row shape into the same shape
@@ -4049,11 +4918,12 @@ function normalizeEmbeddedRows(rawRows){
   return rawRows.map(r => ({
     ID:  r.ID,
     CAT: r.CAT || "",
-    CTAG: r.CTAG || "",
+    SUBCAT: r.SUBCAT || "",
     pairs:   r.pairs || [],
     _preserved: {
       L: r.L || null,
-      ENTRY: r.ENTRY || null
+      ENTRY: r.ENTRY || null,
+      NOTE: r.NOTE || null      // v26.87: NOTE travels on every road (catalog JSON, storage, Excel)
     },
     _extras: null,
     get L(){ return this._preserved.L; }
@@ -4061,7 +4931,7 @@ function normalizeEmbeddedRows(rawRows){
 }
 
 /* Last studied list — so a reload resumes where the user left off, instead of
-   always dumping them back on NL-RU's Full-List. A preference, not progress:
+   always dumping them back on NL-RU's Full. A preference, not progress:
    last write wins, and an unresolvable value silently falls back. */
 const LAST_LIST_KEY = "wd_last_list";
 
@@ -4080,7 +4950,7 @@ function readLastList(){
 
   // Which list were we studying? Load ITS domain, not always NL-RU.
   const wanted = readLastList();
-  let bootDomain = "NL-LA";
+  let bootDomain = "NL-RU";
   if (wanted){
     if (LISTS[wanted]) bootDomain = LISTS[wanted].domain;               // an own list
     else if (wanted.startsWith("embedded_")) bootDomain = wanted.slice(9);
@@ -4089,9 +4959,31 @@ function readLastList(){
       if (pend) bootDomain = pend.domain;
     }
   }
-  if (!catalog.isAvailable(bootDomain)) bootDomain = "NL-LA";           // uncurated own list:
+  if (!catalog.isAvailable(bootDomain)) bootDomain = "NL-RU";           // uncurated own list:
                                                                         // still fetch a Source
-  const rawRows = await catalog.loadMaster(bootDomain);
+  // The one fetch the boot depends on. Offline with this list never cached, it
+  // throws — and without this guard the app hangs on the loading dots forever
+  // (observed v26.38). We don't silently swap in another language: the user is
+  // the captain of their own study. Reveal the stage, land on the list
+  // overview, and say plainly what happened so they can choose. (Item 5,
+  // hardening 2026-09-07.)
+  let rawRows;
+  try {
+    rawRows = await catalog.loadMaster(bootDomain);
+  } catch {
+    loadRS();
+    document.documentElement.classList.remove("restoring-view");
+    openSurface("list");
+    showBrowserPane("lists");
+    startSyncPullTimer();
+    await wdConfirm(
+      "This list isn't on this device yet",
+      "Go online and open it once - it's saved for offline use after that. " +
+      "Or pick another list that's available offline.",
+      "Pick a list", null
+    );
+    return;
+  }
   const fullRows = normalizeEmbeddedRows(rawRows);
   registerList({
     listId: "embedded_" + bootDomain,
@@ -4104,12 +4996,19 @@ function readLastList(){
   resolveIdLists(bootDomain, fullRows);   // stored slices of this domain can now resolve
 
   loadRS();
-  $tabDomainValue.textContent = DOMAIN_RUNTIME;
-  $tabFilterValue.textContent = "No filter";
 
-  // Resume the last list if it still exists; otherwise the domain's Full-List.
+  // Resume the last list if it still exists; otherwise the domain's Full.
   const resume = (wanted && LISTS[wanted]) ? wanted : ("embedded_" + bootDomain);
   switchActiveList(resume);
+  // Phase 2: a stored filter that matches nothing in the resumed list (its
+  // content changed under it) is removed here, out loud, rather than left to
+  // contradict the deck.
+  { const f = getFilter(DOMAIN_RUNTIME);
+    if (f && filteredRows(ALL, f).length === 0){
+      setFilter(DOMAIN_RUNTIME, null);
+      showStudyToast("Filter removed: no matching cards in " + activeListName);
+    } }
+  handleKeyLink();   // 3b: arrived via a scanned QR?
 
   // If this boot is a REFRESH that happened while the user was in the browser,
   // put them back where they were. sessionStorage is empty on a fresh visit, so
@@ -4125,13 +5024,16 @@ function readLastList(){
 
   // Pull after the app is up and usable, never before: sync is a convenience
   // layer and must not delay the first card by a single frame. If it fails,
-  // nothing here notices.
-  syncPull();
+  // nothing here notices. This is also the catch-up moment — a deck finished
+  // in a session the phone killed still owes the server a push, and this is
+  // where that debt is settled (after the merge, never before it).
+  syncCatchUp();
+  startSyncPullTimer();
 })();
 </script>
 
 <script>
-/* Register the service worker — the one thing that makes WordDock installable
+/* Register the service worker — the one thing that makes Latijn installable
    and openable with no connection.
 
    Deliberately after 'load': registration must never compete with the first
