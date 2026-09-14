@@ -1,13 +1,12 @@
 [
-  {"ID": "0001", "ENTRY": "lupus", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "wolf", "a": "lupus"}]},
-  {"ID": "0002", "ENTRY": "domus", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "huis", "a": "domus"}]},
-  {"ID": "0003", "ENTRY": "aqua", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "water", "a": "aqua"}]},
-  {"ID": "0004", "ENTRY": "panis", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "brood", "a": "panis"}]},
-  {"ID": "0005", "ENTRY": "vita", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "leven", "a": "vita"}]},
-  {"ID": "0006", "ENTRY": "rosa", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "roos", "a": "rosa"}]},
-  {"ID": "0007", "ENTRY": "equus", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "paard", "a": "equus"}]},
-  {"ID": "0008", "ENTRY": "ancilla", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "dienstmeid", "a": "ancilla"}]},
-  {"ID": "0009", "ENTRY": "mater", "CAT": "noun", "CTAG": "v", "L": "A1", "pairs": [{"q": "moeder", "a": "mater"}]},
-  {"ID": "0010", "ENTRY": "deus", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "god", "a": "deus"}]},
- {"ID": "0011", "ENTRY": "pater", "CAT": "noun", "CTAG": "m", "L": "A1", "pairs": [{"q": "vader", "a": "pater"}]}
+  {"ID": "0001", "ENTRY": "exemplum", "CAT": "zn", "SUBCAT": "n", "L": "A1", "NOTE": "", "pairs": [{"q": "voorbeeld", "a": "exemplum"}]},
+  {"ID": "0002", "ENTRY": "lupus", "CAT": "zn", "SUBCAT": "m", "L": "A1", "NOTE": "", "pairs": [{"q": "wolf", "a": "lupus"}]},
+  {"ID": "0003", "ENTRY": "aqua", "CAT": "zn", "SUBCAT": "v", "L": "A1", "NOTE": "", "pairs": [{"q": "water", "a": "aqua"}]},
+  {"ID": "0004", "ENTRY": "panis", "CAT": "zn", "SUBCAT": "m", "L": "A1", "NOTE": "", "pairs": [{"q": "brood", "a": "panis"}]},
+  {"ID": "0005", "ENTRY": "vita", "CAT": "zn", "SUBCAT": "v", "L": "A1", "NOTE": "", "pairs": [{"q": "leven", "a": "vita"}]},
+  {"ID": "0006", "ENTRY": "rosa", "CAT": "zn", "SUBCAT": "v", "L": "A1", "NOTE": "", "pairs": [{"q": "roos", "a": "rosa"}]},
+  {"ID": "0007", "ENTRY": "equus", "CAT": "zn", "SUBCAT": "m", "L": "A1", "NOTE": "", "pairs": [{"q": "paard", "a": "equus"}]},
+  {"ID": "0008", "ENTRY": "ancilla", "CAT": "zn", "SUBCAT": "v", "L": "A1", "NOTE": "", "pairs": [{"q": "dienstmeid", "a": "ancilla"}]},
+  {"ID": "0009", "ENTRY": "mater", "CAT": "zn", "SUBCAT": "v", "L": "A1", "NOTE": "", "pairs": [{"q": "moeder", "a": "mater"}, {"q": "de moeders", "a": "matres"}, {"q": "hij ziet de moeder", "a": "matrem videt"}, {"q": "hij ziet de moeders", "a": "matres videt"}, {"q": "wij geven aan de moeders", "a": "matribus damus"}, {"q": "wij zijn bij de moeders", "a": "cum matribus sumus"}, {"q": "de moeder ziet", "a": "mater videt"}, {"q": "de moeders zien", "a": "matres vident"}]},
+  {"ID": "0010", "ENTRY": "deus", "CAT": "zn", "SUBCAT": "m", "L": "A1", "NOTE": "", "pairs": [{"q": "god", "a": "deus"}]}
 ]
